@@ -26,5 +26,6 @@ jobs:
       run: |
           cd AmiyaBotPlayerRatingServer
           dotnet publish -c Release -o ../publish
+          ls -ltr ../publish
     - name: Build and push Docker images
       uses: docker/build-push-action@v4.1.1
