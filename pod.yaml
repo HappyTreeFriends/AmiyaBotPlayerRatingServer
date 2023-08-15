@@ -51,5 +51,5 @@ spec:
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
-        imagePullSecrets:
-          - name: harbor.hsyhhssyy.net
+      imagePullSecrets:
+        - name: harbor.hsyhhssyy.net
