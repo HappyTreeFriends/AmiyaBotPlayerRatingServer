@@ -23,6 +23,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore -o ./publish
+      run: |
+          cd AmiyaBotPlayerRatingServer
+          dotnet publish -c Release -o ../publish
     - name: Build and push Docker images
       uses: docker/build-push-action@v4.1.1
