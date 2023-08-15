@@ -1,10 +1,8 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /app
-COPY . .
+COPY ./publish .
 RUN ls -ltr 
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-WORKDIR /app/publish
-
-CMD ["dotnet", "run"]
+CMD ["dotnet", "run","AmiyaBotPlayerRatingServer.dll"]

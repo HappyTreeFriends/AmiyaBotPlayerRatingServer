@@ -27,7 +27,15 @@ jobs:
           cd AmiyaBotPlayerRatingServer
           dotnet publish -c Release -o ../publish
           ls -ltr ../
+    - name: Login to Private Harbor
+      uses: docker/login-action@v2
+      with:
+        registry: harbor.hsyhhssyy.net
+        username: hsyhhssyy@example.com
+        password: ${{ secrets.HARBOR_PUSH_KEY }}
     - name: Build and push Docker images
       uses: docker/build-push-action@v4.1.1
       with:
         context: .
+        push: true
+        tags: home-esxi/amiya-bot-player-rating-server:latest
