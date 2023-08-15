@@ -39,3 +39,16 @@ jobs:
         context: .
         push: true
         tags: harbor.hsyhhssyy.net/home-esxi/amiya-bot-player-rating-server:latest
+    - uses: azure/setup-kubectl@v3
+      id: install
+    - uses: azure/k8s-set-context@v1
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.HOMECLOUD_KUBECONFIG }}
+      id: setcontext
+    - uses: Azure/k8s-deploy@v4
+      with:
+        namespace: 'amiya-bot'
+        images: 'harbor.hsyhhssyy.net/home-esxi/amiya-bot-player-rating-server:latest'
+        imagepullsecrets: |
+            harbor.hsyhhssyy.net
