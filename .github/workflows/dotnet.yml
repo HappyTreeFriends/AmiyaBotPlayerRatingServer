@@ -38,4 +38,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: home-esxi/amiya-bot-player-rating-server:latest
+        tags: harbor.hsyhhssyy.net/home-esxi/amiya-bot-player-rating-server:latest
