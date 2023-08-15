@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {YZL_PROJECT_SHORT}
+spec:
+  selector:
+    matchLabels:
+      app: {YZL_PROJECT_SHORT}
+  template:
+    metadata:
+      labels:
+        app: {YZL_PROJECT_SHORT}
+    spec:
+      containers:
+        - command:
+            - dotnet
+            - run
+          env:
+            - name: DOTNET_RUNNING_IN_CONTAINER
+              value: 'true'
+            - name: ALIYUN_SLS_LOGGER_SECRET
+              value: '{ALIYUN_SLS_LOGGER_SECRET}'
+            - name: DOTNET_USE_POLLING_FILE_WATCHER
+              value: 'true'
+            - name: NUGET_XMLDOC_MODE
+              value: skip
+            - name: POWERSHELL_DISTRIBUTION_CHANNEL
+              value: PSDocker-DotnetSDK-Debian-10
+            - name: TZ
+              value: Asia/Shanghai
+          image: >-
+            registry-vpc.cn-beijing.aliyuncs.com/{YZL_PRODUCTION_DOCKER_REPO}:{IMAGE_VERSION}
+          imagePullPolicy: IfNotPresent
+          name: {YZL_PROJECT_SHORT}
+          ports:
+            - containerPort: 5000
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: Blank
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
