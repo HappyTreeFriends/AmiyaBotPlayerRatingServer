@@ -30,7 +30,7 @@ spec:
               value: Asia/Shanghai
           image: >-
             harbor.hsyhhssyy.net/home-esxi/amiya-bot-player-rating-server:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: amiya-bot-player-rating-server
           ports:
             - containerPort: 5000
