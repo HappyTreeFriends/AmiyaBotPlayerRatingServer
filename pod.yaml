@@ -4,6 +4,7 @@ metadata:
   name: amiya-bot-player-rating-server
   namespace: amiya-bot
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: amiya-bot-player-rating-server
