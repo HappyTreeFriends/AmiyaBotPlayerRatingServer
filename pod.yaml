@@ -16,7 +16,7 @@ spec:
       containers:
         - command:
             - dotnet
-            - run
+            - AmiyaBotPlayerRatingServer.dll
           env:
             - name: DOTNET_RUNNING_IN_CONTAINER
               value: 'true'
