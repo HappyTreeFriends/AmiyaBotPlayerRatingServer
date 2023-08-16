@@ -54,3 +54,5 @@ jobs:
         namespace: 'amiya-bot'
         manifests: pod.yaml
         images: 'harbor.hsyhhssyy.net/home-esxi/amiya-bot-player-rating-server:latest'
+        imagepullsecrets: |
+            harbor.hsyhhssyy.net
