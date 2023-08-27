@@ -1,33 +1,24 @@
+using AmiyBotPlayerRatingServer;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AmiyBotPlayerRatingServer.Controllers
+namespace AmiyaBotPlayerRatingServer.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class WeatherForecastController : ControllerBase
+    [Produces("application/json")]
+    public class BlankController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
+        private readonly IWebHostEnvironment _env;
 
-        private readonly ILogger<WeatherForecastController> _logger;
-
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public BlankController(IWebHostEnvironment env)
         {
-            _logger = logger;
+            _env = env;
         }
 
-        [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
+        [HttpGet]
+        public object Index()
         {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-            {
-                Date = DateTime.Now.AddDays(index),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+            return new { _env.EnvironmentName };
         }
     }
 }
