@@ -17,7 +17,6 @@ spec:
         - command:
             - dotnet
             - AmiyaBotPlayerRatingServer.dll
-            - --urls "http://*:5000"
           env:
             - name: DOTNET_RUNNING_IN_CONTAINER
               value: 'true'
@@ -34,14 +33,14 @@ spec:
           imagePullPolicy: Always
           name: amiya-bot-player-rating-server
           ports:
-            - containerPort: 5000
+            - containerPort: 80
               name: http
               protocol: TCP
           readinessProbe:
             failureThreshold: 3
             httpGet:
               path: Blank
-              port: 5000
+              port: 80
               scheme: HTTP
             initialDelaySeconds: 3
             periodSeconds: 10
