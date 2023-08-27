@@ -17,6 +17,7 @@ spec:
         - command:
             - dotnet
             - AmiyaBotPlayerRatingServer.dll
+            - --urls "http://*:5000"
           env:
             - name: DOTNET_RUNNING_IN_CONTAINER
               value: 'true'
