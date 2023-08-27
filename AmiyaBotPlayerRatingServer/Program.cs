@@ -1,9 +1,10 @@
-using Aliyun.OSS;
+﻿using Aliyun.OSS;
 using AmiyaBotPlayerRatingServer.Data;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 using AmiyaBotPlayerRatingServer.Utility;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,13 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+//执行数据库迁移
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
+    dbContext.Database.Migrate();
 }
 
 app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
