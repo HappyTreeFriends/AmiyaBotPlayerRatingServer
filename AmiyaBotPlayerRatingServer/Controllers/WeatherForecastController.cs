@@ -1,4 +1,3 @@
-using AmiyBotPlayerRatingServer;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
