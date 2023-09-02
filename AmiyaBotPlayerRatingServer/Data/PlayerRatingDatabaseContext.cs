@@ -1,10 +1,11 @@
 ﻿using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 #pragma warning disable CS8618
 
 namespace AmiyaBotPlayerRatingServer.Data
 {
-    public class PlayerRatingDatabaseContext:DbContext
+    public class PlayerRatingDatabaseContext : DbContext
     {
         private IConfiguration Configuration { get; }
 
@@ -27,6 +28,22 @@ namespace AmiyaBotPlayerRatingServer.Data
 
             options.UseNpgsql(conn);
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<CharacterStatistics>()
+                .Property(e => e.AverageSpecializeLevel)
+                .HasConversion(
+                    v => JsonConvert.SerializeObject(v),
+                    v => JsonConvert.DeserializeObject<List<double>>(v));
+
+            modelBuilder.Entity<CharacterStatistics>()
+                .Property(e => e.AverageEquipLevel)
+                .HasConversion(
+                    v => JsonConvert.SerializeObject(v),
+                    v => JsonConvert.DeserializeObject<Dictionary<int, double>>(v));
+        }
+
 
         public DbSet<CharacterStatistics> CharacterStatistics { get; set; }
     }
