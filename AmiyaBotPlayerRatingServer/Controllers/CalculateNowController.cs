@@ -17,7 +17,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
     [ApiController]
     [Route("[controller]")]
     [Produces("application/json")]
-    public class TestController : ControllerBase
+    public class CalculateNowController : ControllerBase
     {
         public class AccumulatedCharacterData
         {
@@ -29,15 +29,13 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             public Dictionary<string, (long Count, double Level)> SpecializeLevel { get; set; } = new Dictionary<string, (long, double)>();
         }
         
-        private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _configuration;
-        private readonly PlayerRatingDatabaseContext _context;
+        private readonly PlayerRatingDatabaseContext _dbContext;
 
-        public TestController(IWebHostEnvironment env, IConfiguration configuration, PlayerRatingDatabaseContext context)
+        public CalculateNowController(IWebHostEnvironment env, IConfiguration configuration, PlayerRatingDatabaseContext dbContext)
         {
-            _env = env;
             _configuration = configuration;
-            _context = context;
+            _dbContext = dbContext;
         }
 
         [HttpGet]
@@ -199,10 +197,10 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             //最后，遍历accumulatedData并计算平均值，然后存入数据库：
 
             // 删除 CharacterStatistics 表中的所有记录(测试时临时代码)
-            _context.CharacterStatistics.RemoveRange(_context.CharacterStatistics);
+            _dbContext.CharacterStatistics.RemoveRange(_dbContext.CharacterStatistics);
 
             // 提交更改以清空表
-            _context.SaveChanges();
+            _dbContext.SaveChanges();
 
             foreach (var charId in accumulatedData.Keys)
             {
@@ -238,16 +236,19 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 statistics.AverageEquipLevel = avgEquipLevels;
 
                 // 添加到数据库
-                _context.CharacterStatistics.Add(statistics);
+                _dbContext.CharacterStatistics.Add(statistics);
             }
 
-            _context.SaveChanges();
+            _dbContext.SaveChanges();
 
             // 从数据库中获取最新的统计数据
-            var stats = _context.CharacterStatistics
+            var stats = _dbContext.CharacterStatistics.ToList()  // 先获取数据
                 .Select(s => new {
-                    s.CharacterId,
+                    s.Id,
+                    s.VersionStart,
+                    s.VersionEnd,
                     s.SampleCount,
+                    s.CharacterId,
                     AverageEvolvePhase = Math.Round(s.AverageEvolvePhase, 2),
                     AverageLevel = Math.Round(s.AverageLevel, 2),
                     AverageSkillLevel = Math.Round(s.AverageSkillLevel, 2),
@@ -255,6 +256,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     AverageEquipLevel = s.AverageEquipLevel.ToDictionary(kvp => kvp.Key, kvp => Math.Round(kvp.Value, 2))
                 })
                 .ToList();
+
 
 
             // 返回统计数据的 JSON 表示形式
