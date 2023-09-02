@@ -19,14 +19,33 @@
         public long SampleCount { get; set; }
 
         /// <summary>
+        /// 干员Id
+        /// </summary>
+        public string CharacterId { get; set; }
+
+        /// <summary>
         /// 平均精英化等级
         /// </summary>
-        public int AverageExptLevel { get; set; }
+        public double AverageEvolvePhase { get; set; }
+
         /// <summary>
         /// 平均等级
         /// </summary>
-        public int AverageLevel { get; set; }
+        public double AverageLevel { get; set; }
+        
+        /// <summary>
+        /// 平均技能等级,数值为1-7
+        /// </summary>
+        public double AverageSkillLevel { get; set; }
 
+        /// <summary>
+        /// 平均专精等级0-3
+        /// </summary>
+        public List<double> AverageSpecializeLevel { get; set; } = new List<double>();
 
+        /// <summary>
+        /// 平均模组等级 0-3
+        /// </summary>
+        public Dictionary<int, double> AverageEquipLevel { get; set; } =new Dictionary<int, double>();
     }
 }
