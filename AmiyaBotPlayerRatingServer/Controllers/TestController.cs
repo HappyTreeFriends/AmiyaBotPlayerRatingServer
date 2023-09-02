@@ -212,8 +212,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 CharacterStatistics statistics = new CharacterStatistics
                 {
                     Id = Guid.NewGuid().ToString(),
-                    VersionStart = startDate,
-                    VersionEnd = endDate,
+                    VersionStart = startDate.ToUniversalTime(),
+                    VersionEnd = endDate.ToUniversalTime(),
                     SampleCount = data.Count,
                     CharacterId = charId,
                     AverageEvolvePhase = data.TotalEvolvePhase / data.Count,
@@ -243,7 +243,22 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             _context.SaveChanges();
 
-            return new { Message = "Processing complete" };
+            // 从数据库中获取最新的统计数据
+            var stats = _context.CharacterStatistics
+                .Select(s => new {
+                    s.CharacterId,
+                    s.SampleCount,
+                    AverageEvolvePhase = Math.Round(s.AverageEvolvePhase, 2),
+                    AverageLevel = Math.Round(s.AverageLevel, 2),
+                    AverageSkillLevel = Math.Round(s.AverageSkillLevel, 2),
+                    AverageSpecializeLevel = s.AverageSpecializeLevel.Select(x => Math.Round(x, 2)).ToList(),
+                    AverageEquipLevel = s.AverageEquipLevel.ToDictionary(kvp => kvp.Key, kvp => Math.Round(kvp.Value, 2))
+                })
+                .ToList();
+
+
+            // 返回统计数据的 JSON 表示形式
+            return new JsonResult(stats);
         }
     }
 }
