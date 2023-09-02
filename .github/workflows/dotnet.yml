@@ -53,7 +53,8 @@ jobs:
     - name: Push to k8s
       uses: Azure/k8s-deploy@v4
       with:
-        namespace: 'amiya-bot'
+        namespace: amiya-bot
         manifests: pod.yaml
-        images: 'harbor.hsyhhssyy.net/home-esxi/amiya-bot-player-rating-server:${{ github.sha }}'
+        images: |
+          harbor.hsyhhssyy.net/home-esxi/amiya-bot-player-rating-server:${{ github.sha }}
         imagepullsecrets: harbor.hsyhhssyy.net
