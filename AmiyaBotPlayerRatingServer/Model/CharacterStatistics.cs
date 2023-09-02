@@ -19,6 +19,11 @@
         public long SampleCount { get; set; }
 
         /// <summary>
+        /// 该批次的总数，和样本总数的区别是，SampleCount不计算未拥有该干员的人的干员练度
+        /// </summary>
+        public long BatchCount { get; set; }
+
+        /// <summary>
         /// 干员Id
         /// </summary>
         public string CharacterId { get; set; }

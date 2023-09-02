@@ -18,12 +18,19 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         [HttpGet]
         public object Index()
         {
-            // 从数据库中获取最新的统计数据
-            var stats = _dbContext.CharacterStatistics.ToList()  // 先获取数据
+            var statsList = _dbContext.CharacterStatistics.ToList();
+
+            if (statsList.Count == 0)
+            {
+                return new JsonResult(new { message = "No statistics available" });
+            }
+
+            var firstStat = statsList.First();
+
+            // 先获取统计数据
+            var stats = statsList
                 .Select(s => new {
-                    s.Id,
-                    s.VersionStart,
-                    s.VersionEnd,
+                    // Removed s.Id
                     s.SampleCount,
                     s.CharacterId,
                     AverageEvolvePhase = Math.Round(s.AverageEvolvePhase, 2),
@@ -34,10 +41,14 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 })
                 .ToList();
 
-
-
-            // 返回统计数据的 JSON 表示形式
-            return new JsonResult(stats);
+            // 返回统计数据的 JSON 表示形式，将 VersionStart, VersionEnd 和 BatchCount 提取到外层
+            return new JsonResult(new
+            {
+                VersionStart = firstStat.VersionStart,
+                VersionEnd = firstStat.VersionEnd,
+                BatchCount = firstStat.BatchCount,
+                Data = stats
+            });
         }
     }
 }

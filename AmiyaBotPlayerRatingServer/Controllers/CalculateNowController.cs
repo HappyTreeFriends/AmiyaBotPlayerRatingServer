@@ -213,6 +213,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     VersionStart = startDate.ToUniversalTime(),
                     VersionEnd = endDate.ToUniversalTime(),
                     SampleCount = data.Count,
+                    BatchCount = latestFiles.Keys.Count,
                     CharacterId = charId,
                     AverageEvolvePhase = data.TotalEvolvePhase / data.Count,
                     AverageLevel = data.TotalLevel / data.Count,
@@ -244,11 +245,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             // 从数据库中获取最新的统计数据
             var stats = _dbContext.CharacterStatistics.ToList()  // 先获取数据
                 .Select(s => new {
-                    s.Id,
-                    s.VersionStart,
-                    s.VersionEnd,
-                    s.SampleCount,
                     s.CharacterId,
+                    s.SampleCount,
+                    s.BatchCount,
                     AverageEvolvePhase = Math.Round(s.AverageEvolvePhase, 2),
                     AverageLevel = Math.Round(s.AverageLevel, 2),
                     AverageSkillLevel = Math.Round(s.AverageSkillLevel, 2),
