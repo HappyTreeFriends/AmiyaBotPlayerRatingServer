@@ -40,21 +40,7 @@ builder.Services.AddControllers()
             o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
-var connStr = PlayerRatingDatabaseContext.GetConnectionString(configuration);
 
-
-logger.LogInformation("Conn:" + configuration["Db:Host"]);
-
-logger.LogInformation("Conn:"+ connStr);
-
-builder.Services.AddHangfire(hfConf => hfConf
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(connStr));
-
-// Add the processing server as IHostedService
-builder.Services.AddHangfireServer();
 
 
 var app = builder.Build();
@@ -64,6 +50,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 //执行数据库迁移
 using (var scope = app.Services.CreateScope())
@@ -77,10 +64,5 @@ app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseAuthorization();
 
 app.MapControllers();
-
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = new[] { new MyAuthorizationFilter() }
-});
 
 app.Run();
