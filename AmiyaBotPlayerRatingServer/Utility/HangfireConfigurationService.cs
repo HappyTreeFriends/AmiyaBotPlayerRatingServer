@@ -4,9 +4,9 @@ using Hangfire.PostgreSql;
 
 namespace AmiyaBotPlayerRatingServer.Utility
 {
-    public class HangfireConfigService
+    public class HangfireConfigurationService
     {
-        public HangfireConfigService(IConfiguration configuration)
+        public HangfireConfigurationService(IConfiguration configuration)
         {
             GlobalConfiguration.Configuration.UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
         }

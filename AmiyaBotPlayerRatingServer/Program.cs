@@ -35,7 +35,8 @@ builder.Services.AddHangfire(hfConf => hfConf
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings());
-builder.Services.AddSingleton<HangfireConfigService>();
+builder.Services.AddSingleton<HangfireConfigurationService>();
+builder.Services.AddHangfireServer(opt=>opt.Queues= new[] { "amiyabot-playerrating-default" });
 
 // Add the processing server as IHostedService
 builder.Services.AddHangfireServer();
@@ -51,12 +52,11 @@ if (app.Environment.IsDevelopment())
 //执行数据库迁移
 using (var scope = app.Services.CreateScope())
 {
-
-    _ = scope.ServiceProvider.GetRequiredService<HangfireConfigService>();
+    //触发一次HangfireConfigurationService来初始化他
+    _ = scope.ServiceProvider.GetRequiredService<HangfireConfigurationService>();
 
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
-
 
 }
 
@@ -66,9 +66,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-/*app.UseHangfireDashboard("/hangfire", new DashboardOptions
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     Authorization = new[] { new MyAuthorizationFilter() }
-});*/
+});
 
 app.Run();
