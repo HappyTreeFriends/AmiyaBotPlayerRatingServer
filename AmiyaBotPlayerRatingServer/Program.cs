@@ -47,16 +47,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-GlobalConfiguration.Configuration.UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
 
-Console.WriteLine(builder.Environment.EnvironmentName);
-Console.WriteLine(configuration["Db:Host"]);
-Console.WriteLine(configuration["Aliyun:Oss:Key"]);
 //执行数据库迁移
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
+
+    Console.WriteLine(builder.Environment.EnvironmentName);
+    Console.WriteLine(configuration["Db:Host"]);
+    Console.WriteLine(configuration["Aliyun:Oss:Key"]);
+
+    GlobalConfiguration.Configuration.UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
+
 }
 
 app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
