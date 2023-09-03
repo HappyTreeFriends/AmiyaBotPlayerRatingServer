@@ -15,15 +15,6 @@ var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
 
-var serviceProvider = new ServiceCollection()
-    .AddLogging(builder =>
-    {
-        builder.AddConsole(); // 添加控制台日志输出
-    })
-    .BuildServiceProvider();
-
-var logger = serviceProvider.GetService<ILogger<object>>();
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -58,6 +49,9 @@ if (app.Environment.IsDevelopment())
 
 GlobalConfiguration.Configuration.UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
 
+Console.WriteLine(builder.Environment.EnvironmentName);
+Console.WriteLine(configuration["Db:Host"]);
+Console.WriteLine(configuration["Aliyun:Oss:Key"]);
 //执行数据库迁移
 using (var scope = app.Services.CreateScope())
 {

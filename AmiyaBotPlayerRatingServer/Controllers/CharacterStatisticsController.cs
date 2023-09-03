@@ -88,6 +88,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                         s.CharacterId,
                         AverageEvolvePhase,
                         AverageLevel,
+                        AverageCalculatedLevel = s.AverageLevel,
                         AverageSkillLevel = Math.Round(s.AverageSkillLevel, 2),
                         AverageSpecializeLevel = s.AverageSpecializeLevel.Select(x => Math.Round(x, 2)).ToList(),
                         AverageEquipLevel = s.AverageEquipLevel.ToDictionary(kvp => kvp.Key, kvp => Math.Round(kvp.Value, 2))
