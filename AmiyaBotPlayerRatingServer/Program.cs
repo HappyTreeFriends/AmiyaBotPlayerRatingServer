@@ -35,6 +35,7 @@ builder.Services.AddHangfire(hfConf => hfConf
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings());
+builder.Services.AddSingleton<HangfireConfigService>();
 
 // Add the processing server as IHostedService
 builder.Services.AddHangfireServer();
@@ -47,18 +48,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
 //执行数据库迁移
 using (var scope = app.Services.CreateScope())
 {
+
+    _ = scope.ServiceProvider.GetRequiredService<HangfireConfigService>();
+
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
 
-    Console.WriteLine(builder.Environment.EnvironmentName);
-    Console.WriteLine(configuration["Db:Host"]);
-    Console.WriteLine(configuration["Aliyun:Oss:Key"]);
-
-    GlobalConfiguration.Configuration.UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
 
 }
 
@@ -68,9 +66,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+/*app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     Authorization = new[] { new MyAuthorizationFilter() }
-});
+});*/
 
 app.Run();
