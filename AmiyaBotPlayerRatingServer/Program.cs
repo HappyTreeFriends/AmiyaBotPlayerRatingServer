@@ -31,11 +31,24 @@ builder.Services.AddControllers()
             o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
+var connStr = PlayerRatingDatabaseContext.GetConnectionString(configuration);
+
+var serviceProvider = new ServiceCollection()
+    .AddLogging(builder =>
+    {
+        builder.AddConsole(); // 添加控制台日志输出
+    })
+    .BuildServiceProvider();
+
+var logger = serviceProvider.GetService<ILogger<object>>();
+
+logger.LogInformation("Conn:"+ connStr);
+
 builder.Services.AddHangfire(hfConf => hfConf
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration)));
+    .UsePostgreSqlStorage(connStr));
 
 // Add the processing server as IHostedService
 builder.Services.AddHangfireServer();
