@@ -14,19 +14,25 @@ namespace AmiyaBotPlayerRatingServer.Data
             Configuration = configuration;
         }
 
+        public static String GetConnectionString(IConfiguration configuration)
+        {
+            var host = configuration["Db:Host"];
+            var port = configuration["Db:Port"];
+            var database = configuration["Db:Database"];
+            var username = configuration["Db:Username"];
+            var password = configuration["Db:Password"];
+            var conn =
+                $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
+            return conn;
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             base.OnConfiguring(options);
 
-            var host = Configuration["Db:Host"];
-            var port = Configuration["Db:Port"];
-            var database = Configuration["Db:Database"];
-            var username = Configuration["Db:Username"];
-            var password = Configuration["Db:Password"];
-            var conn =
-                $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
+            
 
-            options.UseNpgsql(conn);
+            options.UseNpgsql(GetConnectionString(Configuration));
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

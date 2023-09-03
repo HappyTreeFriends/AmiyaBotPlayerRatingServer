@@ -32,12 +32,7 @@
         /// 角色稀有度,用于帮助计算
         /// </summary>
         public int Rarity { get; set; }
-
-        /// <summary>
-        /// 平均精英化等级
-        /// </summary>
-        public double AverageEvolvePhase { get; set; }
-
+        
         /// <summary>
         /// 平均等级
         /// </summary>

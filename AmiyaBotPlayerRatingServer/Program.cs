@@ -3,6 +3,8 @@ using AmiyaBotPlayerRatingServer.Data;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 using AmiyaBotPlayerRatingServer.Utility;
+using Hangfire;
+using Hangfire.PostgreSql;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +31,16 @@ builder.Services.AddControllers()
             o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
+builder.Services.AddHangfire(hfConf => hfConf
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration)));
+
+// Add the processing server as IHostedService
+builder.Services.AddHangfireServer();
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -49,5 +61,10 @@ app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new MyAuthorizationFilter() }
+});
 
 app.Run();
