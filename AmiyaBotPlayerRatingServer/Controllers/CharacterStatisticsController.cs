@@ -23,7 +23,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         public (int evolvePhase, int level) ReverseCalculateLevel(double calculatedLevel, string charId)
         {
-            var rarity = _characterMap[charId]["rarity"].ToObject<int>();
+            var charData = _characterMap[charId];
+            var rarity = charData["rarity"].ToObject<int>();
             int baseIncrease = 0;
             int evolveIncrease = 0;
 

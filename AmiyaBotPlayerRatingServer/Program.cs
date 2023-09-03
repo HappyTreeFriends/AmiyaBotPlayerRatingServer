@@ -42,6 +42,23 @@ builder.Services.AddControllers()
 
 
 
+var connStr = PlayerRatingDatabaseContext.GetConnectionString(configuration);
+
+logger.LogInformation("Conn:" + configuration["Aliyun:Oss:EndPoint"]);
+logger.LogInformation("Conn:" + configuration.GetSection("Aliyun:Oss:EndPoint"));
+logger.LogInformation("Conn:" + configuration["Db:Host"]);
+logger.LogInformation("Conn:" + configuration.GetSection("Db:Host"));
+
+logger.LogInformation("Conn:" + connStr);
+
+builder.Services.AddHangfire(hfConf => hfConf
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(connStr));
+
+// Add the processing server as IHostedService
+builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
@@ -64,5 +81,10 @@ app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new MyAuthorizationFilter() }
+});
 
 app.Run();
