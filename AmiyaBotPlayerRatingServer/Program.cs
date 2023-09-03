@@ -43,8 +43,7 @@ builder.Services.AddControllers()
 builder.Services.AddHangfire(hfConf => hfConf
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration)));
+    .UseRecommendedSerializerSettings());
 
 // Add the processing server as IHostedService
 builder.Services.AddHangfireServer();
@@ -57,6 +56,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+GlobalConfiguration.Configuration.UsePostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
 
 //执行数据库迁移
 using (var scope = app.Services.CreateScope())
