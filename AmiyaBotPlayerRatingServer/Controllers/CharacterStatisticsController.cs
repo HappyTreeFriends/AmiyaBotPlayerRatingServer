@@ -49,11 +49,11 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             }
 
             // 判断evolvePhase和level
-            if (calculatedLevel >= baseIncrease + evolveIncrease)
+            if (calculatedLevel >= baseIncrease + evolveIncrease&&rarity>=2)
             {
                 return (2, (int)(calculatedLevel - baseIncrease - evolveIncrease));
             }
-            else if (calculatedLevel >= baseIncrease)
+            else if (calculatedLevel >= baseIncrease && rarity >= 1)
             {
                 return (1, (int)(calculatedLevel - baseIncrease));
             }
