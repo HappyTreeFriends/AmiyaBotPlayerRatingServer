@@ -30,8 +30,6 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
             base.OnConfiguring(options);
 
-            
-
             options.UseNpgsql(GetConnectionString(Configuration));
         }
 

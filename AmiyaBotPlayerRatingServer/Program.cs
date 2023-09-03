@@ -15,6 +15,15 @@ var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
 
+var serviceProvider = new ServiceCollection()
+    .AddLogging(builder =>
+    {
+        builder.AddConsole(); // 添加控制台日志输出
+    })
+    .BuildServiceProvider();
+
+var logger = serviceProvider.GetService<ILogger<object>>();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -33,14 +42,8 @@ builder.Services.AddControllers()
 
 var connStr = PlayerRatingDatabaseContext.GetConnectionString(configuration);
 
-var serviceProvider = new ServiceCollection()
-    .AddLogging(builder =>
-    {
-        builder.AddConsole(); // 添加控制台日志输出
-    })
-    .BuildServiceProvider();
 
-var logger = serviceProvider.GetService<ILogger<object>>();
+logger.LogInformation("Conn:" + configuration["Db:Host"]);
 
 logger.LogInformation("Conn:"+ connStr);
 
