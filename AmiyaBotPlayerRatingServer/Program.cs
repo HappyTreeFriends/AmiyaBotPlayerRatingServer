@@ -36,9 +36,6 @@ builder.Services.AddHangfire(hfConf => hfConf
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings());
 builder.Services.AddSingleton<HangfireConfigurationService>();
-builder.Services.AddHangfireServer(opt=>opt.Queues= new[] { "amiyabot-playerrating-default" });
-
-// Add the processing server as IHostedService
 builder.Services.AddHangfireServer();
 
 var app = builder.Build();
