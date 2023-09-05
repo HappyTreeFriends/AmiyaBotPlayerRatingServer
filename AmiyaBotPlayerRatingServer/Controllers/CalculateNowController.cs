@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Hangfire;
 using AmiyaBotPlayerRatingServer.Hangfire;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
@@ -42,6 +43,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             _backgroundJobClient = backgroundJobClient;
         }
 
+        [Authorize]
         [HttpGet]
         public object Index()
         {

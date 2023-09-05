@@ -1,11 +1,12 @@
 ﻿using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 #pragma warning disable CS8618
 
 namespace AmiyaBotPlayerRatingServer.Data
 {
-    public class PlayerRatingDatabaseContext : DbContext
+    public class PlayerRatingDatabaseContext : IdentityDbContext<ApplicationUser>
     {
         private IConfiguration Configuration { get; }
 

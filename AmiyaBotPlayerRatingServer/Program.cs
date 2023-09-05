@@ -1,12 +1,17 @@
 ﻿using Aliyun.OSS;
 using AmiyaBotPlayerRatingServer.Data;
 using System.ComponentModel;
+using System.Text;
 using System.Text.Json.Serialization;
 using AmiyaBotPlayerRatingServer.Utility;
 using Hangfire;
 using Hangfire.PostgreSql;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
 using Microsoft.EntityFrameworkCore;
+using AmiyaBotPlayerRatingServer.Model;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +25,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<PlayerRatingDatabaseContext>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<PlayerRatingDatabaseContext>()
+    .AddDefaultTokenProviders();
+
 builder.Services.AddScoped(_ => new OssClient(configuration["Aliyun:Oss:EndPoint"],
     configuration["Aliyun:Oss:Key"],
     configuration["Aliyun:Oss:Secret"]));
@@ -37,6 +46,24 @@ builder.Services.AddHangfire(hfConf => hfConf
     .UseRecommendedSerializerSettings());
 builder.Services.AddSingleton<HangfireConfigurationService>();
 builder.Services.AddHangfireServer();
+
+builder.Services.AddAuthentication(x =>
+    {
+        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(x =>
+    {
+        x.RequireHttpsMetadata = false;
+        x.SaveToken = true;
+        x.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["JWT:Secret"]!)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+        };
+    });
 
 var app = builder.Build();
 
@@ -60,7 +87,7 @@ using (var scope = app.Services.CreateScope())
 app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 
 app.UseAuthorization();
-
+app.UseAuthentication();
 app.MapControllers();
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
