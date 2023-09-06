@@ -36,6 +36,8 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<CharacterStatistics>()
                 .Property(e => e.AverageSpecializeLevel)
                 .HasConversion(
@@ -47,6 +49,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 .HasConversion(
                     v => JsonConvert.SerializeObject(v),
                     v => JsonConvert.DeserializeObject<Dictionary<int, double>>(v));
+            
         }
 
 
