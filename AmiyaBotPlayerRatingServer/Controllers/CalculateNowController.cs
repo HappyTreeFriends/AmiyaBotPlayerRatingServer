@@ -15,6 +15,8 @@ using Microsoft.Extensions.Hosting;
 using Hangfire;
 using AmiyaBotPlayerRatingServer.Hangfire;
 using Microsoft.AspNetCore.Authorization;
+using AmiyaBotPlayerRatingServer.Migrations;
+using Microsoft.AspNetCore.Identity;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
@@ -43,7 +45,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             _backgroundJobClient = backgroundJobClient;
         }
 
-        [Authorize]
+        [Authorize(Roles = "管理员账户")]
         [HttpGet]
         public object Index()
         {
