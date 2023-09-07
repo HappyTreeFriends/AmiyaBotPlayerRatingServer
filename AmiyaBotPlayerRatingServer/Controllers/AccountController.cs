@@ -1,12 +1,17 @@
 ﻿using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using AmiyaBotPlayerRatingServer.Model;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using OpenIddict.Abstractions;
+using OpenIddict.Core;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AmiyaBotPlayerRatingServer.Controllers;
 
@@ -18,12 +23,16 @@ public class AccountController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IOpenIddictApplicationManager _oauthManager;
 
-    public AccountController(IConfiguration configuration, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+    public AccountController(IConfiguration configuration,
+        UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, 
+        IOpenIddictApplicationManager oauthManager)
     {
         _configuration = configuration;
         _userManager = userManager;
         _roleManager = roleManager;
+        _oauthManager = oauthManager;
     }
 
     public class RegisterModel
@@ -100,6 +109,7 @@ public class AccountController : ControllerBase
         public string? OldRole { get; set; }
     }
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Authorize(Roles = "管理员账户")]
     [HttpPost("change-role")]
     public async Task<IActionResult> ChangeUserRole([FromBody] ChangeRoleRequest model)
@@ -132,6 +142,28 @@ public class AccountController : ControllerBase
         {
             return Ok($"用户角色已更改为 {model.NewRole}");
         }
+
+        return BadRequest("无法更改用户角色");
+    }
+    
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户,开发者账户")]
+    [HttpPost("create-secret")]
+    public async Task<IActionResult> CreateSecret()
+    {
+        var descriptor = new OpenIddictApplicationDescriptor
+        {
+            ClientId = Guid.NewGuid().ToString("N"),
+            ClientSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
+            Permissions =
+            {
+                OpenIddictConstants.Permissions.Endpoints.Token,
+                OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
+                OpenIddictConstants.Permissions.Prefixes.Scope + "写入数据"
+            }
+        };
+
+        await _oauthManager.CreateAsync(descriptor);
 
         return BadRequest("无法更改用户角色");
     }

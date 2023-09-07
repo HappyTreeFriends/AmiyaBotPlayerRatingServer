@@ -9,9 +9,12 @@ using Hangfire.PostgreSql;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
 using Microsoft.EntityFrameworkCore;
 using AmiyaBotPlayerRatingServer.Model;
+using AmiyaBotPlayerRatingServer.Utility.OpenIddict;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using OpenIddict.Server.AspNetCore;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,21 +66,47 @@ builder.Services.AddAuthentication(x =>
             ValidateIssuer = false,
             ValidateAudience = false,
         };
-        x.Events = new JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
-            {
-                Console.WriteLine("OnAuthenticationFailed: " + context.Exception.Message);
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = context =>
-            {
-                Console.WriteLine("OnTokenValidated: " + context.SecurityToken);
-                return Task.CompletedTask;
-            },
-            // 其他事件...
-        };
     });
+
+builder.Services.AddOpenIddict()
+    // 注册Entity Framework Core存储。
+    .AddCore(options =>
+    {
+        options.UseEntityFrameworkCore()
+            .UseDbContext<PlayerRatingDatabaseContext>();
+    })
+    // 注册AspNetCore组件。
+    .AddServer(options =>
+    {
+        // 启用Token端点（必要以启用Client Credentials Flow）
+        options.SetTokenEndpointUris("/connect/token");
+
+        options.AllowClientCredentialsFlow();
+        
+        // 注册自己的密钥（这里应当使用更安全的方式，如证书）。
+        options.AddEphemeralEncryptionKey()
+            .AddEphemeralSigningKey();
+
+        options.UseAspNetCore()
+            .EnableTokenEndpointPassthrough();
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("写入数据", policy =>
+    {
+        policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        policy.Requirements.Add(new RequireScopeRequirement("写入数据"));
+    });
+
+    options.AddPolicy("读取数据", policy =>
+    {
+        policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        policy.Requirements.Add(new RequireScopeRequirement("读取数据"));
+    });
+});
+
+builder.Services.AddSingleton<IAuthorizationHandler, RequireScopeHandler>();
 
 var app = builder.Build();
 

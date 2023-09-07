@@ -13,3 +13,17 @@
 7、“开发者账户”可以在他们的网站，引导用户在我们的网站注册账户，上传cred，或者上传box，这样开发者就不需要再考虑森空岛api相关的问题，而是可以直接通过我们的api来提取数据，并且多个数据源可以共享。
 
 >%USERPROFILE%\.dotnet\tools\dotnet-ef migrations add 
+
+# 本周的Roadmap
+
+实现用户注册与登录
+实现用户申请Secret的API(包括Secrert的列出,申请与作废,并且提交box和获取数据权限分开)
+实现用户通过API提交用户box
+实现公开的API可以访问统计数据,包含按日期范围统计的数据
+实现普通用户提交自己的box或cred,以及管理的API
+开发UI包括注册,登录,提交box和cred
+实现开发者账户OAuth申请用户的box
+实现开发者UI
+
+
+

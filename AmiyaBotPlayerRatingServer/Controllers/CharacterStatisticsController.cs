@@ -1,6 +1,8 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using OpenIddict.Server.AspNetCore;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
@@ -64,7 +66,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         }
 
 
-
+        [Authorize(AuthenticationSchemes = OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,Policy = "读取数据")]
         [HttpGet]
         public object Index()
         {
