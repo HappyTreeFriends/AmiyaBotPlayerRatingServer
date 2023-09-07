@@ -47,8 +47,9 @@ public class AccountController : ControllerBase
     {
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
         var result = await _userManager.CreateAsync(user, model.Password);
+        var addToRoleResult = await _userManager.AddToRoleAsync(user, "普通账户");
 
-        if (result.Succeeded)
+        if (result.Succeeded&& addToRoleResult.Succeeded)
         {
             return Ok(new { message = "用户注册成功" });
         }
