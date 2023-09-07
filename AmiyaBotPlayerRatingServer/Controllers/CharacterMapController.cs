@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Server.AspNetCore;
+using OpenIddict.Validation.AspNetCore;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
@@ -17,7 +18,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             _dbContext = dbContext;
         }
 
-        [Authorize(AuthenticationSchemes = OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)]
+        [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
         [HttpGet]
         public object Index()
         {

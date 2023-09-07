@@ -42,18 +42,21 @@ namespace AmiyaBotPlayerRatingServer.Data
                 .Property(e => e.AverageSpecializeLevel)
                 .HasConversion(
                     v => JsonConvert.SerializeObject(v),
-                    v => JsonConvert.DeserializeObject<List<double>>(v));
+                    v => JsonConvert.DeserializeObject<List<double>>(v) ?? new List<double>());
 
             modelBuilder.Entity<CharacterStatistics>()
                 .Property(e => e.AverageEquipLevel)
                 .HasConversion(
                     v => JsonConvert.SerializeObject(v),
-                    v => JsonConvert.DeserializeObject<Dictionary<int, double>>(v));
+                    v => JsonConvert.DeserializeObject<Dictionary<int, double>>(v) ?? new Dictionary<int, double>());
 
             modelBuilder.UseOpenIddict();
         }
 
 
         public DbSet<CharacterStatistics> CharacterStatistics { get; set; }
+        public DbSet<SKLandCredential> SKLandCredentials { get; set; }
+        public DbSet<SKLandCharacterBox> SKLandCharacterBoxes { get; set; }
+
     }
 }

@@ -38,8 +38,8 @@ public class AccountController : ControllerBase
 
     public class RegisterModel
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
     }
     
     [HttpPost("register")]
@@ -58,8 +58,8 @@ public class AccountController : ControllerBase
 
     public class LoginModel
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
     }
 
     [HttpPost("login")]

@@ -1,10 +1,31 @@
-我想要使用ASP.NET Core Identity搭建一个用户管理系统，用户将有三种身份，管理员账户,开发者账户和普通账户，我的前端界面将是前后端分离的vue界面，现在仅讨论后端.
-目前,我已经使用Microsoft.AspNetCore.Identity.EntityFrameworkCore，Microsoft.AspNetCore.Authentication.JwtBearer搭配我的Postgresql数据库，完成了用户的注册，登录，授权。
-目前已经测试并确认[Authorize(Roles = "管理员账户,开发者账户")]可以正常工作
+我想要使用ASP.NET Core Identity搭建一个用户管理系统，用户将有三种身份，管理员账户,开发者账户和普通账户，我的前端界面将是前后端分离的vue界面.
+目前,我已经使用Microsoft.AspNetCore.Identity.EntityFrameworkCore，Microsoft.AspNetCore.Authentication.JwtBearer搭配我的Postgresql数据库，完成了用户的注册，登录，授权的Api。
+我已经使用OpenIddict实现了创建Client的Api
+
+目前已经测试并确认
+1、[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "管理员账户,开发者账户")]可以正常工作
+2、[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,Policy = "ReadData")]可以正常工作
 我接下来将会据此询问一系列问题。
 
-我现在希望开发者账户可以申请一组ApiSecret和ApiKey（比如OpenIddict的ClientId和ClientSecret）。
-然后提供一组API，需要用ApiKey和ApiSecret来访问。
-并且我希望这个ApiKey可以让开发者账户选择“获取数据”和“写入数据”两种权限中的一种或者两种。
-我想要使用OpenIddict的Client Credentials Grant来实现上述功能，同时还能不和我我前面开发的jwt用户登录冲突
-请从OpenIddict的安装开始，请给出实现这个功能的步骤。
+我现在想让普通用户可以进行注册，并管理一个叫做森空岛(SKLand) Credential的字符串。
+(注意用户注册和通过登录获取JwtToken的Api已经实现了)
+通过这个Cred可以获取玩家在森空岛的昵称，头像，角色列表（character box， Json格式）。
+我希望设计一个vue页面，可以让用户注册，登录，提交Cred，更新Cred，查看每个Cred对应box。
+在列表中区分Cred时，使用昵称和头像来区分他们。
+现在请设计一系列Controller，实现上述功能，请仅提供每个Controller的类名，和里面包含的Action函数声明，不需要提供实现。
+这些Controller放在AmiyaBotPlayerRatingServer.Controllers命名空间下,必要时可以使用子命名空间分类.
+
+如果我在StartUp中写了这样一段代码:
+
+builder.Services.AddAuthorization(options =>
+{
+options.AddPolicy(TestWriteDataPolicy, policy =>
+{
+    policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    policy.Requirements.Add(new RequireScopeRequirement(TestWriteDataPolicy));
+});
+});
+
+那么,我能够省略
+builder.Services.AddSingleton<IAuthorizationHandler, OpenIddictScopePolicy.RequireScopeHandler>(); 
+这一行吗

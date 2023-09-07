@@ -3,6 +3,7 @@ using AmiyaBotPlayerRatingServer.Data;
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json.Serialization;
+using AmiyaBotPlayerRatingServer.Controllers.Policy;
 using AmiyaBotPlayerRatingServer.Utility;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -17,6 +18,7 @@ using OpenIddict.Server.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Configuration;
+using OpenIddict.Validation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,8 +60,8 @@ builder.Services.AddHangfireServer();
 
 builder.Services.AddAuthentication(x =>
     {
-        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+        x.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(x =>
     {
@@ -101,22 +103,8 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("TestWriteData", policy =>
-    {
-        policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        policy.Requirements.Add(new RequireScopeRequirement("TestWriteData"));
-    });
-
-    options.AddPolicy("TestReadData", policy =>
-    {
-        policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        policy.Requirements.Add(new RequireScopeRequirement("TestReadData"));
-    });
-});
-
-builder.Services.AddSingleton<IAuthorizationHandler, RequireScopeHandler>();
+builder.Services.AddCredentialOwnerPolicy();
+builder.Services.AddOpenIddictScopePolicy();
 
 var app = builder.Build();
 
