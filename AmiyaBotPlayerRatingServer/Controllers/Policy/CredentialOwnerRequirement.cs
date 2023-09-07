@@ -19,7 +19,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Policy
                         policy.Requirements.Add(new CredentialOwnerRequirement()));
                 });
 
-            service.AddSingleton<IAuthorizationHandler, CredentialOwnerHandler>();
+            service.AddScoped<IAuthorizationHandler, CredentialOwnerHandler>();
 
         }
 
