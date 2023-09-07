@@ -147,7 +147,6 @@ public class AccountController : ControllerBase
     }
     
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [Authorize(Roles = "管理员账户,开发者账户")]
     [HttpPost("create-secret")]
     public async Task<IActionResult> CreateSecret()
     {
