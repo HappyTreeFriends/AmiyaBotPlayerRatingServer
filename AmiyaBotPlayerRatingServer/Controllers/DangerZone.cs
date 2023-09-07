@@ -40,8 +40,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 // 如果不存在，则创建新的 scope
                 var descriptor = new OpenIddictScopeDescriptor
                 {
-                    Name = scopeName,
-                    Resources = { "your-api-resource-id" }
+                    Name = scopeName
                 };
 
                 await _scopeManager.CreateAsync(descriptor);
