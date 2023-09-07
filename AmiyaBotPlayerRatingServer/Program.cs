@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Server.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +29,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<PlayerRatingDatabaseContext>();
+builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
+{
+    options.UseOpenIddict();
+});
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<PlayerRatingDatabaseContext>()
     .AddDefaultTokenProviders();
@@ -89,6 +95,10 @@ builder.Services.AddOpenIddict()
 
         options.UseAspNetCore()
             .EnableTokenEndpointPassthrough();
+    }).AddValidation(options =>
+    {
+        options.UseLocalServer();
+        options.UseAspNetCore();
     });
 
 builder.Services.AddAuthorization(options =>
