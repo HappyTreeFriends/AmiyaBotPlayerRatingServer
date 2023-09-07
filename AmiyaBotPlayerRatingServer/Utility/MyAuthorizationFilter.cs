@@ -2,13 +2,12 @@
 
 namespace AmiyaBotPlayerRatingServer.Utility
 {
-    public class MyAuthorizationFilter : IDashboardAuthorizationFilter
+    public class HangfireCustomFilter : IDashboardAuthorizationFilter
     {
         public bool Authorize(DashboardContext context)
         {
             var httpContext = context.GetHttpContext();
-            
-            return true;
+            return httpContext.User.IsInRole("管理员账户");
         }
     }
 }

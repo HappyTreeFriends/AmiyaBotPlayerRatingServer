@@ -100,7 +100,7 @@ public class AccountController : ControllerBase
         public string? OldRole { get; set; }
     }
 
-    [Authorize]
+    [Authorize(Roles = "管理员账户")]
     [HttpPost("change-role")]
     public async Task<IActionResult> ChangeUserRole([FromBody] ChangeRoleRequest model)
     {

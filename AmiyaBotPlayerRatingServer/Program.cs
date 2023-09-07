@@ -63,6 +63,20 @@ builder.Services.AddAuthentication(x =>
             ValidateIssuer = false,
             ValidateAudience = false,
         };
+        x.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine("OnAuthenticationFailed: " + context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("OnTokenValidated: " + context.SecurityToken);
+                return Task.CompletedTask;
+            },
+            // 其他事件...
+        };
     });
 
 var app = builder.Build();
@@ -72,6 +86,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 //初始化一些Service
 using (var scope = app.Services.CreateScope())
@@ -103,13 +120,11 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 
-app.UseAuthorization();
-app.UseAuthentication();
 app.MapControllers();
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
-    Authorization = new[] { new MyAuthorizationFilter() }
+    Authorization = new[] { new HangfireCustomFilter() }
 });
 
 app.Run();
