@@ -147,6 +147,7 @@ public class AccountController : ControllerBase
     }
     
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户,开发者账户")]
     [HttpPost("create-secret")]
     public async Task<IActionResult> CreateSecret()
     {
@@ -164,7 +165,12 @@ public class AccountController : ControllerBase
 
         await _oauthManager.CreateAsync(descriptor);
 
-        return BadRequest("无法更改用户角色");
+        return Ok(new
+        {
+            ClientId = descriptor.ClientId,
+            ClientSecret = descriptor.ClientSecret,
+            Scope = "写入数据"
+        });
     }
 
 }
