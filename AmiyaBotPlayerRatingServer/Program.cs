@@ -94,7 +94,7 @@ builder.Services.AddOpenIddict()
             .AddEphemeralSigningKey();
 
         options.UseAspNetCore()
-            .EnableTokenEndpointPassthrough();
+            .EnableTokenEndpointPassthrough().DisableTransportSecurityRequirement();
     }).AddValidation(options =>
     {
         options.UseLocalServer();
