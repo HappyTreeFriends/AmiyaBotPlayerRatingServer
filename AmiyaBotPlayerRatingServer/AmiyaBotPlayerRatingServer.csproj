@@ -30,6 +30,7 @@
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="4.7.0" />
     <PackageReference Include="OpenIddict.Server.AspNetCore" Version="4.7.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.32.3" />
   </ItemGroup>
 
   <ItemGroup>
