@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
