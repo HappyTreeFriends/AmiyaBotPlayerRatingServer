@@ -160,7 +160,7 @@ public class AccountController : ControllerBase
             {
                 OpenIddictConstants.Permissions.Endpoints.Token,
                 OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
-                OpenIddictConstants.Permissions.Prefixes.Scope + "写入数据"
+                OpenIddictConstants.Permissions.Prefixes.Scope + "TestReadData"
             }
         };
 
@@ -170,7 +170,7 @@ public class AccountController : ControllerBase
         {
             ClientId = descriptor.ClientId,
             ClientSecret = descriptor.ClientSecret,
-            Scope = "写入数据"
+            Scope = "TestReadData"
         });
     }
 

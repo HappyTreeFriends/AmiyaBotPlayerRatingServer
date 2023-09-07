@@ -103,16 +103,16 @@ builder.Services.AddOpenIddict()
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("写入数据", policy =>
+    options.AddPolicy("TestWriteData", policy =>
     {
         policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        policy.Requirements.Add(new RequireScopeRequirement("写入数据"));
+        policy.Requirements.Add(new RequireScopeRequirement("TestWriteData"));
     });
 
-    options.AddPolicy("读取数据", policy =>
+    options.AddPolicy("TestReadData", policy =>
     {
         policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        policy.Requirements.Add(new RequireScopeRequirement("读取数据"));
+        policy.Requirements.Add(new RequireScopeRequirement("TestReadData"));
     });
 });
 

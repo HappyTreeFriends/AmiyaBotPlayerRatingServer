@@ -24,13 +24,13 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         [HttpPost("reset-scope")]
         public async Task<object> ResetScope()
         {
-            await AddScope("写入数据");
-            await AddScope("读取数据");
+            await AddScope("TestWriteData","写入数据");
+            await AddScope("TestReadData","读取数据");
 
             return Ok();
         }
 
-        private async Task AddScope(string scopeName)
+        private async Task AddScope(string scopeName, string scopeDisplayName)
         {
             // 检查是否已经存在该 scope
             var existingScope = await _scopeManager.FindByNameAsync(scopeName);
@@ -40,7 +40,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 // 如果不存在，则创建新的 scope
                 var descriptor = new OpenIddictScopeDescriptor
                 {
-                    Name = scopeName
+                    Name = scopeName,
+                    DisplayName = scopeDisplayName
                 };
 
                 await _scopeManager.CreateAsync(descriptor);
