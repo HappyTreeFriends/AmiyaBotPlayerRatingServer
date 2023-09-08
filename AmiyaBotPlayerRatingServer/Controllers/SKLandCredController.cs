@@ -89,9 +89,31 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         }
 
         [HttpGet("List")]
-        public IActionResult GetCredentials()
+        public async Task<IActionResult> GetCredentials()
         {
-            return Ok();
+            // 获取当前用户ID
+            var userId = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            // 从数据库获取该用户的所有Credentials
+            List<SKLandCredential> credentials;
+            try
+            {
+                credentials = await _context.SKLandCredentials
+                    .Where(c => c.UserId == userId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                // 记录异常或执行其他错误处理逻辑
+                return StatusCode(500, "An error occurred while retrieving the credentials.");
+            }
+
+            return Ok(credentials);
         }
 
         [HttpGet("Detail/{credentialId}")]
