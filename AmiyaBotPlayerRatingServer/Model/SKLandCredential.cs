@@ -3,7 +3,7 @@ namespace AmiyaBotPlayerRatingServer.Model
 {
     public class SKLandCredential
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string UserId { get; set; }  // ForeignKey to ApplicationUser
         public ApplicationUser User { get; set; }  // Navigation Property
 

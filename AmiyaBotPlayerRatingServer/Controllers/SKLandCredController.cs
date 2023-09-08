@@ -76,16 +76,75 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         [HttpPut("Update/{credentialId}")]
         [Authorize(Policy = CredentialOwnerPolicy.Name)]
-        public IActionResult UpdateCredential(string credentialId)
+        public async Task<IActionResult> UpdateCredential(string credentialId, [FromBody] SKLandCredentialModel model)
         {
-            return Ok();
+            // 获取当前用户ID
+            var userId = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            // 从数据库中找到对应的Credential
+            var credentialToUpdate = await _context.SKLandCredentials.FindAsync(new Guid(credentialId));
+
+            if (credentialToUpdate == null)
+            {
+                return NotFound("Credential not found.");
+            }
+
+            // 更新字段
+            credentialToUpdate.Credential = model.Credential;
+            // 如果有其他字段（比如昵称、头像等），也应在这里进行更新
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // 记录异常或执行其他错误处理逻辑
+                return StatusCode(500, "An error occurred while updating the credential.");
+            }
+
+            return Ok(new { Message = "Credential successfully updated." });
         }
 
         [HttpDelete("Delete/{credentialId}")]
         [Authorize(Policy = CredentialOwnerPolicy.Name)]
-        public IActionResult DeleteCredential(string credentialId)
+        public async Task<IActionResult> DeleteCredential(string credentialId)
         {
-            return Ok();
+            // 获取当前用户ID
+            var userId = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            // 从数据库中找到对应的Credential
+            var credentialToDelete = await _context.SKLandCredentials.FindAsync(new Guid(credentialId));
+
+            if (credentialToDelete == null)
+            {
+                return NotFound("Credential not found.");
+            }
+
+            // 删除该Credential
+            _context.SKLandCredentials.Remove(credentialToDelete);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // 记录异常或执行其他错误处理逻辑
+                return StatusCode(500, "An error occurred while deleting the credential.");
+            }
+
+            return Ok(new { Message = "Credential successfully deleted." });
         }
 
         [HttpGet("List")]
@@ -124,11 +183,35 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         }
 
-        [HttpGet("Detail/{credentialId}")]
+        [HttpGet("Details/{credentialId}")]
         [Authorize(Policy = CredentialOwnerPolicy.Name)]
-        public IActionResult GetCredentialDetails(string credentialId)
+        public async Task<IActionResult> GetCredentialDetails(string credentialId)
         {
-            return Ok();
+            // 获取当前用户ID
+            var userId = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            // 从数据库中找到对应的Credential
+            var credentialDetails = await _context.SKLandCredentials
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == credentialId);
+
+            if (credentialDetails == null)
+            {
+                return NotFound("Credential not found.");
+            }
+
+            return Ok(new
+            {
+                Id = credentialDetails.Id,
+                Credential = credentialDetails.Credential,
+                Nickname = credentialDetails.Nickname,
+                Avatar = credentialDetails.AvatarUrl,
+            });
         }
     }
 
