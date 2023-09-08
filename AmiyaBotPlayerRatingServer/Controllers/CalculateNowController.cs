@@ -1,22 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Aliyun.OSS;
-using Microsoft.AspNetCore.Hosting;
-using System;
-using Newtonsoft.Json.Linq;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Collections.Generic;
-using System.Xml.Linq;
 using AmiyaBotPlayerRatingServer.Data;
-using AmiyaBotPlayerRatingServer.Model;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using Hangfire;
 using AmiyaBotPlayerRatingServer.Hangfire;
 using Microsoft.AspNetCore.Authorization;
-using AmiyaBotPlayerRatingServer.Migrations;
-using Microsoft.AspNetCore.Identity;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
