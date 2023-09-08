@@ -61,16 +61,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             _context.SKLandCredentials.Add(newCredential);
 
-            // 保存更改
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                // 记录异常或执行其他错误处理逻辑
-                return StatusCode(500, "An error occurred while creating the credential.");
-            }
+            // 保存更改            
+            await _context.SaveChangesAsync();
 
             return Ok(new { Id = newCredential.Id, Message = "Credential successfully created." });
         }
@@ -98,16 +90,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             // 更新字段
             credentialToUpdate.Credential = model.Credential;
             // 如果有其他字段（比如昵称、头像等），也应在这里进行更新
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                // 记录异常或执行其他错误处理逻辑
-                return StatusCode(500, "An error occurred while updating the credential.");
-            }
+            
+            await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Credential successfully updated." });
         }
@@ -134,16 +118,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             // 删除该Credential
             _context.SKLandCredentials.Remove(credentialToDelete);
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                // 记录异常或执行其他错误处理逻辑
-                return StatusCode(500, "An error occurred while deleting the credential.");
-            }
+            
+            await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Credential successfully deleted." });
         }
