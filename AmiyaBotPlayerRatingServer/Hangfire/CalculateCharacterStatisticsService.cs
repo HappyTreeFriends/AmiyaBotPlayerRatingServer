@@ -25,8 +25,7 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             _characterMap = JObject.Parse(fileContent);
 
         }
-
-        [HttpGet]
+        
         public void Calculate(DateTime startDate, DateTime endDate)
         {
 

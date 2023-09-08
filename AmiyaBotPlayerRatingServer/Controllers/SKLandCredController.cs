@@ -1,6 +1,8 @@
 ﻿using AmiyaBotPlayerRatingServer.Controllers.Policy;
 using AmiyaBotPlayerRatingServer.Data;
+using AmiyaBotPlayerRatingServer.Hangfire;
 using AmiyaBotPlayerRatingServer.Model;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +18,12 @@ namespace AmiyaBotPlayerRatingServer.Controllers
     public class SKLandCredentialController : ControllerBase
     {
         private readonly PlayerRatingDatabaseContext _context;
+        private readonly IBackgroundJobClient _backgroundJobClient;
 
-        public SKLandCredentialController(PlayerRatingDatabaseContext context)
+        public SKLandCredentialController(PlayerRatingDatabaseContext context, IBackgroundJobClient backgroundJobClient)
         {
             _context = context;
+            _backgroundJobClient= backgroundJobClient;
         }
 
         public class SKLandCredentialModel
@@ -54,15 +58,17 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 Id= Guid.NewGuid().ToString(),
                 UserId = userId,
                 Credential = model.Credential,
-                SKLandUid = "1234",
-                Nickname = "2345",
-                AvatarUrl = "233"
+                SKLandUid = "",
+                Nickname = "",
+                AvatarUrl = ""
             };
 
             _context.SKLandCredentials.Add(newCredential);
 
             // 保存更改            
             await _context.SaveChangesAsync();
+
+            _backgroundJobClient.Enqueue<CollectPlayerInformationService>(service => service.Collect(newCredential.Id));
 
             return Ok(new { Id = newCredential.Id, Message = "Credential successfully created." });
         }

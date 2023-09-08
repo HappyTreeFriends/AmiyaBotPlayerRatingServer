@@ -106,6 +106,8 @@ builder.Services.AddOpenIddict()
 builder.Services.AddCredentialOwnerPolicy();
 builder.Services.AddOpenIddictScopePolicy();
 
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

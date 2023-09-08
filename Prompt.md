@@ -23,3 +23,38 @@
 
 现在我想搭建这个基于vue的网站,要求是Vue3,Vite,TypeScript,组合式Api风格.
 我现在后端的Api已经编写完成,在我提供这些api之前,能否给出创建空项目的步骤?
+
+const headers = {
+      "Cred": token
+    }
+
+    let response = await axios.get('https://zonai.skland.com/api/v1/user/me', {
+      headers: headers
+    });
+
+    console.log(response)
+
+    if (response.status != 200 || response.data.code != 0) {
+      return false
+    }
+
+    let meData = response.data.data
+
+    doctorScore.value.name = meData.gameStatus.name
+
+    response = await axios.get('https://zonai.skland.com/api/v1/game/player/info?uid=' + meData.gameStatus.uid, {
+      headers: headers
+    });
+
+    console.log(response)
+
+    if (response.status != 200 || response.data.code != 0) {
+      return false
+    }
+
+
+    let infoData = response.data.data
+
+这是一段js代码，根据一个字符串 token，获取一个json的object infoData
+
+现在请将其改写为一个hangfire任务，用于在asp.net core平台上执行

@@ -13,6 +13,8 @@ namespace AmiyaBotPlayerRatingServer.Model
         public string Nickname { get; set; }  // SKLand昵称
         public string AvatarUrl { get; set; }  // SKLand头像URL
 
+        public DateTime RefreshedAt { get; set; } //表示最后一次刷新的时间
+        public bool RefreshSuccess { get; set; } //表示最后一次刷新是否成功
     }
 
 }
