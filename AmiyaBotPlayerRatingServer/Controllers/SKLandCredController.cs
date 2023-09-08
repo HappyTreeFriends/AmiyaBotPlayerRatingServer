@@ -53,7 +53,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             {
                 UserId = userId,
                 Credential = model.Credential,
-                // 如果有其他字段，例如昵称或头像URL，也应该在这里设置
+                SKLandUid = "1234",
+                Nickname = "2345",
+                AvatarUrl = "233"
             };
 
             _context.SKLandCredentials.Add(newCredential);
