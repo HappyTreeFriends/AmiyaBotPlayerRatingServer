@@ -7,7 +7,7 @@ namespace AmiyaBotPlayerRatingServer.Utility
         public bool Authorize(DashboardContext context)
         {
             var httpContext = context.GetHttpContext();
-            return httpContext.User.IsInRole("管理员账户");
+            return true;
         }
     }
 }
