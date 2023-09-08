@@ -108,6 +108,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     {
                         Id = c.Id,
                         Credential = c.Credential,
+                        c.Nickname,
+                        c.AvatarUrl
                     })
                     .ToListAsync();
 
