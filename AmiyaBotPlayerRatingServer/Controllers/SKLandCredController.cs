@@ -51,6 +51,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             // 创建新的SKLandCredential
             var newCredential = new SKLandCredential
             {
+                Id= Guid.NewGuid().ToString(),
                 UserId = userId,
                 Credential = model.Credential,
                 SKLandUid = "1234",
