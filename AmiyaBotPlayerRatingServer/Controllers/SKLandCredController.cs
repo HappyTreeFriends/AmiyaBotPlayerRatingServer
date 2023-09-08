@@ -99,13 +99,20 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return Unauthorized();
             }
 
-            // 从数据库获取该用户的所有Credentials
-            List<SKLandCredential> credentials;
+            // 从数据库获取该用户的所有Credentials\
             try
             {
-                credentials = await _context.SKLandCredentials
+                var credentials = await _context.SKLandCredentials
                     .Where(c => c.UserId == userId)
+                    .Select(c => new
+                    {
+                        Id = c.Id,
+                        Credential = c.Credential,
+                    })
                     .ToListAsync();
+
+
+                return Ok(credentials);
             }
             catch (Exception ex)
             {
@@ -113,7 +120,6 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return StatusCode(500, "An error occurred while retrieving the credentials.");
             }
 
-            return Ok(credentials);
         }
 
         [HttpGet("Detail/{credentialId}")]
