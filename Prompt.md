@@ -1,3 +1,99 @@
+# Summary
+
+这是一段Controller的代码,请去掉所有其他内容,仅保留函数原型和一个典型返回值,便于向生成式AI提问.示例返回值请至少包含各个字段名和一个字段典型值.
+
+# Summary Result
+
+namespace AmiyaBotPlayerRatingServer.Controllers
+{
+    public class SKLandCredentialController : ControllerBase
+    {
+        public async Task<IActionResult> CreateCredential([FromBody] SKLandCredentialModel model)
+        {
+            return Ok(new { Id = "1234567890", Message = "Credential successfully created." });
+        }
+
+        public async Task<IActionResult> UpdateCredential(string credentialId, [FromBody] SKLandCredentialModel model)
+        {
+            return Ok(new { Message = "Credential successfully updated." });
+        }
+
+        public async Task<IActionResult> DeleteCredential(string credentialId)
+        {
+            return Ok(new { Message = "Credential successfully deleted." });
+        }
+
+        public async Task<IActionResult> GetCredentials()
+        {
+            return Ok(new[] { 
+                new { Id = "1234567890", Credential = "example_credential", Nickname = "example_nickname", AvatarUrl = "http://example.com/avatar.jpg" } 
+            });
+        }
+
+        public async Task<IActionResult> GetCredentialDetails(string credentialId)
+        {
+            return Ok(new { 
+                Id = "1234567890", 
+                Credential = "example_credential", 
+                Nickname = "example_nickname", 
+                Avatar = "http://example.com/avatar.jpg" 
+            });
+        }
+    }
+}
+
+[Route("api/[controller]")]
+public class AccountController : ControllerBase
+{
+     [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterModel model)
+    {
+        // 典型返回值
+        return Ok(new { message = "用户注册成功" });
+    }
+
+    public class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginModel model)
+    {
+        // 典型返回值
+        return Ok(new { Token = "jwt-token-string-here" });
+    }
+
+    public class ChangeRoleRequest
+    {
+        public string? UserId { get; set; }
+        public string? NewRole { get; set; }
+        public string? OldRole { get; set; }
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户")]
+    [HttpPost("change-role")]
+    public async Task<IActionResult> ChangeUserRole([FromBody] ChangeRoleRequest model)
+    {
+        // 典型返回值
+        return Ok("用户角色已更改为 管理员账户");
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户,开发者账户")]
+    [HttpPost("create-secret")]
+    public async Task<IActionResult> CreateSecret()
+    {
+        // 典型返回值
+        return Ok(new { ClientId = "some-random-guid", ClientSecret = "some-random-secret", Scope = "TestReadData" });
+    }
+}
+
+
+# 主线任务
+
 我想要使用ASP.NET Core Identity搭建一个用户管理系统，用户将有三种身份，管理员账户,开发者账户和普通账户，我的前端界面将是前后端分离的vue界面.
 目前,我已经使用Microsoft.AspNetCore.Identity.EntityFrameworkCore，Microsoft.AspNetCore.Authentication.JwtBearer搭配我的Postgresql数据库，完成了用户的注册，登录，授权的Api。
 我已经使用OpenIddict实现了创建Client的Api
@@ -15,17 +111,5 @@
 现在请设计一系列Controller，实现上述功能，请仅提供每个Controller的类名，和里面包含的Action函数声明，不需要提供实现。
 这些Controller放在AmiyaBotPlayerRatingServer.Controllers命名空间下,必要时可以使用子命名空间分类.
 
-如果我在StartUp中写了这样一段代码:
-
-builder.Services.AddAuthorization(options =>
-{
-options.AddPolicy(TestWriteDataPolicy, policy =>
-{
-    policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-    policy.Requirements.Add(new RequireScopeRequirement(TestWriteDataPolicy));
-});
-});
-
-那么,我能够省略
-builder.Services.AddSingleton<IAuthorizationHandler, OpenIddictScopePolicy.RequireScopeHandler>(); 
-这一行吗
+现在我想搭建这个基于vue的网站,要求是Vue3,Vite,TypeScript,组合式Api风格.
+我现在后端的Api已经编写完成,在我提供这些api之前,能否给出创建空项目的步骤?
