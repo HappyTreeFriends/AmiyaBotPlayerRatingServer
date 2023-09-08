@@ -71,19 +71,20 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
                 return;
             }
 
-            var statusData = jObject["status"];
+            var infoData = jObject["data"];
+
+            var statusData = infoData["status"];
 
             credential.Nickname = statusData["name"]?.ToString();
             var charname = statusData["secretary"]["skinId"]?.ToString();
             credential.AvatarUrl = $@"https://web.hycdn.cn/arknights/game/assets/char_skin/avatar/{charname.Replace("#", "%23").Replace("@", "%40")}.png";
 
-            var infoData = jObject["data"];
 
             var charBox = new SKLandCharacterBox()
             {
                 Id = Guid.NewGuid().ToString(),
                 CredentialId = credential.Id,
-                CharacterBoxJson = JsonConvert.SerializeObject(infoData)
+                CharacterBoxJson = JsonConvert.SerializeObject(infoData["chars"])
             };
 
             _dbContext.SKLandCharacterBoxes.Add(charBox);
