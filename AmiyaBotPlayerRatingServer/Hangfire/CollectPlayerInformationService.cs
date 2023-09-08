@@ -20,7 +20,7 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             _httpClientFactory = httpClientFactory;
         }
 
-        public async void Collect(String credentialId)
+        public async Task Collect(String credentialId)
         {
             if (string.IsNullOrEmpty(credentialId))
             {
