@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Server.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using OpenIddict.Validation.AspNetCore;
 
@@ -27,10 +28,19 @@ var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers(config =>
+{
+    // 全局授权策略，所有未标记的接口都默认要求Authorize
+    // 匿名接口需要显式使用[AllowAnonymous]标出
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    config.Filters.Add(new AuthorizeFilter(policy));
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
 {
     options.UseOpenIddict();
@@ -151,7 +161,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 {
     Authorization = new[] { new HangfireCustomFilter() }
 });

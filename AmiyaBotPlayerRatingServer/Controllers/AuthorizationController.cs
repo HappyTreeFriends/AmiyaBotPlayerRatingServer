@@ -51,6 +51,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("~/connect/token"), Produces("application/json")]
         public async Task<IActionResult> Exchange()
         {

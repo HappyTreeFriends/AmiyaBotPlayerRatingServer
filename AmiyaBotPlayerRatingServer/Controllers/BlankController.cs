@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
@@ -14,6 +15,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             _env = env;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public object Index()
         {

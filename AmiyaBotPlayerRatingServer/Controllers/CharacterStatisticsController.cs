@@ -8,7 +8,7 @@ using OpenIddict.Validation.AspNetCore;
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     [Produces("application/json")]
     public class CharacterStatisticsController : ControllerBase
     {

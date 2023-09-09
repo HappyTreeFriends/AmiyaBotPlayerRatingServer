@@ -47,6 +47,7 @@ public class AccountController : ControllerBase
         public string ClaimedRole { get; set; } = "";
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
     {
@@ -81,6 +82,7 @@ public class AccountController : ControllerBase
         public string Password { get; set; } = "";
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginModel model)
     {
