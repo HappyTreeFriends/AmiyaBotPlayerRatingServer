@@ -4,11 +4,13 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Core;
@@ -25,37 +27,53 @@ public class AccountController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IOpenIddictApplicationManager _oauthManager;
+    private readonly PlayerRatingDatabaseContext _dbContext;
 
     public AccountController(IConfiguration configuration,
         UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, 
-        IOpenIddictApplicationManager oauthManager)
+        IOpenIddictApplicationManager oauthManager, PlayerRatingDatabaseContext dbContext)
     {
         _configuration = configuration;
         _userManager = userManager;
         _roleManager = roleManager;
         _oauthManager = oauthManager;
+        _dbContext = dbContext;
     }
 
     public class RegisterModel
     {
         public string Email { get; set; } = "";
         public string Password { get; set; } = "";
+        public string ClaimedRole { get; set; } = "";
     }
-    
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
     {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
+
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
         var result = await _userManager.CreateAsync(user, model.Password);
-        var addToRoleResult = await _userManager.AddToRoleAsync(user, "普通账户");
 
-        if (result.Succeeded&& addToRoleResult.Succeeded)
+        if (!result.Succeeded)
         {
-            return Ok(new { message = "用户注册成功" });
+            await transaction.RollbackAsync();
+            return BadRequest(result.Errors);
         }
 
-        return BadRequest(result.Errors);
+        var role = model.ClaimedRole == "开发者账户" ? "开发者账户" : "普通账户";
+        var addToRoleResult = await _userManager.AddToRoleAsync(user, role);
+
+        if (!addToRoleResult.Succeeded)
+        {
+            await transaction.RollbackAsync();
+            return BadRequest(new { message = "注册账户失败", errors = addToRoleResult.Errors });
+        }
+
+        await transaction.CommitAsync(); // 提交事务
+        return Ok(new { message = "用户注册成功" });
     }
+
 
     public class LoginModel
     {
@@ -82,7 +100,8 @@ public class AccountController : ControllerBase
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, user.Id.ToString())
+            new Claim(ClaimTypes.Name, user.Id.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
 
         foreach (var role in userRoles)
@@ -112,6 +131,7 @@ public class AccountController : ControllerBase
     }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户")]
     [HttpPost("change-role")]
     public async Task<IActionResult> ChangeUserRole([FromBody] ChangeRoleRequest model)
     {
@@ -172,6 +192,27 @@ public class AccountController : ControllerBase
             ClientSecret = descriptor.ClientSecret,
             Scope = "TestReadData"
         });
+    }
+
+    [HttpGet("describe")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public async Task<IActionResult> Describe()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var userRoles = await _userManager.GetRolesAsync(user);
+        return Ok(new { Roles = userRoles });
     }
 
 }
