@@ -57,6 +57,8 @@ namespace AmiyaBotPlayerRatingServer.Data
         public DbSet<CharacterStatistics> CharacterStatistics { get; set; }
         public DbSet<SKLandCredential> SKLandCredentials { get; set; }
         public DbSet<SKLandCharacterBox> SKLandCharacterBoxes { get; set; }
+        public DbSet<ClientInfo> ClientInfos { get; set; }
+
 
     }
 }

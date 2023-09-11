@@ -168,11 +168,18 @@ public class AccountController : ControllerBase
 
         return BadRequest("无法更改用户角色");
     }
-    
+
+    public class CreateClientModel
+    {
+        public string FriendlyName { get; set; }
+        public string IconBase64 { get; set; }
+    }
+
+
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Authorize(Roles = "管理员账户,开发者账户")]
     [HttpPost("create-secret")]
-    public async Task<IActionResult> CreateSecret()
+    public async Task<IActionResult> CreateClient([FromBody] CreateClientModel model)
     {
         var descriptor = new OpenIddictApplicationDescriptor
         {
@@ -188,12 +195,43 @@ public class AccountController : ControllerBase
 
         await _oauthManager.CreateAsync(descriptor);
 
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        _dbContext.ClientInfos.Add(new ClientInfo
+        {
+            ClientId = descriptor.ClientId,
+            FriendlyName = model.FriendlyName,
+            IconBase64 = model.IconBase64,
+            UserId = userId
+        });
+
+        await _dbContext.SaveChangesAsync();
+
         return Ok(new
         {
             ClientId = descriptor.ClientId,
             ClientSecret = descriptor.ClientSecret,
-            Scope = "TestReadData"
+            Scope = "TestReadData",
+            IconBase64 = model.IconBase64
         });
+    }
+
+    [HttpGet("list-clients")]
+    public async Task<IActionResult> ListClients()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var clients = await _dbContext.ClientInfos.Where(c => c.UserId == userId).ToListAsync();
+        return Ok(clients);
+    }
+
+    [HttpGet("get-client/{clientId}")]
+    public async Task<IActionResult> GetClient(string clientId)
+    {
+        var client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId);
+        if (client == null)
+        {
+            return NotFound();
+        }
+        return Ok(client);
     }
 
     [HttpGet("describe")]
