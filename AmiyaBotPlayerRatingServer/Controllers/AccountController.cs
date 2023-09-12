@@ -172,13 +172,14 @@ public class AccountController : ControllerBase
     public class CreateClientModel
     {
         public string FriendlyName { get; set; }
+        public string Description { get; set; }
         public string IconBase64 { get; set; }
     }
 
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Authorize(Roles = "管理员账户,开发者账户")]
-    [HttpPost("create-secret")]
+    [HttpPost("create-client")]
     public async Task<IActionResult> CreateClient([FromBody] CreateClientModel model)
     {
         var descriptor = new OpenIddictApplicationDescriptor
@@ -200,6 +201,7 @@ public class AccountController : ControllerBase
         {
             ClientId = descriptor.ClientId,
             FriendlyName = model.FriendlyName,
+            Description = model.Description,
             IconBase64 = model.IconBase64,
             UserId = userId
         });
