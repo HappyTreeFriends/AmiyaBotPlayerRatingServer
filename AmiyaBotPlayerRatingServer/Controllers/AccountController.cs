@@ -215,6 +215,8 @@ public class AccountController : ControllerBase
         });
     }
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户,开发者账户")]
     [HttpGet("list-clients")]
     public async Task<IActionResult> ListClients()
     {
@@ -223,6 +225,8 @@ public class AccountController : ControllerBase
         return Ok(clients);
     }
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户,开发者账户")]
     [HttpGet("get-client/{clientId}")]
     public async Task<IActionResult> GetClient(string clientId)
     {
