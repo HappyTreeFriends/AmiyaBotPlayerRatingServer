@@ -224,11 +224,17 @@ public class AccountController : ControllerBase
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var clients = await _dbContext.ClientInfos.Where(c => c.UserId == userId).ToListAsync();
-        return Ok(clients);
+        return Ok(clients.Select(client=>new
+        {
+            ClientId = client.ClientId,
+            FriendlyName = client.FriendlyName,
+            Description = client.Description,
+            Scope = "TestReadData",
+            IconBase64 = client.IconBase64
+        }));
     }
-
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [Authorize(Roles = "管理员账户,开发者账户")]
+    
+    [AllowAnonymous]
     [HttpGet("get-client/{clientId}")]
     public async Task<IActionResult> GetClient(string clientId)
     {
@@ -237,7 +243,14 @@ public class AccountController : ControllerBase
         {
             return NotFound();
         }
-        return Ok(client);
+        return Ok(new
+        {
+            ClientId = client.ClientId,
+            FriendlyName = client.FriendlyName,
+            Description = client.Description,
+            Scope = "TestReadData",
+            IconBase64 = client.IconBase64
+        });
     }
 
     [HttpGet("describe")]
