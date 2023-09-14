@@ -96,11 +96,12 @@ builder.Services.AddOpenIddict()
     // 注册AspNetCore组件。
     .AddServer(options =>
     {
-        // 启用Token端点（必要以启用Client Credentials Flow）
+        options.SetAuthorizationEndpointUris("/connect/authorize")
         options.SetTokenEndpointUris("/connect/token");
 
         options.AllowClientCredentialsFlow();
-        
+        options.AllowAuthorizationCodeFlow();
+
         // 注册自己的密钥（这里应当使用更安全的方式，如证书）。
         options.AddEphemeralEncryptionKey()
             .AddEphemeralSigningKey();
