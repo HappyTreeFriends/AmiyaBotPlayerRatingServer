@@ -100,6 +100,8 @@ builder.Services.AddOpenIddict()
         options.SetTokenEndpointUris("/connect/token");
         options.SetUserinfoEndpointUris("/connect/userinfo");
 
+        options.SetConfigurationEndpointUris("/connect/.well-known/openid-configuration");
+
         options.AllowClientCredentialsFlow();
         options.AllowAuthorizationCodeFlow();
 
