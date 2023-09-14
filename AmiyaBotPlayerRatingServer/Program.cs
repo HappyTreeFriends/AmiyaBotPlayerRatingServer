@@ -105,10 +105,10 @@ builder.Services.AddOpenIddict()
         options.AllowClientCredentialsFlow();
         options.AllowAuthorizationCodeFlow();
 
-        // 注册自己的密钥（这里应当使用更安全的方式，如证书）。
-        options.AddEphemeralEncryptionKey()
-            .AddEphemeralSigningKey();
-
+        var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["JWT:Secret"]!));
+        options.AddSigningKey(securityKey);
+        options.AddEncryptionKey(securityKey);
+        
         options.UseAspNetCore()
             .EnableTokenEndpointPassthrough().DisableTransportSecurityRequirement();
     }).AddValidation(options =>
