@@ -96,7 +96,7 @@ builder.Services.AddOpenIddict()
     // 注册AspNetCore组件。
     .AddServer(options =>
     {
-        options.SetAuthorizationEndpointUris("/connect/authorize")
+        options.SetAuthorizationEndpointUris("/connect/authorize");
         options.SetTokenEndpointUris("/connect/token");
 
         options.AllowClientCredentialsFlow();
