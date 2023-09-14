@@ -98,6 +98,7 @@ builder.Services.AddOpenIddict()
     {
         options.SetAuthorizationEndpointUris("/connect/authorize");
         options.SetTokenEndpointUris("/connect/token");
+        options.SetUserinfoEndpointUris("/connect/userinfo");
 
         options.AllowClientCredentialsFlow();
         options.AllowAuthorizationCodeFlow();

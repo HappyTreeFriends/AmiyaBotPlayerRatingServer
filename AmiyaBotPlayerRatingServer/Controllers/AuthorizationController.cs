@@ -127,19 +127,20 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             }
         }
 
-        [HttpPost("~/connect/describe"), Produces("application/json")]
+
+        [HttpGet("~/connect/userinfo"), Produces("application/json")]
         [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-        public IActionResult Describe()
+        public IActionResult Get()
         {
-            var clientId = User.FindFirst("client_id")?.Value;
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(userId))
+            var userInfo = new Dictionary<string, object>
             {
-                return Unauthorized();
-            }
-            
-            return Ok(new { Message = "Authorized", clientId = clientId , userId = userId });
+                ["sub"] = User.FindFirst("sub")?.Value??"",
+                ["uid"] = userId??"",
+            };
+
+            return Ok(userInfo);
         }
     }
 }
