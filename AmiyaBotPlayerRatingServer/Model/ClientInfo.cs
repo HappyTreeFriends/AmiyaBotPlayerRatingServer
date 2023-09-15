@@ -11,6 +11,7 @@ namespace AmiyaBotPlayerRatingServer.Model
         public string FriendlyName { get; set; }
         public string Description { get; set; }
         public string IconBase64 { get; set; }
+        public string RedirectUri { get; set; }
         public string UserId { get; set; }
     }
 

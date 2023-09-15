@@ -174,6 +174,7 @@ public class AccountController : ControllerBase
         public string FriendlyName { get; set; }
         public string Description { get; set; }
         public string IconBase64 { get; set; }
+        public string RedirectUri { get; set; }
     }
 
 
@@ -189,9 +190,13 @@ public class AccountController : ControllerBase
             Permissions =
             {
                 OpenIddictConstants.Permissions.Endpoints.Token,
+                OpenIddictConstants.Permissions.Endpoints.Authorization,
                 OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
+                OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
                 OpenIddictConstants.Permissions.Prefixes.Scope + "TestReadData"
-            }
+            },
+            DisplayName = model.FriendlyName,
+            RedirectUris = { new Uri(model.RedirectUri) }
         };
 
         await _oauthManager.CreateAsync(descriptor);
@@ -203,6 +208,7 @@ public class AccountController : ControllerBase
             FriendlyName = model.FriendlyName,
             Description = model.Description,
             IconBase64 = model.IconBase64,
+            RedirectUri = model.RedirectUri,
             UserId = userId
         });
 
