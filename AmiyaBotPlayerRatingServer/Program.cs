@@ -24,13 +24,12 @@ using OpenIddict.Validation.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 var env = builder.Environment;
-var configuration = new ConfigurationBuilder()
+builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
-    .Build();
+    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
-builder.Configuration = configuration;
+var configuration = builder.Configuration;
 
 builder.Services.AddControllers(config =>
 {
