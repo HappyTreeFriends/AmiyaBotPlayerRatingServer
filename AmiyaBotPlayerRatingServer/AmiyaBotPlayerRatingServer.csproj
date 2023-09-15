@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="EncryptedOpenIddictKey.bin">
+    <None Update="Resources\EncryptedOpenIddictKey.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

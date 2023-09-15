@@ -6,7 +6,7 @@ namespace AmiyaBotPlayerRatingServer.Utility
 {
     public class OpenIddictKeyManager
     {
-        private const string KeyFilePath = "EncryptedOpenIddictKey.bin";
+        private const string KeyFileName = "EncryptedOpenIddictKey.bin";
         private readonly IConfiguration _configuration;
 
         public OpenIddictKeyManager(IConfiguration configuration)
@@ -24,18 +24,22 @@ namespace AmiyaBotPlayerRatingServer.Utility
             byte[] plainKey = rsa.ExportRSAPrivateKey();
             byte[] encryptedKey = EncryptData(plainKey, _configuration["JWT:Secret"]);
 
+            var filename = Path.Combine(Directory.GetCurrentDirectory(), "Resources", KeyFileName);
+
             // 保存到文件
-            File.WriteAllBytes(KeyFilePath, encryptedKey);
+            File.WriteAllBytes(filename, encryptedKey);
         }
 
         public RsaSecurityKey GetKeys()
         {
             RSA? rsa=null;
 
-            if (File.Exists(KeyFilePath))
+            var filename = Path.Combine(Directory.GetCurrentDirectory(), "Resources", KeyFileName);
+
+            if (File.Exists(filename))
             {
                 // 密钥文件已存在，读取并解密
-                byte[] encryptedKey = File.ReadAllBytes(KeyFilePath);
+                byte[] encryptedKey = File.ReadAllBytes(filename);
                 byte[] plainKey = DecryptData(encryptedKey, _configuration["JWT:Secret"]);
                 rsa = RSA.Create();
                 rsa.ImportRSAPrivateKey(plainKey, out _);
