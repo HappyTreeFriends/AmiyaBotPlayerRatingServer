@@ -1,8 +1,5 @@
-﻿using AmiyaBotPlayerRatingServer.Utility.OpenIddict;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using OpenIddict.Server.AspNetCore;
-using System.Xml.Linq;
-using static AmiyaBotPlayerRatingServer.Controllers.Policy.CredentialOwnerPolicy;
 
 namespace AmiyaBotPlayerRatingServer.Controllers.Policy
 {

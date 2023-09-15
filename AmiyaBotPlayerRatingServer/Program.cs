@@ -1,24 +1,17 @@
 ﻿using Aliyun.OSS;
 using AmiyaBotPlayerRatingServer.Data;
-using System.ComponentModel;
 using System.Text;
 using System.Text.Json.Serialization;
 using AmiyaBotPlayerRatingServer.Controllers.Policy;
 using AmiyaBotPlayerRatingServer.Utility;
 using Hangfire;
-using Hangfire.PostgreSql;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
 using Microsoft.EntityFrameworkCore;
 using AmiyaBotPlayerRatingServer.Model;
-using AmiyaBotPlayerRatingServer.Utility.OpenIddict;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using OpenIddict.Server.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Authorization;
-using Microsoft.Extensions.Configuration;
 using OpenIddict.Validation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -108,7 +101,9 @@ builder.Services.AddOpenIddict()
         options.AllowClientCredentialsFlow();
         options.AllowAuthorizationCodeFlow();
 
-        var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["JWT:Secret"]!));
+        var keyManager = new OpenIddictKeyManager(configuration);
+        var securityKey = keyManager.GetKeys();
+
         options.AddSigningKey(securityKey);
         options.AddEncryptionKey(securityKey);
         

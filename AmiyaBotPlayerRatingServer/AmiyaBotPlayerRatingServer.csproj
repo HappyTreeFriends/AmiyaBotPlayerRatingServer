@@ -41,6 +41,13 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
+    <Folder Include="Utility\OpenIddict\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="EncryptedOpenIddictKey.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
