@@ -6,10 +6,12 @@ using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Newtonsoft.Json;
 using OpenIddict.Validation.AspNetCore;
 using static AmiyaBotPlayerRatingServer.Controllers.SKLandCredentialController;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
@@ -104,11 +106,29 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     //不允许直接访问Status块
                     var tempStatusBlock = new Dictionary<String, object>();
                     var statusData = infoData?["status"];
-                    tempStatusBlock.Add("name", statusData["name"]);
+
+                    //加密Name
+                    string pattern = @"^(.*)#(\d*)$";
+                    var playerName = statusData["name"]?.ToString()??"海猫络合物#0000";
+                    string result = Regex.Replace(playerName, pattern, m =>
+                    {
+                        string preHash = m.Groups[1].Value;
+                        string postHash = m.Groups[2].Value;
+
+                        preHash = preHash.Length <= 2 ? preHash : preHash[0] + new string('*', preHash.Length - 2) + preHash[^1];
+                        postHash = postHash.Length <= 2 ? postHash : postHash[0] + new string('*', postHash.Length - 2) + postHash[^1];
+
+                        return preHash + "#" + postHash;
+                    });
+                    tempStatusBlock.Add("name", result);
+                    tempStatusBlock.Add("nameEncrypted", true);
+
                     tempStatusBlock.Add("level", statusData["level"]);
                     tempStatusBlock.Add("avatar", statusData["avatar"]);
                     tempStatusBlock.Add("mainStageProgress", statusData["mainStageProgress"]);
                     tempStatusBlock.Add("secretary", statusData["secretary"]);
+
+                    retObject["status"] = tempStatusBlock;
                 }
                 else
                 {
@@ -118,15 +138,22 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     }
                 }
             }
-
-            return Ok(new
+            
+            var retObj = new
             {
                 Id = characterBox.Id,
                 CredentialId = characterBox.CredentialId,
-                code= 0,
-                message= "OK",
+                code = 0,
+                message = "OK",
                 data = retObject
-            });
+            };
+
+            return new ContentResult
+            {
+                Content = JsonConvert.SerializeObject(retObj),
+                ContentType = "application/json",
+                StatusCode = 200
+            };
         }
     }
 }
