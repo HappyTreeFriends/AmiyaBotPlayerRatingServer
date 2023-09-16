@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using OpenIddict.Server.AspNetCore;
+using OpenIddict.Validation.AspNetCore;
 
 namespace AmiyaBotPlayerRatingServer.Controllers.Policy
 {
@@ -14,7 +15,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Policy
                 {
                     options.AddPolicy(TestWriteDataPolicy, policy =>
                     {
-                        policy.AuthenticationSchemes.Add(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                        policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
                         policy.Requirements.Add(new RequireScopeRequirement(TestWriteDataPolicy));
                     });
                 });

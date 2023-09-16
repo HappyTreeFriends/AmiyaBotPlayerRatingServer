@@ -67,7 +67,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         }
 
 
-        [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,Policy = "TestReadData")]
+        [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,Policy = "TestWriteData")]
         [HttpGet]
         public object Index()
         {

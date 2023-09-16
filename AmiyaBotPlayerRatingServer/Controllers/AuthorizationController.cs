@@ -35,11 +35,16 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                     Claims.Name, Claims.Role);
 
+                //这里的User是授权者,也就是普通用户
+                //而开发者需要通过ClientId来确认
+
                 var subjectClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value??"";
                 var claim = new Claim(Claims.Subject, subjectClaim);
                 claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
                 identity.AddClaim(claim);
-                
+
+                claim = new Claim(Claims.Subject, subjectClaim);
+
                 var principal = new ClaimsPrincipal(identity);
                 
                 return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -74,7 +79,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 }
 
                 // Extract the user ID from the principal
-                var userId = userPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userId = userPrincipal.FindFirst(Claims.Subject)?.Value;
 
                 if (string.IsNullOrEmpty(userId))
                 {
