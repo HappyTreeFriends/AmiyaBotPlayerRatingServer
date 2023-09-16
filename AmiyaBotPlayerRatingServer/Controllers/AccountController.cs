@@ -191,9 +191,13 @@ public class AccountController : ControllerBase
             {
                 OpenIddictConstants.Permissions.Endpoints.Token,
                 OpenIddictConstants.Permissions.Endpoints.Authorization,
+
                 OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
                 OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
-                OpenIddictConstants.Permissions.Prefixes.Scope + "TestReadData"
+
+                OpenIddictConstants.Permissions.Prefixes.Scope + "TestReadData",
+
+                OpenIddictConstants.Permissions.ResponseTypes.Code,
             },
             DisplayName = model.FriendlyName,
             RedirectUris = { new Uri(model.RedirectUri) }

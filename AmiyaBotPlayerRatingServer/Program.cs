@@ -108,7 +108,9 @@ builder.Services.AddOpenIddict()
         options.AddEncryptionKey(securityKey);
         
         options.UseAspNetCore()
-            .EnableTokenEndpointPassthrough().DisableTransportSecurityRequirement();
+            .EnableAuthorizationEndpointPassthrough()
+            .EnableTokenEndpointPassthrough()
+            .DisableTransportSecurityRequirement();
     }).AddValidation(options =>
     {
         options.UseLocalServer();
