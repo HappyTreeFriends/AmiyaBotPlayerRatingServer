@@ -259,6 +259,33 @@ public class AccountController : ControllerBase
         });
     }
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "管理员账户,开发者账户")]
+    [HttpDelete("delete-client/{clientId}")]
+    public async Task<IActionResult> DeleteClient(string clientId)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId && c.UserId == userId);
+
+        if (client == null)
+        {
+            return NotFound("应用不存在或您没有权限删除这个客户端");
+        }
+
+        // 删除 OAuth2 客户端
+        var openIddictApplication = await _oauthManager.FindByClientIdAsync(clientId);
+        if (openIddictApplication != null)
+        {
+            await _oauthManager.DeleteAsync(openIddictApplication);
+        }
+
+        _dbContext.ClientInfos.Remove(client);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { message = "应用已成功删除" });
+    }
+
+
     [HttpGet("describe")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<IActionResult> Describe()
