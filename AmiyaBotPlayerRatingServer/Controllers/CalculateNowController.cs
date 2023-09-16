@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     [Produces("application/json")]
     public class CalculateNowController : ControllerBase
     {
@@ -35,7 +35,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         [HttpGet]
         public object Index()
         {
-            var startDate = DateTime.Now.AddDays(-90);
+            var startDate = DateTime.Now.AddDays(-180);
             var endDate = DateTime.Now;
             _backgroundJobClient.Enqueue<CalculateCharacterStatisticsService>(service => service.Calculate(startDate,endDate));
             return Ok();
