@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
 using OpenIddict.Abstractions;
 using OpenIddict.Core;
 using static System.Net.Mime.MediaTypeNames;
@@ -120,8 +121,20 @@ public class AccountController : ControllerBase
         };
         var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
+        var jwtToken = tokenHandler.WriteToken(token);
 
-        return Ok(new { Token = tokenHandler.WriteToken(token) });
+        // 设置名为 "jwt" 的 Cookie
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(24)
+        };
+        HttpContext.Response.Cookies.Append("jwt", jwtToken, cookieOptions);
+
+
+        return Ok(new { Token = jwtToken });
     }
 
     // DTO (Data Transfer Object) 用于接收请求数据
