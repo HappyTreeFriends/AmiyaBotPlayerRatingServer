@@ -106,15 +106,15 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
                 credential.AvatarUrl = $@"https://web.hycdn.cn/arknights/game/assets/char_skin/avatar/{Uri.EscapeDataString(charName)}.png";
             }
 
-            var charBoxJson = JsonConvert.SerializeObject(infoData?["chars"]);
+            var infoDataJson = JsonConvert.SerializeObject(infoData);
 
-            if (!string.IsNullOrEmpty(charBoxJson))
+            if (!string.IsNullOrEmpty(infoDataJson))
             {
                 var charBox = new SKLandCharacterBox()
                 {
                     Id = Guid.NewGuid().ToString(),
                     CredentialId = credential.Id,
-                    CharacterBoxJson = charBoxJson
+                    CharacterBoxJson = infoDataJson
                 };
 
                 _dbContext.SKLandCharacterBoxes.Add(charBox);

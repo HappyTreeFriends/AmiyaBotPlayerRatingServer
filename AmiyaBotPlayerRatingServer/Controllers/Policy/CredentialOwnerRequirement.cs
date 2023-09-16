@@ -61,7 +61,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Policy
 
                 // 查询数据库以确认currentUserId是targetCredentialId的拥有者
                 var targetCredential = await _context.Set<SKLandCredential>()
-                    .Where(c => c.Id.ToString() == targetCredentialId && c.UserId == currentUserId)
+                    .Where(c => c.Id == targetCredentialId && c.UserId == currentUserId)
                     .FirstOrDefaultAsync();
 
                 if (targetCredential != null)

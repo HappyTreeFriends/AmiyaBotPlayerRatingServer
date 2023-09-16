@@ -114,8 +114,15 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return Unauthorized();
             }
 
+            if (!Guid.TryParse(credentialId, out var guidCredentialId))
+            {
+                return BadRequest("Invalid credential ID format.");
+            }
+
             // 从数据库中找到对应的Credential
-            var credentialToDelete = await _context.SKLandCredentials.FindAsync(new Guid(credentialId));
+            var credentialToDelete = await _context.SKLandCredentials
+                .Where(c => c.Id == credentialId && c.UserId == userId)
+                .FirstOrDefaultAsync();
 
             if (credentialToDelete == null)
             {
