@@ -243,7 +243,7 @@ public class AccountController : ControllerBase
             IconBase64 = client.IconBase64
         }));
     }
-    
+
     [AllowAnonymous]
     [HttpGet("get-client/{clientId}")]
     public async Task<IActionResult> GetClient(string clientId)
@@ -253,13 +253,28 @@ public class AccountController : ControllerBase
         {
             return NotFound();
         }
+
+        var application = await _oauthManager.FindByClientIdAsync(clientId);
+        if (application == null)
+        {
+            return NotFound();
+        }
+
+        var redirectUris = await _oauthManager.GetRedirectUrisAsync(application);
+
+        var scopes =
+            (await _oauthManager.GetPermissionsAsync(application)).Where(p =>
+                p.StartsWith(OpenIddictConstants.Permissions.Prefixes.Scope));
+
         return Ok(new
         {
             ClientId = client.ClientId,
             FriendlyName = client.FriendlyName,
             Description = client.Description,
             Scope = "TestReadData",
-            IconBase64 = client.IconBase64
+            IconBase64 = client.IconBase64,
+            RedirectUri = redirectUris,
+            Scopes = scopes
         });
     }
 
