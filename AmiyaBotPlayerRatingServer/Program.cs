@@ -125,10 +125,14 @@ builder.Services.AddOpenIddict()
 
         var keyManager = new OpenIddictKeyManager(configuration);
         var securityKey = keyManager.GetKeys();
-
         options.AddSigningKey(securityKey);
         options.AddEncryptionKey(securityKey);
-        
+
+        if (env.IsDevelopment())
+        {
+            options.DisableAccessTokenEncryption();
+        }
+
         options.UseAspNetCore()
             .EnableAuthorizationEndpointPassthrough()
             .EnableTokenEndpointPassthrough()

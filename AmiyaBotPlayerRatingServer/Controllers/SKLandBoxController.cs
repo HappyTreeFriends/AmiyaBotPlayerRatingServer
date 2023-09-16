@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using OpenIddict.Validation.AspNetCore;
 using static AmiyaBotPlayerRatingServer.Controllers.SKLandCredentialController;
 using static OpenIddict.Abstractions.OpenIddictConstants;
+using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
@@ -72,9 +73,16 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return Unauthorized();
             }
 
+            var credClaimValue = User.FindFirst("SKLandCredentialId")?.Value;
+
+            if (string.IsNullOrEmpty(credClaimValue))
+            {
+                return NotFound("该凭据没有对应的森空岛凭据.");
+            }
+
             // 从数据库中找到对应的CharacterBox
             var characterBox = await _context.SKLandCharacterBoxes
-                .Include(box => box.Credential)  // Include the related SKLandCredential
+                .Where(b=>b.CredentialId== credClaimValue).OrderByDescending(b=>b.RefreshedAt)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
@@ -83,11 +91,41 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return NotFound("Character box not found.");
             }
 
+            var infoData = JObject.Parse(characterBox.CharacterBoxJson);
+
+            var boxParts = model.PartList.Split(',');
+
+            var retObject = new Dictionary<String, Object>();
+
+            foreach (var boxPart in boxParts)
+            {
+                if (boxPart == "status")
+                {
+                    //不允许直接访问Status块
+                    var tempStatusBlock = new Dictionary<String, object>();
+                    var statusData = infoData?["status"];
+                    tempStatusBlock.Add("name", statusData["name"]);
+                    tempStatusBlock.Add("level", statusData["level"]);
+                    tempStatusBlock.Add("avatar", statusData["avatar"]);
+                    tempStatusBlock.Add("mainStageProgress", statusData["mainStageProgress"]);
+                    tempStatusBlock.Add("secretary", statusData["secretary"]);
+                }
+                else
+                {
+                    if (infoData.ContainsKey(boxPart))
+                    {
+                        retObject[boxPart] = infoData[boxPart];
+                    }
+                }
+            }
+
             return Ok(new
             {
                 Id = characterBox.Id,
                 CredentialId = characterBox.CredentialId,
-                CharacterBoxJson = characterBox.CharacterBoxJson
+                code= 0,
+                message= "OK",
+                data = retObject
             });
         }
     }

@@ -9,25 +9,30 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using OpenIddict.Validation.AspNetCore;
+using AmiyaBotPlayerRatingServer.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
     public class AuthorizationController : Controller
     {
         private readonly IOpenIddictApplicationManager _applicationManager;
+        private readonly PlayerRatingDatabaseContext _dbContext;
 
-        public AuthorizationController(IOpenIddictApplicationManager applicationManager)
-            => _applicationManager = applicationManager;
+        public AuthorizationController(IOpenIddictApplicationManager applicationManager, PlayerRatingDatabaseContext dbContext)
+        {
+            _applicationManager = applicationManager;
+            _dbContext = dbContext;
+        }
 
         [HttpGet("~/connect/authorize")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> Authorize()
         {
             var request = HttpContext.GetOpenIddictServerRequest();
-
+            
             var allowToAuthorize = true;
-            // 这里应验证传入的 request 参数（例如：client_id，redirect_uri 等）
-
+            
             if (allowToAuthorize)
             {
                 // 创建或获取用户的身份标识（ClaimsIdentity）
@@ -37,13 +42,26 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
                 //这里的User是授权者,也就是普通用户
                 //而开发者需要通过ClientId来确认
-
-                var subjectClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value??"";
-                var claim = new Claim(Claims.Subject, subjectClaim);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+                var claim = new Claim(Claims.Subject, userId);
                 claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
                 identity.AddClaim(claim);
 
-                claim = new Claim(Claims.Subject, subjectClaim);
+                var requestedCred = request?.GetParameter("cred").ToString();
+                if (requestedCred != null)
+                {
+                    //确认这个cred属于这个用户
+                    var credentialDetails = await _dbContext.SKLandCredentials
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Id == requestedCred);
+                    if (credentialDetails?.UserId == userId)
+                    {
+                        //允许
+                        var credClaim = new Claim("SKLandCredentialId", requestedCred);
+                        credClaim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
+                        identity.AddClaim(credClaim);
+                    }
+                }
 
                 var principal = new ClaimsPrincipal(identity);
                 
@@ -58,7 +76,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         [AllowAnonymous]
         [HttpPost("~/connect/token"), Produces("application/json")]
-        public async Task<IActionResult> Exchange()
+        public async Task<IActionResult> Token()
         {
             var request = HttpContext.GetOpenIddictServerRequest();
             if (request.IsAuthorizationCodeGrantType())
@@ -87,9 +105,19 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     return BadRequest();
                 }
 
+
                 // 这里添加相应的声明。
                 identity.AddClaim(Claims.Subject, userId,
                     OpenIddictConstants.Destinations.AccessToken);
+
+                var credClaimValue = userPrincipal.FindFirst("SKLandCredentialId")?.Value;
+                if (!string.IsNullOrEmpty(credClaimValue))
+                {
+                    var credClaim = new Claim("SKLandCredentialId", credClaimValue);
+                    credClaim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
+                    identity.AddClaim(credClaim);
+                }
+
 
                 var principal = new ClaimsPrincipal(identity);
 

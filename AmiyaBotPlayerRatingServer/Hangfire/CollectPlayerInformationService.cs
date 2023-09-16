@@ -114,8 +114,9 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
                 {
                     Id = Guid.NewGuid().ToString(),
                     CredentialId = credential.Id,
-                    CharacterBoxJson = infoDataJson
-                };
+                    CharacterBoxJson = infoDataJson,
+                    RefreshedAt = DateTime.UtcNow
+            };
 
                 _dbContext.SKLandCharacterBoxes.Add(charBox);
             }
