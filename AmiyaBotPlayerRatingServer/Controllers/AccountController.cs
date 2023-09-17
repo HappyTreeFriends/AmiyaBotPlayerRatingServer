@@ -341,7 +341,22 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> DeleteClient(string clientId)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId && c.UserId == userId);
+
+        // 判断当前用户是否是管理员
+        var isAdmin = User.IsInRole("管理员账户");
+
+        ClientInfo? client;
+        if (isAdmin)
+        {
+            // 管理员可以删除任何客户端
+            client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId);
+        }
+        else
+        {
+            // 开发者只能删除自己的客户端
+            client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId && c.UserId == userId);
+        }
+
 
         if (client == null)
         {
