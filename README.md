@@ -72,3 +72,8 @@
 不过，使用authorization_code模式OAuth验证的一个例子，可以在兔兔打分的repo中看到，这也就是上面演示用的代码。
 
 [OAuthGetBox.vue](https://github.com/hsyhhssyy/amiyabot-player-rating-standalone/blob/master/src/views/OAuthGetBox.vue)
+
+## 备注
+
+这个Repo只是该服务的后台，通过一个GithubAction生成一个DockerImage用于部署，所以能跑Docker的服务器都能部署这个后端。
+他还有一个[对应的前端](https://github.com/hsyhhssyy/AmiyaBotPlayerRatingServerWebsite)，基于Vue，也配置了GithubAction用于生成DockerImage。
