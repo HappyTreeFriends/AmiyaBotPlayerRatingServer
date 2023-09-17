@@ -8,6 +8,7 @@ using Hangfire;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
 using Microsoft.EntityFrameworkCore;
 using AmiyaBotPlayerRatingServer.Model;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authorization;
@@ -62,7 +63,9 @@ builder.Services.AddControllers()
 builder.Services.AddHangfire(hfConf => hfConf
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings());
+    .UseRecommendedSerializerSettings()
+    .UseStorage(new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration))));
+
 builder.Services.AddSingleton<HangfireConfigurationService>();
 builder.Services.AddHangfireServer();
 
@@ -166,30 +169,12 @@ app.UseAuthorization();
 //初始化一些Service
 using (var scope = app.Services.CreateScope())
 {
-    //触发一次HangfireConfigurationService来初始化他
-    _ = scope.ServiceProvider.GetRequiredService<HangfireConfigurationService>();
-
     //执行数据迁移
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
-
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-    if (!await roleManager.RoleExistsAsync("管理员账户"))
-    {
-        await roleManager.CreateAsync(new IdentityRole("管理员账户"));
-    }
-
-    if (!await roleManager.RoleExistsAsync("开发者账户"))
-    {
-        await roleManager.CreateAsync(new IdentityRole("开发者账户"));
-    }
-
-    if (!await roleManager.RoleExistsAsync("普通账户"))
-    {
-        await roleManager.CreateAsync(new IdentityRole("普通账户"));
-    }
 }
+
+app.AddSystemRoleAsync();
 
 app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 {

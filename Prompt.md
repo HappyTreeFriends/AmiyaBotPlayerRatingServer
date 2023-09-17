@@ -58,3 +58,6 @@ const headers = {
 这是一段js代码，根据一个字符串 token，获取一个json的object infoData
 
 现在请将其改写为一个hangfire任务，用于在asp.net core平台上执行
+
+
+>%USERPROFILE%\.dotnet\tools\dotnet-ef migrations add 

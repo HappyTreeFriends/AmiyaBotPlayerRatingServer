@@ -137,7 +137,51 @@ public class AccountController : ControllerBase
         return Ok(new { Token = jwtToken });
     }
 
-    // DTO (Data Transfer Object) 用于接收请求数据
+    public class ChangePasswordModel
+    {
+        public string CurrentPassword { get; set; }
+        public string NewPassword { get; set; }
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
+    {
+        // Get the current user ID from the claims
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        // Find the user
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        // Validate the current password
+        var checkPassword = await _userManager.CheckPasswordAsync(user, model.CurrentPassword);
+        if (!checkPassword)
+        {
+            return BadRequest(new { message = "当前密码不正确" });
+        }
+
+        // Change the password
+        var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+
+        if (!changePasswordResult.Succeeded)
+        {
+            return BadRequest(new { message = "密码更改失败", errors = changePasswordResult.Errors });
+        }
+
+        return Ok(new { message = "密码已成功更改" });
+    }
+
+
+
     public class ChangeRoleRequest
     {
         public string? UserId { get; set; }
@@ -241,7 +285,7 @@ public class AccountController : ControllerBase
     }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [Authorize(Roles = "管理员账户,开发者账户")]
+    [Authorize(Roles = "管理员账户,开发者账户,演示开发者账户")]
     [HttpGet("list-clients")]
     public async Task<IActionResult> ListClients()
     {

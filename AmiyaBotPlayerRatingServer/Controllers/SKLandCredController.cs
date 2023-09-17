@@ -14,7 +14,6 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,Roles= "普通账户")]
     public class SKLandCredentialController : ControllerBase
     {
         private readonly PlayerRatingDatabaseContext _context;
@@ -32,6 +31,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             // 可能还有其他字段，比如昵称、头像URL等
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("Create")]
         public async Task<IActionResult> CreateCredential([FromBody] SKLandCredentialModel model)
         {
@@ -73,6 +73,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             return Ok(new { Id = newCredential.Id, Message = "Credential successfully created." });
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPut("Update/{credentialId}")]
         [Authorize(Policy = CredentialOwnerPolicy.Name)]
         public async Task<IActionResult> UpdateCredential(string credentialId, [FromBody] SKLandCredentialModel model)
@@ -102,6 +103,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             return Ok(new { Message = "Credential successfully updated." });
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpDelete("Delete/{credentialId}")]
         [Authorize(Policy = CredentialOwnerPolicy.Name)]
         public async Task<IActionResult> DeleteCredential(string credentialId)
@@ -137,6 +139,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             return Ok(new { Message = "Credential successfully deleted." });
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户,演示普通账户")]
         [HttpGet("List")]
         public async Task<IActionResult> GetCredentials()
         {
@@ -175,6 +178,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户,演示普通账户")]
         [HttpGet("Details/{credentialId}")]
         [Authorize(Policy = CredentialOwnerPolicy.Name)]
         public async Task<IActionResult> GetCredentialDetails(string credentialId)
