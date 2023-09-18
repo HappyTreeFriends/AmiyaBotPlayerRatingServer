@@ -129,53 +129,57 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
                         int level = character["level"].ToObject<int>();
                         int mainSkillLvl = character["mainSkillLvl"].ToObject<int>();
 
-                        // 初始化或获取AccumulatedCharacterData
-                        if (!accumulatedData.ContainsKey(charId))
+                        if (_characterMap != null && _characterMap.ContainsKey(charId))
                         {
-                            accumulatedData[charId] = new AccumulatedCharacterData();
-                        }
 
-                        var data = accumulatedData[charId];
-
-                        // 更新计数和其他统计信息
-                        data.Count++;
-                        
-                        data.TotalLevel += CalculateLevel(evolvePhase,level, charId);
-                        
-                        data.TotalSkillLevel += mainSkillLvl;
-
-                        // 更新平均专精等级
-                        JArray skills = (JArray)character["skills"];
-                        foreach (JObject skill in skills)
-                        {
-                            string skillId = skill["id"].ToString();
-                            int specializeLevel = skill["specializeLevel"].ToObject<int>();
-
-                            if (!data.SpecializeLevel.ContainsKey(skillId))
+                            // 初始化或获取AccumulatedCharacterData
+                            if (!accumulatedData.ContainsKey(charId))
                             {
-                                data.SpecializeLevel[skillId] = (0, 0);
+                                accumulatedData[charId] = new AccumulatedCharacterData();
                             }
 
-                            var (count, totalLevel) = data.SpecializeLevel[skillId];
-                            data.SpecializeLevel[skillId] = (count + 1, totalLevel + specializeLevel);
-                        }
+                            var data = accumulatedData[charId];
 
-                        // 更新平均模组等级
-                        JArray equips = (JArray)character["equip"];
-                        int equipIndex = 0;
-                        foreach (JObject equip in equips)
-                        {
-                            int equipLevel = equip["level"].ToObject<int>();
+                            // 更新计数和其他统计信息
+                            data.Count++;
 
-                            if (!data.EquipLevel.ContainsKey(equipIndex))
+                            data.TotalLevel += CalculateLevel(evolvePhase, level, charId);
+
+                            data.TotalSkillLevel += mainSkillLvl;
+
+                            // 更新平均专精等级
+                            JArray skills = (JArray)character["skills"];
+                            foreach (JObject skill in skills)
                             {
-                                data.EquipLevel[equipIndex] = (0, 0);
+                                string skillId = skill["id"].ToString();
+                                int specializeLevel = skill["specializeLevel"].ToObject<int>();
+
+                                if (!data.SpecializeLevel.ContainsKey(skillId))
+                                {
+                                    data.SpecializeLevel[skillId] = (0, 0);
+                                }
+
+                                var (count, totalLevel) = data.SpecializeLevel[skillId];
+                                data.SpecializeLevel[skillId] = (count + 1, totalLevel + specializeLevel);
                             }
 
-                            var (count, totalLevel) = data.EquipLevel[equipIndex];
-                            data.EquipLevel[equipIndex] = (count + 1, totalLevel + equipLevel);
+                            // 更新平均模组等级
+                            JArray equips = (JArray)character["equip"];
+                            int equipIndex = 0;
+                            foreach (JObject equip in equips)
+                            {
+                                int equipLevel = equip["level"].ToObject<int>();
 
-                            equipIndex++;
+                                if (!data.EquipLevel.ContainsKey(equipIndex))
+                                {
+                                    data.EquipLevel[equipIndex] = (0, 0);
+                                }
+
+                                var (count, totalLevel) = data.EquipLevel[equipIndex];
+                                data.EquipLevel[equipIndex] = (count + 1, totalLevel + equipLevel);
+
+                                equipIndex++;
+                            }
                         }
                     }
 
@@ -194,41 +198,44 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             {
                 var data = accumulatedData[charId];
 
-                var rarity = _characterMap[charId]["rarity"].ToObject<int>();
-                // 创建新的 CharacterStatistics 实例
-                CharacterStatistics statistics = new CharacterStatistics
+                if (_characterMap != null&& _characterMap.ContainsKey(charId))
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    VersionStart = startDate.ToUniversalTime(),
-                    VersionEnd = endDate.ToUniversalTime(),
-                    SampleCount = data.Count,
-                    BatchCount = latestFiles.Keys.Count,
-                    CharacterId = charId,
-                    Rarity = rarity,
-                    AverageLevel = data.TotalLevel / data.Count,
-                    AverageSkillLevel = data.TotalSkillLevel / data.Count
-                };
+                    var rarity = _characterMap[charId]["rarity"].ToObject<int>();
+                    // 创建新的 CharacterStatistics 实例
+                    CharacterStatistics statistics = new CharacterStatistics
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        VersionStart = startDate.ToUniversalTime(),
+                        VersionEnd = endDate.ToUniversalTime(),
+                        SampleCount = data.Count,
+                        BatchCount = latestFiles.Keys.Count,
+                        CharacterId = charId,
+                        Rarity = rarity,
+                        AverageLevel = data.TotalLevel / data.Count,
+                        AverageSkillLevel = data.TotalSkillLevel / data.Count
+                    };
 
-                // 计算平均专精等级
-                List<double> avgSpecializeLevels = new List<double>();
-                foreach (var (skillId, (count, totalLevel)) in data.SpecializeLevel)
-                {
-                    avgSpecializeLevels.Add(totalLevel / (double)count);
+                    // 计算平均专精等级
+                    List<double> avgSpecializeLevels = new List<double>();
+                    foreach (var (skillId, (count, totalLevel)) in data.SpecializeLevel)
+                    {
+                        avgSpecializeLevels.Add(totalLevel / (double)count);
+                    }
+
+                    statistics.AverageSpecializeLevel = avgSpecializeLevels;
+
+                    // 计算平均模组等级
+                    Dictionary<int, double> avgEquipLevels = new Dictionary<int, double>();
+                    foreach (var (equipIndex, (count, totalLevel)) in data.EquipLevel)
+                    {
+                        avgEquipLevels[equipIndex] = totalLevel / (double)count;
+                    }
+
+                    statistics.AverageEquipLevel = avgEquipLevels;
+
+                    // 添加到数据库
+                    _dbContext.CharacterStatistics.Add(statistics);
                 }
-
-                statistics.AverageSpecializeLevel = avgSpecializeLevels;
-
-                // 计算平均模组等级
-                Dictionary<int, double> avgEquipLevels = new Dictionary<int, double>();
-                foreach (var (equipIndex, (count, totalLevel)) in data.EquipLevel)
-                {
-                    avgEquipLevels[equipIndex] = totalLevel / (double)count;
-                }
-
-                statistics.AverageEquipLevel = avgEquipLevels;
-
-                // 添加到数据库
-                _dbContext.CharacterStatistics.Add(statistics);
             }
 
             _dbContext.SaveChanges();
