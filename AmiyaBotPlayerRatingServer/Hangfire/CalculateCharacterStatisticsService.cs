@@ -28,6 +28,11 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
         
         public void Calculate(DateTime startDate, DateTime endDate)
         {
+            string localDirectoryPath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "AliyunOss");
+            if (!Directory.Exists(localDirectoryPath))
+            {
+                Directory.CreateDirectory(localDirectoryPath);
+            }
 
             // 从appsettings.json获取OSS相关设置
             string endPoint = _configuration["Aliyun:Oss:EndPoint"]!;
@@ -40,68 +45,91 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
 
             string nextMarker = string.Empty;
             string prefix = "collected_data_v1/"; // Directory prefix
-
-            Dictionary<string, string> latestFiles = new Dictionary<string, string>();
-
+            
             do
             {
                 var listObjectsRequest = new ListObjectsRequest(bucketName)
                 {
                     Marker = nextMarker,
                     MaxKeys = 100,
-                    Prefix = prefix // Only retrieve objects under the collected_data_v1 directory
+                    Prefix = prefix
                 };
 
-                // List objects
                 var result = client.ListObjects(listObjectsRequest);
-
-                // File name regular expression
-                Regex regex = new Regex(@"chars\.(\w+)\.(\d{8})\.(\d{6})\.json");
 
                 foreach (var summary in result.ObjectSummaries)
                 {
                     string fileName = summary.Key;
 
-                    // Use regex to extract date and time information
-                    var match = regex.Match(fileName);
-                    if (match.Success)
+                    // 检查本地文件是否已存在
+                    string localFilePath = Path.Combine(localDirectoryPath, Path.GetFileName(fileName));
+                    if (File.Exists(localFilePath))
                     {
-                        string userId = match.Groups[1].Value;
-                        string dateStr = match.Groups[2].Value;
-                        string timeStr = match.Groups[3].Value;
+                        // 如果文件已存在，跳过下载
+                        continue;
+                    }
 
-                        DateTime fileDate;
-                        if (DateTime.TryParseExact(dateStr, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None,
-                                out fileDate))
-                        {
-                            if (fileDate >= startDate && fileDate <= endDate)
-                            {
-                                // Check if this file is the latest for this user
-                                if (latestFiles.ContainsKey(userId))
-                                {
-                                    string existingFileName = latestFiles[userId];
-                                    var existingMatch = regex.Match(existingFileName);
-                                    string existingDateStr = existingMatch.Groups[2].Value;
-                                    string existingTimeStr = existingMatch.Groups[3].Value;
-
-                                    if (String.CompareOrdinal(dateStr + timeStr, existingDateStr + existingTimeStr) > 0)
-                                    {
-                                        // This file is newer
-                                        latestFiles[userId] = fileName;
-                                    }
-                                }
-                                else
-                                {
-                                    latestFiles[userId] = fileName;
-                                }
-                            }
-                        }
+                    // 否则，下载文件
+                    var stream = client.GetObject(bucketName, fileName).Content;
+                    using (FileStream fs = new FileStream(localFilePath, FileMode.Create, FileAccess.Write))
+                    {
+                        stream.CopyTo(fs);
+                        fs.Flush();
                     }
                 }
 
                 nextMarker = result.NextMarker;
 
             } while (!string.IsNullOrEmpty(nextMarker));
+
+            // 现在，从 localDirectoryPath 下读取这些文件
+            // 首先，获取该目录下所有文件的名称
+            string[] files = Directory.GetFiles(localDirectoryPath);
+
+            Dictionary<string, string> latestFiles = new Dictionary<string, string>();
+
+            // File name regular expression
+            Regex regex = new Regex(@"chars\.(\w+)\.(\d{8})\.(\d{6})\.json");
+
+            foreach (var filePath in files)
+            {
+                string fileName = Path.GetFileName(filePath);
+
+                // 使用正则表达式从文件名中提取日期和时间信息
+                var match = regex.Match(fileName);
+                if (match.Success)
+                {
+                    string userId = match.Groups[1].Value;
+                    string dateStr = match.Groups[2].Value;
+                    string timeStr = match.Groups[3].Value;
+
+                    DateTime fileDate;
+                    if (DateTime.TryParseExact(dateStr, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out fileDate))
+                    {
+                        if (fileDate >= startDate && fileDate <= endDate)
+                        {
+                            // 检查这个文件是否是该用户的最新文件
+                            if (latestFiles.ContainsKey(userId))
+                            {
+                                string existingFileName = latestFiles[userId];
+                                var existingMatch = regex.Match(existingFileName);
+                                string existingDateStr = existingMatch.Groups[2].Value;
+                                string existingTimeStr = existingMatch.Groups[3].Value;
+
+                                if (String.CompareOrdinal(dateStr + timeStr, existingDateStr + existingTimeStr) > 0)
+                                {
+                                    // 这个文件更新
+                                    latestFiles[userId] = fileName;
+                                }
+                            }
+                            else
+                            {
+                                latestFiles[userId] = fileName;
+                            }
+                        }
+                    }
+                }
+            }
 
             // Now, process the latest file for each user
 
