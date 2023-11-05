@@ -3,6 +3,7 @@ using AmiyaBotPlayerRatingServer.Data;
 using System.Text;
 using System.Text.Json.Serialization;
 using AmiyaBotPlayerRatingServer.Controllers.Policy;
+using AmiyaBotPlayerRatingServer.Hangfire;
 using AmiyaBotPlayerRatingServer.Utility;
 using Hangfire;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
@@ -172,6 +173,10 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
 }
+
+// 初始化添加全局任务。
+RecurringJob.AddOrUpdate<MAATakeSnapshotOnAllConnectionsService>("MAATakeSnapshotOnAllConnectionsService", service=>service.Collect() , Cron.Hourly);
+
 
 app.AddSystemRoleAsync();
 
