@@ -26,14 +26,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             _backgroundJobClient = backgroundJobClient;
             _logger = logger;
         }
-
-        public class MAAConnectionModel
-        {
-            public String DeviceIdentity { get; set; }
-            public String UserIdentity { get; set; }
-            // 可能还有其他字段，比如昵称、头像URL等
-        }
-
+        
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet("List")]
         public async Task<IActionResult> ListConnections()
@@ -57,7 +50,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                         c.Id,
                         c.DeviceIdentity,
                         c.UserIdentity,
-                        // 这里可以添加其他需要返回的字段，例如昵称或头像URL
+                        c.Name
                     })
                     .ToListAsync();
 
@@ -84,7 +77,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             var userId = userIdClaim.Value;
 
             // 生成UserIdentity
-            var userIdentity = Guid.NewGuid().ToString(); // 或者其他生成逻辑
+            var userIdentity = Guid.NewGuid().ToString("N");
 
             var connection = new MAAConnection
             {
@@ -122,9 +115,15 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             }
         }
 
+        public class CompleteConnectionModel
+        {
+            public String DeviceIdentity { get; set; }
+            public String Name { get; set; }
+        }
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("Complete/{id}")]
-        public async Task<IActionResult> CompleteConnection(Guid id, [FromBody] MAAConnectionModel model)
+        public async Task<IActionResult> CompleteConnection(Guid id, [FromBody] CompleteConnectionModel model)
         {
             if (string.IsNullOrEmpty(model.DeviceIdentity))
             {
@@ -153,6 +152,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
             // 完成Connection的创建
             connection.DeviceIdentity = model.DeviceIdentity;
+            connection.Name = model.Name;
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "成功创建连接。" });
