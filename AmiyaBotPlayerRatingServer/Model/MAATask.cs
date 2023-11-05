@@ -11,4 +11,12 @@ public class MAATask
     public MAAConnection Connection { get; set; }
 
     public bool IsCompleted { get; set; }
+
+    public String Type { get; set; }
+
+    public String? Parameters { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    public DateTime? CompletedAt { get; set; }
 }
