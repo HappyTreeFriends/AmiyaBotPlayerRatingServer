@@ -53,7 +53,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             
             // 数据库中获取最近五分钟未完成的任务
             var tasks = _context.MAATasks.Where(t => t.ConnectionId == connection.Id && t.IsCompleted)
-                .Where(t=>t.CreatedAt>DateTime.Now.AddMinutes(-5))
+                .Where(t=>t.CreatedAt>DateTime.UtcNow.AddMinutes(-5))
                 .OrderByDescending(t => t.CreatedAt).Select(t => new MAATaskDto
             {
                 Id = t.Id.ToString("N"),
@@ -105,13 +105,14 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 var result = new MAAResponse
                 {
                     TaskId = task.Id,
-                    Payload = request.Payload
+                    Payload = request.Payload,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 _context.MAAResponses.Add(result);
 
                 task.IsCompleted = true;
-                task.CompletedAt = DateTime.Now;
+                task.CompletedAt = DateTime.UtcNow;
 
                 _context.MAATasks.Update(task);
 

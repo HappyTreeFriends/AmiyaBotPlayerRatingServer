@@ -11,4 +11,6 @@ public class MAAResponse
     public MAATask Task { get; set; }
 
     public String Payload { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
