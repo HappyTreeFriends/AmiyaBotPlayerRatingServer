@@ -10,7 +10,7 @@ namespace AmiyaBotPlayerRatingServer.Model
         /// <summary>
         /// 用户给出的友好名称
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         public string UserId { get; set; }
         public ApplicationUser User { get; set; }

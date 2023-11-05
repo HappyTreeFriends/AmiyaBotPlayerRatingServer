@@ -44,7 +44,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             {
                 // 查询数据库获取该用户的所有MAAConnections
                 var connections = await _context.MAAConnections
-                    .Where(c => c.UserId == userId)
+                    .Where(c => c.UserId == userId&&!String.IsNullOrWhiteSpace(c.Name))
                     .Select(c => new
                     {
                         c.Id,
