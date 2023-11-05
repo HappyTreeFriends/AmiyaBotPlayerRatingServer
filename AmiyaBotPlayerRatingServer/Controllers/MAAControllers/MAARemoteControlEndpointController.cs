@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Authorization;
+using Hangfire;
+using AmiyaBotPlayerRatingServer.Hangfire;
 
 namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 {
@@ -12,11 +14,15 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
     public class MAARemoteControlEndpointController : ControllerBase
     {
         private readonly PlayerRatingDatabaseContext _context;
+        private readonly IBackgroundJobClient _backgroundJobClient;
         private readonly ILogger<MAARemoteControlEndpointController> _logger;
 
-        public MAARemoteControlEndpointController(PlayerRatingDatabaseContext context, ILogger<MAARemoteControlEndpointController> logger)
+        public MAARemoteControlEndpointController(PlayerRatingDatabaseContext context,
+            IBackgroundJobClient backgroundJobClient,
+            ILogger<MAARemoteControlEndpointController> logger)
         {
             _context = context;
+            _backgroundJobClient = backgroundJobClient;
             _logger = logger;
         }
 
@@ -108,15 +114,17 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     Payload = request.Payload,
                     CreatedAt = DateTime.UtcNow
                 };
-
+                
                 _context.MAAResponses.Add(result);
-
+                
                 task.IsCompleted = true;
                 task.CompletedAt = DateTime.UtcNow;
 
                 _context.MAATasks.Update(task);
 
                 await _context.SaveChangesAsync();
+
+                _backgroundJobClient.Enqueue<MAAGenerateImageSnapshotService>(service => service.GenerateThumbnail(result.Id.ToString()));
 
                 // 如果一切顺利，返回200 OK
                 return Ok();
