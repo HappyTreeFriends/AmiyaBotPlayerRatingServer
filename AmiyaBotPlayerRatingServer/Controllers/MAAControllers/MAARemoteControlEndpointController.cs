@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 {
     [ApiController]
-    [Route("maa")]
+    [Route("api/maa")]
     public class MAARemoteControlEndpointController : ControllerBase
     {
         private readonly PlayerRatingDatabaseContext _context;
