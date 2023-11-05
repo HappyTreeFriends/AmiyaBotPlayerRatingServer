@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiyaBotPlayerRatingServer.Migrations
 {
     [DbContext(typeof(PlayerRatingDatabaseContext))]
-    [Migration("20231105054452_MAAEntiityModify1")]
-    partial class MAAEntiityModify1
+    [Migration("20231105064705_MAAEntity")]
+    partial class MAAEntity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
