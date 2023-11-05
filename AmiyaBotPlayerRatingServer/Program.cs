@@ -172,10 +172,12 @@ using (var scope = app.Services.CreateScope())
     //执行数据迁移
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
+
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    // 初始化添加全局任务。
+    recurringJobManager.AddOrUpdate<MAATakeSnapshotOnAllConnectionsService>("MAATakeSnapshotOnAllConnectionsService", service => service.Collect(), Cron.Hourly);
 }
 
-// 初始化添加全局任务。
-RecurringJob.AddOrUpdate<MAATakeSnapshotOnAllConnectionsService>("MAATakeSnapshotOnAllConnectionsService", service=>service.Collect() , Cron.Hourly);
 
 
 app.AddSystemRoleAsync();

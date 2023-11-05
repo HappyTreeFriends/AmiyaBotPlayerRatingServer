@@ -80,8 +80,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
         }
 
         // POST: maa/reportStatus
-        [HttpPost]
-        [Route("reportStatus")] // 确保路由与要求的端点匹配
+        [HttpPost("reportStatus")]
+        [AllowAnonymous]
         public async Task<IActionResult> ReportTaskStatus([FromBody] TaskReportModel request)
         {
             try
