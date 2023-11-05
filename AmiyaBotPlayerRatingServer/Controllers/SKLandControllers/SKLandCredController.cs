@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Polly;
 using System.Security.Claims;
 
-namespace AmiyaBotPlayerRatingServer.Controllers
+namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -22,7 +22,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         public SKLandCredentialController(PlayerRatingDatabaseContext context, IBackgroundJobClient backgroundJobClient)
         {
             _context = context;
-            _backgroundJobClient= backgroundJobClient;
+            _backgroundJobClient = backgroundJobClient;
         }
 
         public class SKLandCredentialModel
@@ -55,7 +55,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             // 创建新的SKLandCredential
             var newCredential = new SKLandCredential
             {
-                Id= Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid().ToString(),
                 UserId = userId,
                 Credential = model.Credential,
                 SKLandUid = "",
@@ -70,7 +70,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             _backgroundJobClient.Enqueue<CollectPlayerInformationService>(service => service.Collect(newCredential.Id));
 
-            return Ok(new { Id = newCredential.Id, Message = "Credential successfully created." });
+            return Ok(new { newCredential.Id, Message = "Credential successfully created." });
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
@@ -97,7 +97,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             // 更新字段
             credentialToUpdate.Credential = model.Credential;
             // 如果有其他字段（比如昵称、头像等），也应在这里进行更新
-            
+
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Credential successfully updated." });
@@ -133,7 +133,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             // 删除该Credential
             _context.SKLandCredentials.Remove(credentialToDelete);
-            
+
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Credential successfully deleted." });
@@ -158,8 +158,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     .Where(c => c.UserId == userId)
                     .Select(c => new
                     {
-                        Id = c.Id,
-                        Credential = c.Credential,
+                        c.Id,
+                        c.Credential,
                         c.Nickname,
                         c.AvatarUrl,
                         c.RefreshedAt,
@@ -203,9 +203,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             return Ok(new
             {
-                Id = credentialDetails.Id,
-                Credential = credentialDetails.Credential,
-                Nickname = credentialDetails.Nickname,
+                credentialDetails.Id,
+                credentialDetails.Credential,
+                credentialDetails.Nickname,
                 Avatar = credentialDetails.AvatarUrl,
             });
         }

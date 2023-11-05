@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json;
 using OpenIddict.Validation.AspNetCore;
-using static AmiyaBotPlayerRatingServer.Controllers.SKLandCredentialController;
+using static AmiyaBotPlayerRatingServer.Controllers.SKLandControllers.SKLandCredentialController;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 
-namespace AmiyaBotPlayerRatingServer.Controllers
+namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -52,9 +52,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             return Ok(new
             {
-                Id = characterBox.Id,
-                CredentialId = characterBox.CredentialId,
-                CharacterBoxJson = characterBox.CharacterBoxJson
+                characterBox.Id,
+                characterBox.CredentialId,
+                characterBox.CharacterBoxJson
             });
         }
 
@@ -84,7 +84,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             // 从数据库中找到对应的CharacterBox
             var characterBox = await _context.SKLandCharacterBoxes
-                .Where(b=>b.CredentialId== credClaimValue).OrderByDescending(b=>b.RefreshedAt)
+                .Where(b => b.CredentialId == credClaimValue).OrderByDescending(b => b.RefreshedAt)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
@@ -97,19 +97,19 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             var boxParts = model.PartList.Split(',');
 
-            var retObject = new Dictionary<String, Object>();
+            var retObject = new Dictionary<string, object>();
 
             foreach (var boxPart in boxParts)
             {
                 if (boxPart == "status")
                 {
                     //不允许直接访问Status块
-                    var tempStatusBlock = new Dictionary<String, object>();
+                    var tempStatusBlock = new Dictionary<string, object>();
                     var statusData = infoData?["status"];
 
                     //加密Name
                     string pattern = @"^(.*)#(\d*)$";
-                    var playerName = statusData["name"]?.ToString()??"海猫络合物#0000";
+                    var playerName = statusData["name"]?.ToString() ?? "海猫络合物#0000";
                     string result = Regex.Replace(playerName, pattern, m =>
                     {
                         string preHash = m.Groups[1].Value;
@@ -138,11 +138,11 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     }
                 }
             }
-            
+
             var retObj = new
             {
-                Id = characterBox.Id,
-                CredentialId = characterBox.CredentialId,
+                characterBox.Id,
+                characterBox.CredentialId,
                 code = 0,
                 message = "OK",
                 data = retObject

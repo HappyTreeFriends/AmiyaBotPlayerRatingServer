@@ -66,7 +66,6 @@ builder.Services.AddHangfire(hfConf => hfConf
     .UseRecommendedSerializerSettings()
     .UseStorage(new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration))));
 
-builder.Services.AddSingleton<HangfireConfigurationService>();
 builder.Services.AddHangfireServer();
 
 builder.Services.AddAuthentication(x =>
