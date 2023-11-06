@@ -34,33 +34,32 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             
             using (var image = Image.Load(imageBytes))
             {
+                //保存原图
+                using (var originalStream = new MemoryStream())
+                {
+                    await image.SaveAsync(originalStream, SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance); 
+                    response.ImagePayload = originalStream.ToArray(); 
+                }
+
                 var thumbnailWidth = 192;
                 var thumbnailHeight = 108;
 
-                // Resize the image preserving the aspect ratio
+                // 按照指定比例缩放
                 var resizeOptions = new ResizeOptions
                 {
                     Size = new SixLabors.ImageSharp.Size(thumbnailWidth, thumbnailHeight),
                     Mode = ResizeMode.Min
                 };
                 image.Mutate(x => x.Resize(resizeOptions));
-
-                // Convert the image to a byte array
-                using (var originalStream = new MemoryStream())
-                {
-                    await image.SaveAsync(originalStream, SixLabors.ImageSharp.Formats.Png.PngFormat.Instance); // Save as PNG
-                    response.ImagePayload = originalStream.ToArray(); // Original image bytes
-                }
-
-                // Create the thumbnail image
+                
+                // 保存缩略图
                 using (var thumbnailStream = new MemoryStream())
                 {
-                    await image.SaveAsPngAsync(thumbnailStream); // Save the thumbnail as PNG
-                    response.ImagePayloadThumbnail = thumbnailStream.ToArray(); // Thumbnail image bytes
+                    await image.SaveAsync(thumbnailStream, SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance);
+                    response.ImagePayloadThumbnail = thumbnailStream.ToArray();
                 }
             }
-
-            // Update the database with the changes
+            
             _dbContext.MAAResponses.Update(response);
             await _dbContext.SaveChangesAsync();
         }
