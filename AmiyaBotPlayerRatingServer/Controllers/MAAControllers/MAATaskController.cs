@@ -50,6 +50,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
                 var latestScreenShot = await _context.MAATasks
                     .Where(s => s.ConnectionId == id&&s.IsCompleted==true&&(s.Type=="CaptureImage"||s.Type=="CaptureImageNow"))
+                    .OrderByDescending(s=>s.CompletedAt)
                     .FirstOrDefaultAsync();
 
                 if (latestScreenShot == null)
@@ -107,6 +108,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
                 var latestScreenShot = await _context.MAATasks
                     .Where(s => s.ConnectionId == id && s.IsCompleted == true && (s.Type == "CaptureImage" || s.Type == "CaptureImageNow"))
+                    .OrderByDescending(s => s.CompletedAt)
                     .FirstOrDefaultAsync();
 
                 if (latestScreenShot == null)
@@ -147,5 +149,6 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 return StatusCode(500, "获取连接列表时发生内部错误。");
             }
         }
+        
     }
 }

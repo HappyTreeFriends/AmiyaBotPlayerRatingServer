@@ -10,17 +10,17 @@ using Microsoft.EntityFrameworkCore;
 namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/maaConnections")]
     public class MAAConnectionController : ControllerBase
     {
         private readonly PlayerRatingDatabaseContext _context;
         private readonly IBackgroundJobClient _backgroundJobClient;
-        private readonly ILogger<MAAConnectionController> _logger; // 声明一个Logger
+        private readonly ILogger<MAAConnectionController> _logger;
 
         public MAAConnectionController(
             PlayerRatingDatabaseContext context,
             IBackgroundJobClient backgroundJobClient,
-            ILogger<MAAConnectionController> logger) // 通过构造函数注入Logger
+            ILogger<MAAConnectionController> logger)
         {
             _context = context;
             _backgroundJobClient = backgroundJobClient;
@@ -28,7 +28,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
         }
         
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpGet("List")]
+        [HttpGet]
         public async Task<IActionResult> ListConnections()
         {
             // 从JWT中提取用户ID
@@ -65,7 +65,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpPost("Initialize")]
+        [HttpPost]
         public async Task<IActionResult> InitializeConnection()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -122,7 +122,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpPost("Complete/{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> CompleteConnection(Guid id, [FromBody] CompleteConnectionModel model)
         {
             if (string.IsNullOrEmpty(model.DeviceIdentity))
@@ -159,7 +159,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpDelete("Delete/{id}")]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteConnection(Guid id)
         {
             // 获取当前用户ID
@@ -194,6 +194,286 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             return Ok(new { Message = "成功删除连接。" });
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("{id}/maaTasks")]
+        public async Task<IActionResult> ListTasks(Guid id, [FromQuery]int page, [FromQuery]int size)
+        {
+            // 从JWT中提取用户ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("用户未登录。");
+            }
+
+            var userId = userIdClaim.Value;
+
+            try
+            {
+                var connection = await _context.MAAConnections
+                    .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+
+                if (connection == null)
+                {
+                    return NotFound("指定的连接不存在。");
+                }
+                
+                var tasks = await _context.MAATasks
+                    .Where(t => t.ConnectionId == connection.Id)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Skip(page * size)
+                    .Take(size)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.Type,
+                        t.Parameters,
+                        t.IsCompleted,
+                        t.CreatedAt,
+                        t.CompletedAt
+                    })
+                    .ToListAsync();
+
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "列出任务时发生错误。");
+                return StatusCode(500, "获取任务列表时发生内部错误。");
+            }
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("{id}/maaTasks/{taskId}")]
+        public async Task<IActionResult> GetTask(Guid id, Guid taskId)
+        {
+            // 从JWT中提取用户ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("用户未登录。");
+            }
+
+            var userId = userIdClaim.Value;
+
+            try
+            {
+                var connection = await _context.MAAConnections
+                    .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+
+                if (connection == null)
+                {
+                    return NotFound("指定的连接不存在。");
+                }
+
+                var task = await _context.MAATasks
+                    .Where(t => t.ConnectionId == connection.Id && t.Id == taskId)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.Type,
+                        t.Parameters,
+                        t.IsCompleted,
+                        t.CreatedAt,
+                        t.CompletedAt
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (task == null)
+                {
+                    return NotFound("指定的任务不存在。");
+                }
+
+                return Ok(task);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取任务时发生错误。");
+                return StatusCode(500, "获取任务时发生内部错误。");
+            }
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpPost("{id}/image")]
+        public async Task<IActionResult> GetConnectionImage(Guid id, [FromQuery] String? type)
+        {
+            //type: original/null, thumbnail
+
+            // 从JWT中提取用户ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("用户未登录。");
+            }
+
+            var userId = userIdClaim.Value;
+
+            try
+            {
+                var connection = await _context.MAAConnections
+                    .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+
+                if (connection == null)
+                {
+                    return NotFound("指定的连接不存在。");
+                }
+
+                var latestScreenShot = await _context.MAATasks
+                    .Where(s => s.ConnectionId == id && s.IsCompleted == true && (s.Type == "CaptureImage" || s.Type == "CaptureImageNow"))
+                    .OrderByDescending(s => s.CompletedAt)
+                    .FirstOrDefaultAsync();
+
+                if (latestScreenShot == null)
+                {
+                    return Ok(new
+                    {
+                        Image = ""
+                    });
+                }
+
+                var result = _context.MAAResponses.FirstOrDefault(r => r.TaskId == latestScreenShot.Id);
+
+                if (result == null)
+                {
+                    return Ok(new
+                    {
+                        Image = ""
+                    });
+                }
+
+                if (type == "thumbnail")
+                {
+                    return Ok(new
+                    {
+                        Image = result.ImagePayloadThumbnail
+                    });
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        Image = result.ImagePayload
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取任务时发生错误。");
+                return StatusCode(500, "获取任务时发生内部错误。");
+            }
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpPost("{id}/maaTasks/{taskId}/image")]
+        public async Task<IActionResult> GetTaskImage(Guid id, Guid taskId, [FromQuery] String? type)
+        {
+            //type: original/null, thumbnail
+
+            // 从JWT中提取用户ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("用户未登录。");
+            }
+
+            var userId = userIdClaim.Value;
+
+            try
+            {
+                var connection = await _context.MAAConnections
+                    .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+
+                if (connection == null)
+                {
+                    return NotFound("指定的连接不存在。");
+                }
+
+                var task = await _context.MAATasks
+                    .Where(t => t.ConnectionId == connection.Id && t.Id == taskId)
+                    .FirstOrDefaultAsync();
+
+                if (task == null)
+                {
+                    return NotFound("指定的任务不存在。");
+                }
+
+                var result = _context.MAAResponses.FirstOrDefault(r => r.TaskId == task.Id);
+
+                if (result == null)
+                {
+                    return Ok(new
+                    {
+                        Image = ""
+                    });
+                }
+
+                if (type == "thumbnail")
+                {
+                    return Ok(new
+                    {
+                        Image = result.ImagePayloadThumbnail
+                    });
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        Image = result.ImagePayload
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取任务时发生错误。");
+                return StatusCode(500, "获取任务时发生内部错误。");
+            }
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpPost("{id}/maaTasks")]
+        public async Task<IActionResult> CreateTask(Guid id, [FromBody] MAATask task)
+        {
+            // 从JWT中提取用户ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("用户未登录。");
+            }
+
+            var userId = userIdClaim.Value;
+
+            try
+            {
+                var connection = await _context.MAAConnections
+                    .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+
+                if (connection == null)
+                {
+                    return NotFound("指定的连接不存在。");
+                }
+
+                task.ConnectionId = connection.Id;
+                task.CreatedAt = DateTime.UtcNow;
+                task.IsCompleted = false;
+
+                await _context.MAATasks.AddAsync(task);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    task.Id,
+                    task.Type,
+                    task.Parameters,
+                    task.IsCompleted,
+                    task.CreatedAt,
+                    task.CompletedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "创建任务时发生错误。");
+                return StatusCode(500, "创建任务时发生内部错误。");
+            }
+        }
     }
 
 }
