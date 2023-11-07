@@ -233,14 +233,15 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     })
                     .ToListAsync();
 
-                var maxPage = Math.Ceiling((double)(await _context.MAATasks.CountAsync(t => t.ConnectionId == connection.Id)) / size);
+                var total = await _context.MAATasks.CountAsync(t => t.ConnectionId == connection.Id);
 
                 return Ok(new
                 {
                     tasks=tasks,
-                    maxPage= maxPage,
-                    page=page,
-                    size=size
+                    total= total,
+                    maxPage= Math.Ceiling((double)total / size),
+                    page =page,
+                    size=size,
 
                 });
             }
@@ -302,7 +303,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpPost("{id}/image")]
+        [HttpGet("{id}/image")]
         public async Task<IActionResult> GetConnectionImage(Guid id, [FromQuery] String? type)
         {
             //type: original/null, thumbnail
@@ -372,7 +373,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpPost("{id}/maaTasks/{taskId}/image")]
+        [HttpGet("{id}/maaTasks/{taskId}/image")]
         public async Task<IActionResult> GetTaskImage(Guid id, Guid taskId, [FromQuery] String? type)
         {
             //type: original/null, thumbnail
