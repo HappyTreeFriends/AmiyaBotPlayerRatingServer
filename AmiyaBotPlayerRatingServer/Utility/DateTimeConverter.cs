@@ -12,8 +12,16 @@ namespace AmiyaBotPlayerRatingServer.Utility
 
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(
-                new DateTime(value.Year, value.Month, value.Day, value.Hour, value.Minute, value.Second, DateTimeKind.Local).ToString("O"));
+            // 如果DateTime是Unspecified或者Local，将其转换为UTC时间
+            if (value.Kind == DateTimeKind.Unspecified || value.Kind == DateTimeKind.Local)
+            {
+                // 假设Unspecified是Local时间，因此先转换为Local，再转换为UTC
+                value = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(value, DateTimeKind.Local));
+            }
+
+            // 现在value是UTC时间，将其以ISO 8601字符串格式写入
+            writer.WriteStringValue(value.ToString("O"));
         }
+
     }
 }
