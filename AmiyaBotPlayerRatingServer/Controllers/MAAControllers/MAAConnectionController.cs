@@ -63,6 +63,46 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetConnection(Guid id)
+        {
+            // 从JWT中提取用户ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("用户未登录。");
+            }
+
+            var userId = userIdClaim.Value;
+
+            try
+            {
+                // 查询数据库获取该用户的所有MAAConnections
+                var connection = await _context.MAAConnections
+                    .Where(c => c.UserId == userId && c.Id == id)
+                    .Select(c => new
+                    {
+                        c.Id,
+                        c.DeviceIdentity,
+                        c.UserIdentity,
+                        c.Name
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (connection == null)
+                {
+                    return NotFound("指定的连接不存在。");
+                }
+
+                return Ok(connection);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取连接时发生错误。"); // 使用Logger记录错误
+                return StatusCode(500, "获取连接时发生内部错误。");
+            }
+        }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost]
@@ -438,9 +478,15 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             }
         }
 
+        public class AddTaskModel
+        {
+            public String Type { get; set; }
+            public String Parameters { get; set; }
+        }
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("{id}/maaTasks")]
-        public async Task<IActionResult> CreateTask(Guid id, [FromBody] MAATask task)
+        public async Task<IActionResult> AddTask(Guid id, [FromBody] AddTaskModel taskModel)
         {
             // 从JWT中提取用户ID
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -461,7 +507,10 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     return NotFound("指定的连接不存在。");
                 }
 
+                var task = new MAATask();
                 task.ConnectionId = connection.Id;
+                task.Type = taskModel.Type;
+                task.Parameters = taskModel.Parameters;
                 task.CreatedAt = DateTime.UtcNow;
                 task.IsCompleted = false;
 
