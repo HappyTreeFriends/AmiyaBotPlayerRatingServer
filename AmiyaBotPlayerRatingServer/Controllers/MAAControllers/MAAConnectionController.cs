@@ -233,7 +233,16 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     })
                     .ToListAsync();
 
-                return Ok(tasks);
+                var maxPage = Math.Ceiling((double)(await _context.MAATasks.CountAsync(t => t.ConnectionId == connection.Id)) / size);
+
+                return Ok(new
+                {
+                    tasks=tasks,
+                    maxPage= maxPage,
+                    page=page,
+                    size=size
+
+                });
             }
             catch (Exception ex)
             {
