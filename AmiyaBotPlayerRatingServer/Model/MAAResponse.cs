@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace AmiyaBotPlayerRatingServer.Model;
-
+#pragma warning disable CS8618
+// ReSharper disable UnusedMember.Global
+// ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class MAAResponse
 {
     [Key]

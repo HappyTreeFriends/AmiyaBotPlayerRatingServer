@@ -1,7 +1,6 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Authorization;
 using Hangfire;
@@ -26,19 +25,28 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             _logger = logger;
         }
 
-        // DTO定义
+        #region Data Objects
+
+        #pragma warning disable CS8618
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
         public class MAARequest
         {
             public string User { get; set; }
             public string Device { get; set; }
         }
-
-        public class MAATaskDto
+        public class TaskReportModel
         {
-            public string Id { get; set; }
-            public string Type { get; set; }
-            public string? Params { get; set; } // 可选参数
+            public string User { get; set; }
+            public string Device { get; set; }
+            public string Task { get; set; }
+            // ReSharper disable once UnusedMember.Global
+            public string Status { get; set; }
+            public string Payload { get; set; }
         }
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
+        #pragma warning restore CS8618
+
+        #endregion
 
         // POST: maa/getTask
         [HttpPost("getTask")]
@@ -60,8 +68,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             // 数据库中获取最近五分钟未完成的任务
             var tasks = _context.MAATasks.Where(t => t.ConnectionId == connection.Id && !t.IsCompleted)
                 .Where(t=>t.CreatedAt>DateTime.UtcNow.AddMinutes(-5))
-                .OrderByDescending(t => t.CreatedAt).Select(t => new MAATaskDto
-            {
+                .OrderByDescending(t => t.CreatedAt).Select(t => new {
                 Id = t.Id.ToString("N"),
                 Type = t.Type,
                 Params = t.Parameters
@@ -70,21 +77,12 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             // 检查任务列表是否为空
             if (!tasks.Any())
             {
-                return Ok(new { tasks = new List<MAATaskDto>() });
+                return Ok(new { tasks = Array.Empty<Object>() });
             }
 
             return Ok(new { tasks = tasks });
         }
-
-        public class TaskReportModel
-        {
-            public string User { get; set; }
-            public string Device { get; set; }
-            public string Task { get; set; }
-            public string Status { get; set; }
-            public string Payload { get; set; }
-        }
-
+        
         // POST: maa/reportStatus
         [HttpPost("reportStatus")]
         [AllowAnonymous]
@@ -131,8 +129,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             }
             catch (Exception ex)
             {
-                // 出现异常，返回500服务器错误
-                // 在实际的生产环境中，应该记录异常信息而不是直接返回
+                _logger.LogError(ex, "在处理任务状态报告时出现异常。");
                 return StatusCode(500, "服务器内部错误：" + ex.Message);
             }
         }

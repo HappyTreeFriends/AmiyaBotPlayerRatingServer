@@ -49,6 +49,11 @@ namespace AmiyaBotPlayerRatingServer.Data
                 .HasConversion(
                     v => JsonConvert.SerializeObject(v),
                     v => JsonConvert.DeserializeObject<Dictionary<int, double>>(v) ?? new Dictionary<int, double>());
+            
+            modelBuilder.Entity<MAATask>().HasMany(e => e.SubTasks)
+                .WithOne(e => e.ParentTask)
+                .HasForeignKey(e => e.ParentTaskId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.UseOpenIddict();
         }

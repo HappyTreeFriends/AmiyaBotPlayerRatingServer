@@ -1,11 +1,17 @@
 ﻿using Aliyun.OSS;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using static AmiyaBotPlayerRatingServer.Controllers.CalculateNowController;
 using System.Text.RegularExpressions;
+// ReSharper disable PossibleInvalidCastExceptionInForeachLoop
+// ReSharper disable UnusedVariable
+// ReSharper disable RedundantCast
+// ReSharper disable ConvertToUsingDeclaration
+// ReSharper disable InlineOutVariableDeclaration
+// ReSharper disable ClassNeverInstantiated.Global
+#pragma warning disable CS8602
+#pragma warning disable CS8600
 
 namespace AmiyaBotPlayerRatingServer.Hangfire
 {

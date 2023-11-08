@@ -29,6 +29,7 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
                     Type = "CaptureImage",
                     Parameters = null,
                     IsCompleted = false,
+                    IsSystemGenerated = true,
                     CreatedAt = DateTime.UtcNow
                 };
 

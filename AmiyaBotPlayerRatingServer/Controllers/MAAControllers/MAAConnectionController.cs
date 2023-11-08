@@ -2,6 +2,7 @@
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
 using Hangfire;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,29 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             _backgroundJobClient = backgroundJobClient;
             _logger = logger;
         }
-        
+
+        #region Data Objects
+
+#pragma warning disable CS8618
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
+
+        public class AddTaskModel
+        {
+            public String Type { get; set; }
+            public String Parameters { get; set; }
+        }
+
+        public class CompleteConnectionModel
+        {
+            public String DeviceIdentity { get; set; }
+            public String Name { get; set; }
+        }
+
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
+#pragma warning restore CS8618
+
+        #endregion
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet]
         public async Task<IActionResult> ListConnections()
@@ -138,6 +161,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
         }
 
         [NonAction]
+        [UsedImplicitly]
         public async Task DeleteUnconfirmedConnection(Guid connectionId)
         {
             try
@@ -154,13 +178,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 _logger.LogError(ex, "尝试删除未确认的连接时发生错误，连接ID：{ConnectionId}", connectionId);
             }
         }
-
-        public class CompleteConnectionModel
-        {
-            public String DeviceIdentity { get; set; }
-            public String Name { get; set; }
-        }
-
+        
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> CompleteConnection(Guid id, [FromBody] CompleteConnectionModel model)
@@ -478,11 +496,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             }
         }
 
-        public class AddTaskModel
-        {
-            public String Type { get; set; }
-            public String Parameters { get; set; }
-        }
+
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("{id}/maaTasks")]
@@ -507,12 +521,15 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     return NotFound("指定的连接不存在。");
                 }
 
-                var task = new MAATask();
-                task.ConnectionId = connection.Id;
-                task.Type = taskModel.Type;
-                task.Parameters = taskModel.Parameters;
-                task.CreatedAt = DateTime.UtcNow;
-                task.IsCompleted = false;
+                var task = new MAATask
+                {
+                    ConnectionId = connection.Id,
+                    Type = taskModel.Type,
+                    Parameters = taskModel.Parameters,
+                    CreatedAt = DateTime.UtcNow,
+                    IsCompleted = false,
+                    IsSystemGenerated = false
+                };
 
                 await _context.MAATasks.AddAsync(task);
                 await _context.SaveChangesAsync();
