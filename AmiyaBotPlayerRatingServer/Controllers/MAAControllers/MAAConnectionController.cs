@@ -458,6 +458,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
                 var task = await _context.MAATasks
                     .Where(t => t.ConnectionId == connection.Id && t.Id == taskId)
+                    .Include(t => t.SubTasks)
                     .FirstOrDefaultAsync();
 
                 if (task == null)
