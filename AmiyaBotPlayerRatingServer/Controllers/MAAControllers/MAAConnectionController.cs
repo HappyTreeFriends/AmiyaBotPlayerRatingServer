@@ -464,7 +464,19 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     return NotFound("指定的任务不存在。");
                 }
 
-                var result = _context.MAAResponses.FirstOrDefault(r => r.TaskId == task.Id);
+                MAAResponse? result = null;
+                if (task.Type == "CaptureImage" || task.Type == "CaptureImageNow")
+                {
+                    result = _context.MAAResponses.FirstOrDefault(r => r.TaskId == task.Id);
+                }
+                else
+                {
+                    if (task.SubTasks?.Count > 0)
+                    {
+                        var capSubTask = task.SubTasks.FirstOrDefault(t => t.Type == "CaptureImage")?.Id;
+                        result = _context.MAAResponses.FirstOrDefault(r => r.TaskId == capSubTask);
+                    }
+                }
 
                 if (result == null)
                 {
@@ -495,9 +507,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 return StatusCode(500, "获取任务时发生内部错误。");
             }
         }
-
-
-
+        
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("{id}/maaTasks")]
         public async Task<IActionResult> AddTask(Guid id, [FromBody] AddTaskModel taskModel)
@@ -521,7 +531,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     return NotFound("指定的连接不存在。");
                 }
 
-                var task = new MAATask
+                var userTask = new MAATask
                 {
                     ConnectionId = connection.Id,
                     Type = taskModel.Type,
@@ -531,17 +541,38 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     IsSystemGenerated = false
                 };
 
-                await _context.MAATasks.AddAsync(task);
+                MAATask? captureTask = null;
+
+                if (userTask.Type != "CaptureImage" && userTask.Type != "CaptureImageNow")
+                {
+                    captureTask = new MAATask
+                    {
+                        ConnectionId = connection.Id,
+                        Type = "CaptureImage",
+                        Parameters = null,
+                        CreatedAt = DateTime.UtcNow,
+                        IsCompleted = false,
+                        IsSystemGenerated = true,
+                        ParentTask = userTask
+                    };
+                }
+
+                await _context.MAATasks.AddAsync(userTask);
+                if (captureTask != null)
+                {
+                    await _context.MAATasks.AddAsync(captureTask);
+                }
                 await _context.SaveChangesAsync();
+                
 
                 return Ok(new
                 {
-                    task.Id,
-                    task.Type,
-                    task.Parameters,
-                    task.IsCompleted,
-                    task.CreatedAt,
-                    task.CompletedAt
+                    userTask.Id,
+                    userTask.Type,
+                    userTask.Parameters,
+                    userTask.IsCompleted,
+                    userTask.CreatedAt,
+                    userTask.CompletedAt
                 });
             }
             catch (Exception ex)
