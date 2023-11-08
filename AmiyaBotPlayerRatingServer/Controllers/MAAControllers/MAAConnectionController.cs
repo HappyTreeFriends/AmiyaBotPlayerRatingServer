@@ -254,7 +254,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet("{id}/maaTasks")]
-        public async Task<IActionResult> ListTasks(Guid id, [FromQuery]int page, [FromQuery]int size)
+        public async Task<IActionResult> ListTasks(Guid id, [FromQuery]int page, [FromQuery]int size, [FromQuery]bool showSystem=false)
         {
             // 从JWT中提取用户ID
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -276,7 +276,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 }
                 
                 var tasks = await _context.MAATasks
-                    .Where(t => t.ConnectionId == connection.Id)
+                    .Where(t => t.ConnectionId == connection.Id && (showSystem || !t.IsSystemGenerated))
                     .OrderByDescending(t => t.CreatedAt)
                     .Skip(page * size)
                     .Take(size)
