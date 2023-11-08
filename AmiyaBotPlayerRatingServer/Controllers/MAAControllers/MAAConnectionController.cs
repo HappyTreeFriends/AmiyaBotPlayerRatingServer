@@ -287,7 +287,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                         t.Parameters,
                         t.IsCompleted,
                         t.CreatedAt,
-                        t.CompletedAt
+                        t.CompletedAt,
+                        t.IsSystemGenerated,
                     })
                     .ToListAsync();
 
