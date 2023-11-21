@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using OpenIddict.Validation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using Hangfire.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +62,8 @@ builder.Services.AddControllers()
             o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
+#region Hangfire
+
 builder.Services.AddHangfire(hfConf => hfConf
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
@@ -68,6 +71,11 @@ builder.Services.AddHangfire(hfConf => hfConf
     .UseStorage(new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration))));
 
 builder.Services.AddHangfireServer();
+
+builder.Services.AddSingleton(provider =>
+    JobStorage.Current.GetMonitoringApi());
+
+#endregion
 
 builder.Services.AddAuthentication(x =>
     {
@@ -172,7 +180,7 @@ using (var scope = app.Services.CreateScope())
     //执行数据迁移
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
-
+    
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     // 初始化添加全局任务。
     recurringJobManager.AddOrUpdate<MAATakeSnapshotOnAllConnectionsService>("MAATakeSnapshotOnAllConnectionsService", service => service.Collect(), Cron.Hourly);

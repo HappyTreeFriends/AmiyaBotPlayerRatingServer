@@ -54,6 +54,12 @@ namespace AmiyaBotPlayerRatingServer.Data
                 .WithOne(e => e.ParentTask)
                 .HasForeignKey(e => e.ParentTaskId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            modelBuilder.Entity<MAARepetitiveTask>()
+                .HasMany(r => r.SubTasks)  
+                .WithOne(t => t.ParentRepetitiveTask) 
+                .HasForeignKey(t => t.ParentRepetitiveTaskId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.UseOpenIddict();
         }
@@ -66,6 +72,7 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         public DbSet<MAAConnection> MAAConnections { get; set; }
         public DbSet<MAATask> MAATasks { get; set; }
+        public DbSet<MAARepetitiveTask> MAARepetitiveTasks { get; set; }
         public DbSet<MAAResponse> MAAResponses { get; set; }
     }
 }

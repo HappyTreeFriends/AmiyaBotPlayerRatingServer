@@ -3,6 +3,7 @@ using System;
 using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiyaBotPlayerRatingServer.Migrations
 {
     [DbContext(typeof(PlayerRatingDatabaseContext))]
-    partial class PlayerRatingDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20231117154355_repeat")]
+    partial class repeat
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -197,28 +200,11 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("AvailableFrom")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("AvailableTo")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("ConnectionId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Parameters")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("UtcCronString")
                         .HasColumnType("text");
@@ -283,11 +269,11 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.Property<bool>("IsSystemGenerated")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("MAARepetitiveTaskId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Parameters")
                         .HasColumnType("text");
-
-                    b.Property<Guid?>("ParentRepetitiveTaskId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("ParentTaskId")
                         .HasColumnType("uuid");
@@ -300,7 +286,7 @@ namespace AmiyaBotPlayerRatingServer.Migrations
 
                     b.HasIndex("ConnectionId");
 
-                    b.HasIndex("ParentRepetitiveTaskId");
+                    b.HasIndex("MAARepetitiveTaskId");
 
                     b.HasIndex("ParentTaskId");
 
@@ -739,10 +725,9 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AmiyaBotPlayerRatingServer.Model.MAARepetitiveTask", "ParentRepetitiveTask")
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.MAARepetitiveTask", null)
                         .WithMany("SubTasks")
-                        .HasForeignKey("ParentRepetitiveTaskId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("MAARepetitiveTaskId");
 
                     b.HasOne("AmiyaBotPlayerRatingServer.Model.MAATask", "ParentTask")
                         .WithMany("SubTasks")
@@ -750,8 +735,6 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Connection");
-
-                    b.Navigation("ParentRepetitiveTask");
 
                     b.Navigation("ParentTask");
                 });

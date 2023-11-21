@@ -19,7 +19,12 @@ public class MAATask
     public String? Parameters { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime AvailableAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
+
+    // 父MAARepetitiveTask导航属性
+    public Guid? ParentRepetitiveTaskId { get; set; }
+    public virtual MAARepetitiveTask? ParentRepetitiveTask { get; set; }
 
     // 父子任务导航属性
     public virtual ICollection<MAATask> SubTasks { get; set; }
