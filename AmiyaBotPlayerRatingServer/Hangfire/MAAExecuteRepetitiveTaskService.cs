@@ -35,16 +35,7 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
 
             //组织任务Id
             var jobId = $"MAARepetitiveTask-{repetitiveTask.Id}";
-            var monitoringApi = JobStorage.Current.GetMonitoringApi();
-            //用_monitoringApi检测任务是否存在
-            var job = monitoringApi.JobDetails(jobId);
-            if (job != null)
-            {
-                //如果存在就不需要动了。
-                return;
-            }
-
-            //如果不存在，就创建任务
+            
             var cronStr = repetitiveTask.UtcCronString;
             if (String.IsNullOrWhiteSpace(cronStr))
             {
@@ -52,7 +43,7 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             }
 
             _jobManager.AddOrUpdate<MAAExecuteRepetitiveTaskService>(jobId, service => service.ExecuteRepetitiveTask(repetitiveTaskId,false), cronStr);
-
+            
         }
 
         public async Task ExecuteRepetitiveTask(String repetitiveTaskId,bool  lastTask = true)

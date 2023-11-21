@@ -17,15 +17,18 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
     {
         private readonly PlayerRatingDatabaseContext _context;
         private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly IRecurringJobManager _recurringJobManager;
         private readonly ILogger<MAAConnectionController> _logger;
 
         public MAAConnectionController(
             PlayerRatingDatabaseContext context,
             IBackgroundJobClient backgroundJobClient,
+            IRecurringJobManager recurringJobManager,
             ILogger<MAAConnectionController> logger)
         {
             _context = context;
             _backgroundJobClient = backgroundJobClient;
+            _recurringJobManager = recurringJobManager;
             _logger = logger;
         }
 
@@ -308,7 +311,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 {
                     tasks=tasks,
                     total= total,
-                    maxPage= Math.Ceiling((double)total / size),
+                    maxPage= tasks.Count==0?0: Math.Ceiling((double)total / size),
                     page =page,
                     size=size,
 
@@ -626,8 +629,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
                     CreatedAt = DateTime.UtcNow,
 
-                    AvailableFrom = taskModel.AvailableFrom,
-                    AvailableTo = taskModel.AvailableTo,
+                    AvailableFrom = taskModel.AvailableFrom.ToUniversalTime(),
+                    AvailableTo = taskModel.AvailableTo?.ToUniversalTime(),
                 };
                 
                 await _context.MAARepetitiveTasks.AddAsync(userTask);
@@ -694,7 +697,10 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             
             // RepetitiveTask不可以真正的删除，只能标记为已删除，因为它的子任务可能还在运行并且用户查看任务历史时需要查看已删除的任务
             repetitiveTask.IsDeleted = true;
+            var jobId = $"MAARepetitiveTask-{repetitiveTask.Id}";
+            _recurringJobManager.RemoveIfExists(jobId);
             _context.MAARepetitiveTasks.Update(repetitiveTask);
+
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "成功删除任务。" });
@@ -746,7 +752,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             {
                 repetitiveTasks = repetitiveTasks,
                 total = total,
-                maxPage = Math.Ceiling((double)total / size),
+                maxPage = repetitiveTasks.Count==0?0:Math.Ceiling((double)total / size),
                 page = page,
                 size = size,
             });
