@@ -26,6 +26,8 @@ public class MAARepetitiveTask
     public DateTime AvailableFrom { get; set; } = DateTime.UtcNow;
     public DateTime? AvailableTo { get; set; }
 
+    public DateTime? LastRunAt { get; set; }
+
     // 父子任务导航属性
     public virtual ICollection<MAATask> SubTasks { get; set; }
 }

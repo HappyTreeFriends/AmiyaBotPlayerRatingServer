@@ -97,6 +97,9 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
                 };
             }
 
+            repetitiveTask.LastRunAt = DateTime.UtcNow;
+            _dbContext.MAARepetitiveTasks.Update(repetitiveTask);
+
             await _dbContext.MAATasks.AddAsync(userTask);
             if (captureTask != null)
             {
