@@ -764,8 +764,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 repetitiveTasks = repetitiveTasks,
                 total = total,
                 maxPage = repetitiveTasksResult.Count==0||size==null?0:Math.Ceiling((double)total / size.Value),
-                page = page,
-                size = size,
+                page = page??0,
+                size = size ?? 0,
             });
         }
 
