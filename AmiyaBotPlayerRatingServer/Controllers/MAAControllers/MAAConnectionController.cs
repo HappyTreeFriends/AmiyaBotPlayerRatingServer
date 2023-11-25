@@ -304,6 +304,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                         t.CreatedAt,
                         t.CompletedAt,
                         t.IsSystemGenerated,
+                        t.ParentRepetitiveTaskId,
                     })
                     .ToListAsync();
 

@@ -75,7 +75,7 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             {
                 ConnectionId = repetitiveTask.ConnectionId,
                 IsCompleted = false,
-                IsSystemGenerated = true,
+                IsSystemGenerated = false,
                 Type = repetitiveTask.Type,
                 Parameters = repetitiveTask.Parameters,
                 AvailableAt = DateTime.UtcNow,
