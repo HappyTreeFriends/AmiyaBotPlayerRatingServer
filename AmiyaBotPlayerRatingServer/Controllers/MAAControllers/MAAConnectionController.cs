@@ -45,6 +45,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
         public class AddRepetitiveTaskModel
         {
+            public String Name { get; set; }
             public String Type { get; set; }
             public String Parameters { get; set; }
             public String UtcCronString { get; set; }
@@ -623,6 +624,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
                 var userTask = new MAARepetitiveTask
                 {
+                    Name = taskModel.Name,
+
                     ConnectionId = connection.Id,
                     Type = taskModel.Type,
                     Parameters = taskModel.Parameters,
@@ -642,6 +645,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 return Ok(new
                 {
                     userTask.Id,
+                    userTask.Name,
                     userTask.Type,
                     userTask.Parameters,
                     userTask.UtcCronString,
@@ -742,6 +746,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             var repetitiveTasksResult = await repetitiveTasks.Select(t => new
                 {
                     t.Id,
+                    t.Name,
                     t.Type,
                     t.Parameters,
                     t.UtcCronString,

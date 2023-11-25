@@ -9,6 +9,8 @@ public class MAARepetitiveTask
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    public String Name { get; set; } = "New Task";
+
     public bool IsDeleted { get; set; } = false;
 
     public Guid ConnectionId { get; set; }
