@@ -11,6 +11,7 @@ public class MAARepetitiveTask
 
     public String Name { get; set; } = "New Task";
 
+    public bool IsPaused { get; set; } = false;
     public bool IsDeleted { get; set; } = false;
 
     public Guid ConnectionId { get; set; }
