@@ -267,7 +267,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet("{id}/maaTasks")]
-        public async Task<IActionResult> ListTasks(Guid id, [FromQuery]int page, [FromQuery]int size, [FromQuery]bool showSystem=false)
+        public async Task<IActionResult> ListTasks(Guid id, [FromQuery] string? repetitiveTaskId, [FromQuery]int page, [FromQuery]int size, [FromQuery]bool showSystem=false)
         {
             // 从JWT中提取用户ID
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -291,6 +291,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 var tasks = await _context.MAATasks
                     .Where(t => t.ConnectionId == connection.Id && (showSystem || !t.IsSystemGenerated))
                     .OrderByDescending(t => t.CreatedAt)
+                    .Where(t=> repetitiveTaskId == null||t.ParentRepetitiveTaskId==Guid.Parse(repetitiveTaskId))
                     .Skip(page * size)
                     .Take(size)
                     .Select(t => new
@@ -305,7 +306,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     })
                     .ToListAsync();
 
-                var total = await _context.MAATasks.CountAsync(t => t.ConnectionId == connection.Id);
+                var total = await _context.MAATasks.Where(t => repetitiveTaskId == null || t.ParentRepetitiveTaskId == Guid.Parse(repetitiveTaskId)).CountAsync(t => t.ConnectionId == connection.Id);
 
                 return Ok(new
                 {
@@ -709,7 +710,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet("{connectionId}/maaRepetitiveTasks")]
-        public async Task<ActionResult<IEnumerable<MAARepetitiveTask>>> ListRepetitiveTasks(Guid connectionId, [FromQuery] int page, [FromQuery] int size)
+        public async Task<ActionResult<IEnumerable<MAARepetitiveTask>>> ListRepetitiveTasks(Guid connectionId, [FromQuery] int? page, [FromQuery] int? size)
         {
             // 获取当前用户ID
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -729,12 +730,16 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 return NotFound("连接未找到。");
             }
 
-            var repetitiveTasks = await _context.MAARepetitiveTasks
+            IQueryable<MAARepetitiveTask> repetitiveTasks = _context.MAARepetitiveTasks
                 .Where(t => t.ConnectionId == connectionId && t.IsDeleted==false)
-                .OrderByDescending(t => t.CreatedAt)
-                .Skip(page * size)
-                .Take(size)
-                .Select(t => new
+                .OrderByDescending(t => t.CreatedAt);
+            if (page != null && size != null)
+            {
+                repetitiveTasks = repetitiveTasks
+                    .Skip(page.Value * size.Value)
+                    .Take(size.Value);
+            }
+            var repetitiveTasksResult = await repetitiveTasks.Select(t => new
                 {
                     t.Id,
                     t.Type,
@@ -752,7 +757,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
             {
                 repetitiveTasks = repetitiveTasks,
                 total = total,
-                maxPage = repetitiveTasks.Count==0?0:Math.Ceiling((double)total / size),
+                maxPage = repetitiveTasksResult.Count==0||size==null?0:Math.Ceiling((double)total / size.Value),
                 page = page,
                 size = size,
             });
