@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using static AmiyaBotPlayerRatingServer.Controllers.MAAControllers.MAAConnectionController;
 using System.Security.Claims;
+using AmiyaBotPlayerRatingServer.Services.MAAServices;
 
 namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
 {
@@ -15,19 +16,16 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
     public class MAATaskController : ControllerBase
     {
         private readonly PlayerRatingDatabaseContext _context;
-        private readonly IBackgroundJobClient _backgroundJobClient;
-        private readonly IRecurringJobManager _recurringJobManager;
+        private readonly CreateMAATaskService _createTaskService;
         private readonly ILogger<MAATaskController> _logger;
 
         public MAATaskController(
             PlayerRatingDatabaseContext context,
-            IBackgroundJobClient backgroundJobClient,
-            IRecurringJobManager recurringJobManager,
+            CreateMAATaskService createTaskService,
             ILogger<MAATaskController> logger)
         {
             _context = context;
-            _backgroundJobClient = backgroundJobClient;
-            _recurringJobManager = recurringJobManager;
+            _createTaskService = createTaskService;
             _logger = logger;
         }
 
@@ -259,39 +257,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                     return NotFound("指定的连接不存在。");
                 }
 
-                var userTask = new MAATask
-                {
-                    ConnectionId = connection.Id,
-                    Type = taskModel.Type,
-                    Parameters = taskModel.Parameters,
-                    CreatedAt = DateTime.UtcNow,
-                    IsCompleted = false,
-                    IsSystemGenerated = false
-                };
-
-                MAATask? captureTask = null;
-
-                if (userTask.Type != "CaptureImage" && userTask.Type != "CaptureImageNow")
-                {
-                    captureTask = new MAATask
-                    {
-                        ConnectionId = connection.Id,
-                        Type = "CaptureImage",
-                        Parameters = null,
-                        CreatedAt = DateTime.UtcNow,
-                        IsCompleted = false,
-                        IsSystemGenerated = true,
-                        ParentTask = userTask
-                    };
-                }
-
-                await _context.MAATasks.AddAsync(userTask);
-                if (captureTask != null)
-                {
-                    await _context.MAATasks.AddAsync(captureTask);
-                }
-                await _context.SaveChangesAsync();
-
+                var userTask = await _createTaskService.CreateMAATask(connection.Id, taskModel.Type, taskModel.Parameters);
 
                 return Ok(new
                 {

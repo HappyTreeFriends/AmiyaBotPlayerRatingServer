@@ -9,6 +9,7 @@ using Hangfire;
 using DateTimeConverter = AmiyaBotPlayerRatingServer.Utility.DateTimeConverter;
 using Microsoft.EntityFrameworkCore;
 using AmiyaBotPlayerRatingServer.Model;
+using AmiyaBotPlayerRatingServer.Services.MAAServices;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -76,6 +77,8 @@ builder.Services.AddSingleton(provider =>
     JobStorage.Current.GetMonitoringApi());
 
 #endregion
+
+#region Auth and OAuth
 
 builder.Services.AddAuthentication(x =>
     {
@@ -157,7 +160,12 @@ builder.Services.AddOpenIddict()
 builder.Services.AddCredentialOwnerPolicy();
 builder.Services.AddOpenIddictScopePolicy();
 
+#endregion
+
 builder.Services.AddHttpClient();
+
+//注入自定义服务
+builder.Services.AddScoped<CreateMAATaskService>();
 
 var app = builder.Build();
 

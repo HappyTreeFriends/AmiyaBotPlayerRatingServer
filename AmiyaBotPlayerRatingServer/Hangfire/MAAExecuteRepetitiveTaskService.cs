@@ -3,6 +3,7 @@ using AmiyaBotPlayerRatingServer.Model;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using AmiyaBotPlayerRatingServer.Services.MAAServices;
 using Hangfire;
 using Hangfire.Storage;
 
@@ -13,15 +14,15 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
         private readonly PlayerRatingDatabaseContext _dbContext;
         private readonly ILogger<MAAExecuteRepetitiveTaskService> _logger;
         private readonly IRecurringJobManager _jobManager;
-        private readonly IMonitoringApi _monitoringApi;
+        private readonly CreateMAATaskService _createMAATaskService;
 
         public MAAExecuteRepetitiveTaskService(PlayerRatingDatabaseContext dbContext,ILogger<MAAExecuteRepetitiveTaskService> logger,
-            IRecurringJobManager jobManager,IMonitoringApi monitoringApi)
+            IRecurringJobManager jobManager,CreateMAATaskService createMAATaskService)
         {
             _dbContext = dbContext;
             _logger = logger;
             _jobManager = jobManager;
-            _monitoringApi = monitoringApi;
+            _createMAATaskService = createMAATaskService;
         }
 
         public void CreateTask(String repetitiveTaskId)
@@ -67,45 +68,8 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             {
                 return;
             }
-
-            //创建任务
-            MAATask? captureTask = null;
-
-            var userTask = new MAATask
-            {
-                ConnectionId = repetitiveTask.ConnectionId,
-                IsCompleted = false,
-                IsSystemGenerated = false,
-                Type = repetitiveTask.Type,
-                Parameters = repetitiveTask.Parameters,
-                AvailableAt = DateTime.UtcNow,
-                ParentRepetitiveTaskId = repetitiveTask.Id
-            };
-
-            //额外的CaptureImage
-            if (userTask.Type != "CaptureImage" && userTask.Type != "CaptureImageNow")
-            {
-                captureTask = new MAATask
-                {
-                    ConnectionId = repetitiveTask.ConnectionId,
-                    Type = "CaptureImage",
-                    Parameters = null,
-                    CreatedAt = DateTime.UtcNow,
-                    IsCompleted = false,
-                    IsSystemGenerated = true,
-                    ParentTask = userTask
-                };
-            }
-
-            repetitiveTask.LastRunAt = DateTime.UtcNow;
-            _dbContext.MAARepetitiveTasks.Update(repetitiveTask);
-
-            await _dbContext.MAATasks.AddAsync(userTask);
-            if (captureTask != null)
-            {
-                await _dbContext.MAATasks.AddAsync(captureTask);
-            }
-            await _dbContext.SaveChangesAsync();
+            
+            await _createMAATaskService.CreateMAATask(repetitiveTask.ConnectionId, repetitiveTask.Type, repetitiveTask.Parameters);
         }
 
     }
