@@ -13,7 +13,7 @@ namespace AmiyaBotPlayerRatingServer.Services.MAAServices
             _context = context;
         }
 
-        public async Task<MAATask> CreateMAATask(Guid connectionId,String type,String parameters)
+        public async Task<MAATask> CreateMAATask(Guid connectionId,String type,String parameters,Guid? parentRepetitiveTaskId=null)
         {
             var utcNow = DateTime.UtcNow;
 
@@ -24,7 +24,8 @@ namespace AmiyaBotPlayerRatingServer.Services.MAAServices
                 Parameters = parameters,
                 CreatedAt = utcNow,
                 IsCompleted = false,
-                IsSystemGenerated = false
+                IsSystemGenerated = false,
+                ParentRepetitiveTaskId = parentRepetitiveTaskId
             };
 
             var generatedTasks = new List<MAATask>();
