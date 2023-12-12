@@ -350,6 +350,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 // 获取当前RepetitiveTask最新的对应的Task的对应截图
                 var task = await _context.MAATasks
                     .Where(t => t.ParentRepetitiveTaskId == taskId && t.ConnectionId == connectionId)
+                    .Include(t=>t.SubTasks)
                     .OrderByDescending(t => t.CreatedAt)
                     .FirstOrDefaultAsync();
 
