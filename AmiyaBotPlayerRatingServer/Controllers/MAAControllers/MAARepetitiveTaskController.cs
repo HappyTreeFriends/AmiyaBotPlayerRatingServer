@@ -321,5 +321,86 @@ namespace AmiyaBotPlayerRatingServer.Controllers.MAAControllers
                 size = size ?? 0,
             });
         }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("{connectionId}/maaRepetitiveTasks/{taskId}/image")]
+        public async Task<IActionResult> GetTaskImage(Guid connectionId, Guid taskId, [FromQuery] String? type)
+        {//type: original/null, thumbnail
+
+            // 从JWT中提取用户ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("用户未登录。");
+            }
+
+            var userId = userIdClaim.Value;
+
+            try
+            {
+                var connection = await _context.MAAConnections
+                    .FirstOrDefaultAsync(c => c.Id == connectionId && c.UserId == userId);
+
+                if (connection == null)
+                {
+                    return NotFound("指定的连接不存在。");
+                }
+
+
+                // 获取当前RepetitiveTask最新的对应的Task的对应截图
+                var task = await _context.MAATasks
+                    .Where(t => t.ParentRepetitiveTaskId == taskId && t.ConnectionId == connectionId)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (task == null)
+                {
+                    return NotFound("指定的任务不存在。");
+                }
+
+                MAAResponse? result = null;
+                if (task.Type == "CaptureImage" || task.Type == "CaptureImageNow")
+                {
+                    result = _context.MAAResponses.FirstOrDefault(r => r.TaskId == task.Id);
+                }
+                else
+                {
+                    if (task.SubTasks?.Count > 0)
+                    {
+                        var capSubTask = task.SubTasks.FirstOrDefault(t => t.Type == "CaptureImage")?.Id;
+                        result = _context.MAAResponses.FirstOrDefault(r => r.TaskId == capSubTask);
+                    }
+                }
+
+                if (result == null)
+                {
+                    return Ok(new
+                    {
+                        Image = ""
+                    });
+                }
+
+                if (type == "thumbnail")
+                {
+                    return Ok(new
+                    {
+                        Image = result.ImagePayloadThumbnail
+                    });
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        Image = result.ImagePayload
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取任务时发生错误。");
+                return StatusCode(500, "获取任务时发生内部错误。");
+            }
+        }
+
     }
 }
