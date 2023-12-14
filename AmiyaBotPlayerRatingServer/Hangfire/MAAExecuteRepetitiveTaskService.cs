@@ -68,6 +68,11 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
             {
                 return;
             }
+
+            if (repetitiveTask.IsPaused)
+            {
+                return;
+            }
             
             await _createMAATaskService.CreateMAATask(repetitiveTask.ConnectionId, repetitiveTask.Type, repetitiveTask.Parameters,repetitiveTask.Id);
         }

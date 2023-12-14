@@ -19,6 +19,7 @@ using OpenIddict.Validation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Hangfire.Storage;
+using AmiyaBotPlayerRatingServer.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,7 +51,8 @@ builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<PlayerRatingDatabaseContext>()
-    .AddDefaultTokenProviders();
+    .AddDefaultTokenProviders()
+    .AddErrorDescriber<LocalizationIdentityErrorDescriber>(); ;
 
 builder.Services.AddScoped(_ => new OssClient(configuration["Aliyun:Oss:EndPoint"],
     configuration["Aliyun:Oss:Key"],
