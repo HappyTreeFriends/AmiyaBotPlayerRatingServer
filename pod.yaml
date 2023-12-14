@@ -13,6 +13,16 @@ spec:
       labels:
         app: amiya-bot-player-rating-server
     spec:
+      # 不允许在位于阿里云的节点执行，不然io操作太卡了
+      affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: location
+                  operator: NotIn
+                  values:
+                  - aliyun
       containers:
         - command:
             - dotnet
