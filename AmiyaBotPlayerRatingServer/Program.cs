@@ -54,6 +54,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddDefaultTokenProviders()
     .AddErrorDescriber<LocalizationIdentityErrorDescriber>(); ;
 
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    // 设置密码长度
+    options.Password.RequiredLength = 8;
+});
+
 builder.Services.AddScoped(_ => new OssClient(configuration["Aliyun:Oss:EndPoint"],
     configuration["Aliyun:Oss:Key"],
     configuration["Aliyun:Oss:Secret"]));
