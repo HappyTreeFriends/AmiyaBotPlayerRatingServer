@@ -48,11 +48,33 @@ public class AccountController : ControllerBase
         public string ClaimedRole { get; set; } = "";
     }
 
+    private static bool IsPasswordComplex(string password, int x)
+    {
+        string specialCharacters = "!@#$%^&*()-+";
+        int count = 0;
+
+        // 检查大写字母
+        if (password.Any(char.IsUpper)) count++;
+        // 检查小写字母
+        if (password.Any(char.IsLower)) count++;
+        // 检查数字
+        if (password.Any(char.IsDigit)) count++;
+        // 检查特殊字符
+        if (password.Any(specialCharacters.Contains)) count++;
+
+        return count >= x;
+    }
+
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
     {
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
+
+        if (!IsPasswordComplex(model.Password, 3))
+        {
+            return BadRequest(new { message = "密码不符合要求，至少需要包含大写字母、小写字母、数字和特殊符号（!@#$%^&*()-+）中的3种。" });
+        }
 
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
         var result = await _userManager.CreateAsync(user, model.Password);

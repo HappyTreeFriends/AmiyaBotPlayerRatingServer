@@ -58,6 +58,10 @@ builder.Services.Configure<IdentityOptions>(options =>
 {
     // 设置密码长度
     options.Password.RequiredLength = 8;
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
 });
 
 builder.Services.AddScoped(_ => new OssClient(configuration["Aliyun:Oss:EndPoint"],
