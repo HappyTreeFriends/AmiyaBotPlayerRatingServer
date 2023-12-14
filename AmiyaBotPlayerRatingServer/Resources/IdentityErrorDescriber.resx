@@ -202,7 +202,7 @@
     <comment>Error when passwords do not have a lowercase letter</comment>
   </data>
   <data name="PasswordRequiresNonAlphanumeric" xml:space="preserve">
-    <value>密码必须至少有一个非字母数字字符。</value>
+    <value>密码必须包含一个特殊字符(!@#$%^&amp;*()+-={}[]:;'&lt;&gt;,.?/)。</value>
     <comment>Error when password does not have enough non alphanumeric characters</comment>
   </data>
   <data name="PasswordRequiresUniqueChars" xml:space="preserve">
