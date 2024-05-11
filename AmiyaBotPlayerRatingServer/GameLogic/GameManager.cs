@@ -18,7 +18,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             }
         }
 
-        public static Game GetGame(object gameId)
+        public static Game GetGame(string gameId)
         {
             return GameList.Find(x => x.GameId == gameId);
         }

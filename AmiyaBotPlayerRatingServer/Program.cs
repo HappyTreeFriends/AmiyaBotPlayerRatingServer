@@ -124,6 +124,20 @@ builder.Services.AddAuthentication(x =>
                 else if (context.Request.Cookies.ContainsKey("jwt"))
                 {
                     context.Token = context.Request.Cookies["jwt"];
+                }else if (context.Request.Query.ContainsKey("access_token"))
+                {
+                    // 为SignalR添加访问令牌支持
+                    // See https://docs.microsoft.com/aspnet/core/signalr/security#access-token-logging
+
+                    var accessToken = context.Request.Query["access_token"];
+
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        (path.StartsWithSegments("/gamehub")))
+                    {
+                        // Read the token out of the query string
+                        context.Token = accessToken;
+                    }
                 }
 
                 return Task.CompletedTask;
@@ -192,7 +206,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 
-app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
+app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod()
+    .SetIsOriginAllowed(_ => true).AllowCredentials());
 
 app.UseAuthentication();
 app.UseAuthorization();

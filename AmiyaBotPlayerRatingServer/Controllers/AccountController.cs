@@ -45,6 +45,7 @@ public class AccountController : ControllerBase
     {
         public string Email { get; set; } = "";
         public string Password { get; set; } = "";
+        public string Nickname { get; set; } = "";
         public string ClaimedRole { get; set; } = "";
     }
 
@@ -76,7 +77,7 @@ public class AccountController : ControllerBase
             return BadRequest(new { message = "密码不符合要求，至少需要包含大写字母、小写字母、数字和特殊符号（!@#$%^&*()-+）中的3种。" });
         }
 
-        var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+        var user = new ApplicationUser { UserName = model.Email, Email = model.Email, Nickname = model.Nickname };
         var result = await _userManager.CreateAsync(user, model.Password);
 
         if (!result.Succeeded)
@@ -417,7 +418,13 @@ public class AccountController : ControllerBase
         }
 
         var userRoles = await _userManager.GetRolesAsync(user);
-        return Ok(new { Roles = userRoles });
+        return Ok(new
+        {
+            Id = user.Id,
+            Email = user.Email,
+            Nickname = user.Nickname,
+            Roles = userRoles
+        });
     }
 
 }

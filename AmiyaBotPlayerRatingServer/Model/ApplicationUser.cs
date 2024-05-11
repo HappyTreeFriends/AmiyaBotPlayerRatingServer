@@ -6,7 +6,6 @@ namespace AmiyaBotPlayerRatingServer.Model;
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class ApplicationUser : IdentityUser
 {
-    // 这里可以添加其他属性，比如
-    // public string FullName { get; set; }
+    public string Nickname { get; set; }
 }
 
