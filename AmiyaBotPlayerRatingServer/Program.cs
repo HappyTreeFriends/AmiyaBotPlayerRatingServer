@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Hangfire.Storage;
 using AmiyaBotPlayerRatingServer.Localization;
+using AmiyaBotPlayerRatingServer.RealtimeHubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -176,6 +177,8 @@ builder.Services.AddOpenIddictScopePolicy();
 
 builder.Services.AddHttpClient();
 
+builder.Services.AddSignalR();
+
 //注入自定义服务
 builder.Services.AddScoped<CreateMAATaskService>();
 
@@ -218,6 +221,7 @@ app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
+    endpoints.MapHub<GameHub>("/gamehub");
 });
 
 app.Run();
