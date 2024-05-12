@@ -193,6 +193,16 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddSignalR();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy",
+        builder => builder.WithOrigins("https://amiya-bot-service.hsyhhssyy.net",
+                "https://minigame.hsyhhssyy.net", "http://localhost:5173")
+            .AllowAnyMethod()
+            .AllowAnyHeader().AllowCredentials()
+    );
+});
+
 //注入自定义服务
 builder.Services.AddScoped<CreateMAATaskService>();
 
@@ -206,8 +216,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 
-app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod()
-    .SetIsOriginAllowed(_ => true).AllowCredentials());
+app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
