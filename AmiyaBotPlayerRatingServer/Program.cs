@@ -191,16 +191,6 @@ builder.Services.AddOpenIddictScopePolicy();
 
 builder.Services.AddHttpClient();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("CorsPolicy",
-        builder => builder.WithOrigins("https://amiya-bot-service.hsyhhssyy.net",
-                "https://minigame.hsyhhssyy.net", "http://localhost:5173")
-            .AllowAnyMethod()
-            .AllowAnyHeader().AllowCredentials()
-    );
-});
-
 builder.Services.AddSignalR();
 
 //注入自定义服务
@@ -216,7 +206,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 
-app.UseCors("CorsPolicy");
+app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod()
+    .SetIsOriginAllowed(_ => true).AllowCredentials());
 
 app.UseAuthentication();
 app.UseAuthorization();
