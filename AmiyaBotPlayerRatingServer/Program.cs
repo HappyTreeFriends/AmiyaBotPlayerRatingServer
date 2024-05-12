@@ -191,8 +191,6 @@ builder.Services.AddOpenIddictScopePolicy();
 
 builder.Services.AddHttpClient();
 
-builder.Services.AddSignalR();
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy",
@@ -202,6 +200,8 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader().AllowCredentials()
     );
 });
+
+builder.Services.AddSignalR();
 
 //注入自定义服务
 builder.Services.AddScoped<CreateMAATaskService>();
