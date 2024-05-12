@@ -207,7 +207,7 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 
 app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod()
-    .SetIsOriginAllowed(_ => true).AllowCredentials());
+    .WithOrigins(new string[] { "minigame.hsyhhssyy.net", "localhost:5003" }).AllowCredentials());
 
 app.UseAuthentication();
 app.UseAuthorization();
