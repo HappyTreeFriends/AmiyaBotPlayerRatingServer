@@ -7,12 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace AmiyaBotPlayerRatingServer.Controllers.Game.SchulteGrid
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/schulteGridGame")]
     public class SchulteGridGameController : ControllerBase
     {
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpGet]
+        [HttpGet("{gameId}")]
         public IActionResult GetGame(String gameId)
         {
             var game = GameManager.GetGame(gameId) as SchulteGridGame;

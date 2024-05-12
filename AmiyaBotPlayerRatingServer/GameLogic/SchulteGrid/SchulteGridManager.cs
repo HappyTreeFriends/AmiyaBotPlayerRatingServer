@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 {
-    public class SchulteGridGameManager: GameManager
+    public class SchulteGridGameManager : GameManager
     {
         private static JObject? _characterMap;
 
@@ -29,16 +29,17 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         public override String CreateNewGame()
         {
             var game = new SchulteGridGame();
-            
+
             //手动添加一些测试数据
+            game.GameType = "SchulteGrid";
             game.GridWidth = 4;
             game.GridHeight = 4;
-            game.Grid = new string[,]
+            game.Grid = new List<List<string>>()
             {
-                {"情", "坚", "守", "模"},
-                {"共", "崩", "毁", "式"},
-                {"恸", "见", "之", "判"},
-                {"哀", "我", "前", "决"}
+                new List<string>{"情", "坚", "守", "模"},
+                new List<string>{"共", "崩", "毁", "式"},
+                new List<string>{"恸", "见", "之", "判"},
+                new List<string>{"哀", "我", "前", "决"}
             };
             game.AnswerList = new List<SchulteGridGame.GridAnswer>()
             {
@@ -115,11 +116,35 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var answer = game.AnswerList.Find(a => a.CharacterName == characterName);
             if (answer == null)
             {
-                return JsonConvert.SerializeObject(new { Result = "Wrong" });
+                return JsonConvert.SerializeObject(new { Result = "Wrong", CharacterName = characterName, Completed = false });
+            }
+            answer.Completed = true;
+            answer.AnswerTime = DateTime.Now;
+            answer.PlayerId = contextConnectionId;
+
+            if (game.PlayerScore.ContainsKey(contextConnectionId))
+            {
+                game.PlayerScore[contextConnectionId] += 200;
+            }
+            else
+            {
+                game.PlayerScore.TryAdd(contextConnectionId, 200);
             }
 
-            return JsonConvert.SerializeObject(new { Result = "Correct", Answer = answer , Completed = false});
+            return JsonConvert.SerializeObject(new { Result = "Correct", CharacterName = characterName, Answer = answer, Completed = game.AnswerList.All(a=>a.Completed==true) });
 
+        }
+
+        public override double GetScore(Game game, string player)
+        {
+            var schulteGridGame = game as SchulteGridGame;
+            
+            if (schulteGridGame.PlayerScore.ContainsKey(player))
+            {
+                return schulteGridGame.PlayerScore[player];
+            }
+
+            return 0;
         }
     }
 }

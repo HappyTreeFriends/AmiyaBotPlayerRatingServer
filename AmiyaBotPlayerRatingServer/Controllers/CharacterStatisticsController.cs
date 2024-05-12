@@ -24,6 +24,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             _characterMap = JObject.Parse(fileContent);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         public (int evolvePhase, int level) ReverseCalculateLevel(double calculatedLevel, string charId)
         {
             var charData = _characterMap[charId];

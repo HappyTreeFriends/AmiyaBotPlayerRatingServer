@@ -24,6 +24,32 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             _dbContext = dbContext;
         }
 
+        private async Task<Tuple<Game, GameManager, ApplicationUser>> Validate(string gameId)
+        {
+            var appUser = await _dbContext.Users.FindAsync(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            if (appUser == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var game = GameManager.GetGame(gameId);
+
+            if (game == null || !game.PlayerList.ContainsKey(Context.ConnectionId))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var manager = GameManager.GetGameManager(game.GameType);
+
+            if (manager == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            return Tuple.Create(game, manager, appUser);
+        }
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task GetMyId()
         {
@@ -61,15 +87,10 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }));
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task GetGame(string gameId)
         {
-            var game = GameManager.GetGame(gameId);
-
-            if (game == null||!game.PlayerList.ContainsKey(Context.ConnectionId))
-            {
-                await Clients.Caller.SendAsync("GameNotFound");
-                return;
-            }
+            var (game, manager, _) = await Validate(gameId);
 
             var playerlist = game.PlayerList.Select(x => new
             {
@@ -78,6 +99,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 UserName = _dbContext.Users.Find(x.Value)?.Nickname,
                 UserEmail = _dbContext.Users.Find(x.Value)?.Email,
                 GameId = gameId,
+                Score = manager.GetScore(game, x.Key)
             });
 
             await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
@@ -99,6 +121,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
             
             var game = GameManager.GetGame(gameId);
+            var manager = GameManager.GetGameManager(game.GameType);
             game.PlayerList.Add(Context.ConnectionId,appUser.Id);
 
             var playerlist = game.PlayerList.Select(x => new
@@ -108,6 +131,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 UserName = _dbContext.Users.Find(x.Value)?.Nickname,
                 UserEmail = _dbContext.Users.Find(x.Value)?.Email,
                 GameId = gameId,
+                Score = manager.GetScore(game, x.Key)
             });
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
@@ -125,7 +149,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task KickPlayer(string gameId, string playerId)
         {
-            var game = GameManager.GetGame(gameId);
+            var (game, manager, _) = await Validate(gameId);
+
+            if (game.CreatorId != Context.ConnectionId)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
             game.PlayerList.Remove(playerId);
 
             var playerKickedResponse = JsonConvert.SerializeObject(new
@@ -142,7 +172,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task LeaveGame(string gameId)
         {
-            var game = GameManager.GetGame(gameId);
+            var (game, manager, _) = await Validate(gameId);
+
             game.PlayerList.Remove(Context.ConnectionId);
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
@@ -153,16 +184,41 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }));
         }
 
+        public async Task CloseGame(string gameId)
+        {
+            var (game, manager, _) = await Validate(gameId);
+
+            if (game.CreatorId != Context.ConnectionId)
+            {
+                throw new UnauthorizedAccessException();
+            }
+            
+            await Clients.Group(gameId).SendAsync("GameClosed", JsonConvert.SerializeObject(new
+            {
+                GameId = gameId,
+            }));
+
+            foreach (var player in game.PlayerList)   
+            {
+                await Groups.RemoveFromGroupAsync(player.Key, gameId);
+            }
+
+            GameManager.GameList.Remove(game);
+        }
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task StartGame(string gameId)
         {
-            var playerlist = GameManager.GetGame(gameId).PlayerList.Select(x => new
+            var (game, manager, _) = await Validate(gameId);
+
+            var playerlist = game.PlayerList.Select(x => new
             {
                 UserId = x.Value,
                 UserSignalRId = x.Key,
                 UserName = _dbContext.Users.Find(x.Value)?.Nickname,
                 UserEmail = _dbContext.Users.Find(x.Value)?.Email,
                 GameId = gameId,
+                Score = manager.GetScore(game, x.Key)
             });
 
             await Clients.Group(gameId).SendAsync("GameStart", JsonConvert.SerializeObject(new
