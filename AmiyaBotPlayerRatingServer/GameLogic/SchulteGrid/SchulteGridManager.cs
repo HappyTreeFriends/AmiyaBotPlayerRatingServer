@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -6,27 +7,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 {
     public class SchulteGridGameManager : GameManager
     {
-        private static JObject? _characterMap;
 
-        private static void LoadCharacterMap()
-        {
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "CharacterMap.json");
-
-            if (System.IO.File.Exists(filePath))
-            {
-                var fileStream = new FileStream(filePath, FileMode.Open);
-                using var reader = new StreamReader(fileStream);
-                _characterMap = JObject.Parse(reader.ReadToEnd());
-            }
-        }
-
-        public static void Init()
-        {
-            LoadCharacterMap();
-        }
-
-
-        public override String CreateNewGame()
+        private static SchulteGridGame GenerateTestGame()
         {
             var game = new SchulteGridGame();
 
@@ -93,6 +75,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 },
             };
 
+            return game;
+        }
+
+        public override async Task<String> CreateNewGame()
+        {
+            var game = await SchulteGridGameData.BuildContinuousMode();
+
             GameManager.GameList.Add(game);
 
             string gameId;
@@ -118,6 +107,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             {
                 return JsonConvert.SerializeObject(new { Result = "Wrong", CharacterName = characterName, Completed = false });
             }
+
+            if (answer.PlayerId != null)
+            {
+                return JsonConvert.SerializeObject(new { Result = "Wrong", CharacterName = characterName, Answer = answer, Completed = false });
+            }
+
             answer.Completed = true;
             answer.AnswerTime = DateTime.Now;
             answer.PlayerId = contextConnectionId;

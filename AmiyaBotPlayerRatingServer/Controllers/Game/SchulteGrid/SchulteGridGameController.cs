@@ -16,6 +16,10 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game.SchulteGrid
         public IActionResult GetGame(String gameId)
         {
             var game = GameManager.GetGame(gameId) as SchulteGridGame;
+            if (game == null)
+            {
+                return NotFound();
+            }
             return Ok(
             new {
                 game.Grid,

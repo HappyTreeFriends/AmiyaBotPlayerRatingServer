@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Content Remove="Resources\CharacterMap.json" />
+    <Content Remove="Resources\SkillMap.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,6 +45,9 @@
 
   <ItemGroup>
     <None Include="Resources\CharacterMap.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\SkillMap.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -71,7 +71,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             var gameManager = GameManager.GetGameManager(gameType);
-            var gameId = gameManager.CreateNewGame();
+            var gameId = await gameManager.CreateNewGame();
             var game = GameManager.GetGame(gameId);
             game.CreatorId=Context.ConnectionId;
             game.PlayerList.Add(Context.ConnectionId, appUser.Id);
@@ -122,7 +122,24 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             
             var game = GameManager.GetGame(gameId);
             var manager = GameManager.GetGameManager(game.GameType);
-            game.PlayerList.Add(Context.ConnectionId,appUser.Id);
+
+            //看一下是不是已经在游戏里了
+            if (game.PlayerList.ContainsValue(appUser.Id))
+            {
+                //替换身份
+                var oldConnectionId = game.PlayerList.FirstOrDefault(x => x.Value == appUser.Id).Key;
+                game.PlayerList.Remove(oldConnectionId);
+                game.PlayerList.Add(Context.ConnectionId, appUser.Id);
+
+                if (game.CreatorId == oldConnectionId)
+                {
+                    game.CreatorId = Context.ConnectionId;
+                }
+            }
+            else
+            {
+                game.PlayerList.Add(Context.ConnectionId, appUser.Id);
+            }
 
             var playerlist = game.PlayerList.Select(x => new
             {
@@ -221,7 +238,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 Score = manager.GetScore(game, x.Key)
             });
 
-            await Clients.Group(gameId).SendAsync("GameStart", JsonConvert.SerializeObject(new
+            await Clients.Group(gameId).SendAsync("GameStarted", JsonConvert.SerializeObject(new
             {
                 GameId = gameId,
                 PlayerList = playerlist
@@ -231,8 +248,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task SendMove(string gameId, string move)
         {
-            var game = GameManager.GetGame(gameId);
-            var manager = GameManager.GetGameManager(game.GameType);
+            var (game, manager, _) = await Validate(gameId);
+
             var ret = manager.HandleMove(game, Context.ConnectionId, move);
 
             await Clients.Group(gameId).SendAsync("ReceiveMove", Context.ConnectionId, ret);

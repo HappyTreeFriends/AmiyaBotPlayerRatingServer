@@ -23,8 +23,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return GameList.Find(x => x.GameId == gameId);
         }
 
-        public abstract String CreateNewGame();
-        
+        public abstract Task<String> CreateNewGame();
+
+
         public abstract string HandleMove(Game game, string contextConnectionId, string move);
 
         public abstract double GetScore(Game game, string player);

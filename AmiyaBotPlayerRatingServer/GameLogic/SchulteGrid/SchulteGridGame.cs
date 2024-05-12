@@ -17,7 +17,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             public List<GridPoint> GridPointList { get; set; }
             public bool Completed { get; set; }
             public DateTime AnswerTime { get; set; }
-            public string PlayerId { get; set; }
+            public string? PlayerId { get; set; }
         }
         
         public List<List<String>> Grid { get; set; }
