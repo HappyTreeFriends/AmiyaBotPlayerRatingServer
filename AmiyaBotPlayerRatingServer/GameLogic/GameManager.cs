@@ -49,6 +49,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public abstract Task<Game> CreateNewGame(string param);
         public abstract Task GameStart(Game game);
         public abstract string HandleMove(Game game, string contextConnectionId, string move);
+        public abstract string CloseGame(Game game);
 
         public abstract object GetGameStatus(Game game);
         public abstract double GetScore(Game game, string player);

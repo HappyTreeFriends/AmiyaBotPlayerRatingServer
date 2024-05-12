@@ -96,22 +96,25 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var moveObj = JObject.Parse(move);
             var characterName = moveObj["CharacterName"].ToString();
 
-            var answer = game.AnswerList.Find(a => a.CharacterName == characterName);
-            if (answer == null)
+            var answers = game.AnswerList.Where(a => a.CharacterName == characterName).ToList();
+            if (answers.Count==0)
             {
                 return JsonConvert.SerializeObject(new { Result = "Wrong",
                     PlayerId = playerId,
-                    CharacterName = characterName, Completed = false });
+                    CharacterName = characterName, Completed = game.IsCompleted });
             }
 
-            if (answer.PlayerId != null)
+            foreach (var answer in answers)
             {
-                return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = false });
-            }
+                if (answer.PlayerId != null)
+                {
+                    return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
+                }
 
-            answer.Completed = true;
-            answer.AnswerTime = DateTime.Now;
-            answer.PlayerId = playerId;
+                answer.Completed = true;
+                answer.AnswerTime = DateTime.Now;
+                answer.PlayerId = playerId;
+            }
 
             if (game.PlayerScore.ContainsKey(playerId))
             {
@@ -122,8 +125,19 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 game.PlayerScore.TryAdd(playerId, 200);
             }
 
-            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.AnswerList.All(a=>a.Completed==true) });
+            if (game.AnswerList.All(a => a.Completed == true))
+            {
+                game.IsCompleted = true;
+            }
 
+            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answers, Completed = game.IsCompleted});
+
+        }
+
+        public override string CloseGame(Game rawGame)
+        {
+            var game = rawGame as SchulteGridGame;
+            return JsonConvert.SerializeObject(new { GameId= game.Id, RemainingAnswers = game.AnswerList.Where(a=>a.Completed==false) });
         }
 
         public override object GetGameStatus(Game game)

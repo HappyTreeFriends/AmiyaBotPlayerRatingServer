@@ -91,7 +91,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 GameId = game.Id,
                 GameJoinCode = game.JoinCode,
-                GameStarted = game.Started,
+                GameStarted = game.IsStarted,
+                GameCompleted = game.IsCompleted,
                 CreatorId = game.CreatorId,
                 CreatorConnectionId = game.CreatorConnectionId,
                 PlayerList = FormatPlayerList(game),
@@ -228,6 +229,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }));
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task CloseGame(string gameId)
         {
             var (game, manager, appUser) = await Validate(gameId);
@@ -236,19 +238,10 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 throw new UnauthorizedAccessException();
             }
-            
-            await Clients.Group(gameId).SendAsync("GameClosed", JsonConvert.SerializeObject(new
-            {
-                GameId = gameId,
-            }));
 
-            //全部踢掉
-            foreach (var player in game.PlayerList)   
-            {
-                await Groups.RemoveFromGroupAsync(player.Value, gameId);
-            }
+            var ret = manager.CloseGame(game);
 
-            GameManager.GameList.Remove(game);
+            await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -261,7 +254,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            game.Started = true;
+            game.IsStarted = true;
             
             await Clients.Group(gameId).SendAsync("GameStarted", JsonConvert.SerializeObject(new
             {
@@ -274,6 +267,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         public async Task SendMove(string gameId, string move)
         {
             var (game, manager, appUser) = await Validate(gameId);
+
+            if (game.IsCompleted)
+            {
+                return;
+            }
 
             var ret = manager.HandleMove(game, appUser.Id, move);
 

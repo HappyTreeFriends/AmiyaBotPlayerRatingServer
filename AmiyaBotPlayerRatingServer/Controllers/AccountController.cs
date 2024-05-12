@@ -72,9 +72,9 @@ public class AccountController : ControllerBase
     {
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
 
-        if (!IsPasswordComplex(model.Password, 3))
+        if (!IsPasswordComplex(model.Password, 2))
         {
-            return BadRequest(new { message = "密码不符合要求，至少需要包含大写字母、小写字母、数字和特殊符号（!@#$%^&*()-+）中的3种。" });
+            return BadRequest(new { message = "密码不符合要求，至少需要包含大写字母、小写字母、数字和特殊符号（!@#$%^&*()-+）中的2种。" });
         }
 
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email, Nickname = model.Nickname };
