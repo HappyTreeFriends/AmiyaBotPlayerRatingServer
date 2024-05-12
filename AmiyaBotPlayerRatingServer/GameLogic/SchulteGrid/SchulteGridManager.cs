@@ -78,24 +78,18 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             return game;
         }
 
-        public override async Task<String> CreateNewGame()
+        public override async Task<Game> CreateNewGame(string param)
         {
             var game = await SchulteGridGameData.BuildContinuousMode();
-
-            GameManager.GameList.Add(game);
-
-            string gameId;
-            do
-            {
-                gameId = new Random().Next(100000, 999999).ToString();
-            } while (GameManager.GameList.Any(g => g.GameId == gameId));
-
-            game.GameId = gameId;
-
-            return gameId;
+            return game;
         }
 
-        public override string HandleMove(Game rawGame, string contextConnectionId, string move)
+        public override Task GameStart(Game game)
+        {
+            return Task.CompletedTask;
+        }
+
+        public override string HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SchulteGridGame;
 
@@ -105,29 +99,40 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var answer = game.AnswerList.Find(a => a.CharacterName == characterName);
             if (answer == null)
             {
-                return JsonConvert.SerializeObject(new { Result = "Wrong", CharacterName = characterName, Completed = false });
+                return JsonConvert.SerializeObject(new { Result = "Wrong",
+                    PlayerId = playerId,
+                    CharacterName = characterName, Completed = false });
             }
 
             if (answer.PlayerId != null)
             {
-                return JsonConvert.SerializeObject(new { Result = "Wrong", CharacterName = characterName, Answer = answer, Completed = false });
+                return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = false });
             }
 
             answer.Completed = true;
             answer.AnswerTime = DateTime.Now;
-            answer.PlayerId = contextConnectionId;
+            answer.PlayerId = playerId;
 
-            if (game.PlayerScore.ContainsKey(contextConnectionId))
+            if (game.PlayerScore.ContainsKey(playerId))
             {
-                game.PlayerScore[contextConnectionId] += 200;
+                game.PlayerScore[playerId] += 200;
             }
             else
             {
-                game.PlayerScore.TryAdd(contextConnectionId, 200);
+                game.PlayerScore.TryAdd(playerId, 200);
             }
 
-            return JsonConvert.SerializeObject(new { Result = "Correct", CharacterName = characterName, Answer = answer, Completed = game.AnswerList.All(a=>a.Completed==true) });
+            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.AnswerList.All(a=>a.Completed==true) });
 
+        }
+
+        public override object GetGameStatus(Game game)
+        {
+            var schulteGridGame = game as SchulteGridGame;
+            return new
+            {
+                AnswerList = schulteGridGame.AnswerList.Where(a=>a.Completed==true)
+            };
         }
 
         public override double GetScore(Game game, string player)

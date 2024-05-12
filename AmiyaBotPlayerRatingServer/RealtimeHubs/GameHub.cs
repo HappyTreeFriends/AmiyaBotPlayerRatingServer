@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using AmiyaBotPlayerRatingServer.Utility;
 
 namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 {
@@ -35,7 +37,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             var game = GameManager.GetGame(gameId);
 
-            if (game == null || !game.PlayerList.ContainsKey(Context.ConnectionId))
+            if (game == null || !game.PlayerList.ContainsKey(appUser.Id))
             {
                 throw new UnauthorizedAccessException();
             }
@@ -50,135 +52,159 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             return Tuple.Create(game, manager, appUser);
         }
 
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task GetMyId()
+        private Object FormatPlayerList(Game game)
         {
-            await Clients.Caller.SendAsync("ReceiveMyId", JsonConvert.SerializeObject(new
+            var manager = GameManager.GetGameManager(game.GameType);
+            return game.PlayerList.Select(x =>
             {
-                SignalRId = Context.ConnectionId,
-                UserId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                var user = _dbContext.Users.Find(x.Key);
+                return new
+                {
+                    UserId = x.Key,
+                    UserSignalRId = x.Value,
+                    UserName = user?.Nickname,
+                    UserAvatar = user?.Email==null?"/amiya.png":"https://www.gravatar.com/avatar/"+CryptoHelper.GetMd5Hash(user?.Email) + "?d=identicon",
+                    Score = manager?.GetScore(game, x.Key)
+                };
+            });
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task Me()
+        {
+            var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            await Clients.Caller.SendAsync("MyConnectionInfo", JsonConvert.SerializeObject(new
+            {
+                ConnectionId = Context.ConnectionId,
+                Id = userId,
+                CreatedGames = GameManager.GameList.Where(x => x.CreatorId == userId).Select(x => x.Id),
             }));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task CreateGame(string gameType)
+        public async Task GetGame(string id)
+        {
+            var (game, manager, _) = await Validate(id);
+
+            await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
+            {
+                GameId = game.Id,
+                GameJoinCode = game.JoinCode,
+                GameStarted = game.Started,
+                CreatorId = game.CreatorId,
+                CreatorConnectionId = game.CreatorConnectionId,
+                PlayerList = FormatPlayerList(game),
+                CurrentStatus = manager.GetGameStatus(game),
+            }));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task CreateGame(string gameType,string param)
         {
             var appUser = await _dbContext.Users.FindAsync(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
             if (appUser == null)
             {
                 throw new UnauthorizedAccessException();
             }
 
             var gameManager = GameManager.GetGameManager(gameType);
-            var gameId = await gameManager.CreateNewGame();
-            var game = GameManager.GetGame(gameId);
-            game.CreatorId=Context.ConnectionId;
-            game.PlayerList.Add(Context.ConnectionId, appUser.Id);
+            if (gameManager == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var game = await gameManager.CreateNewGame(param);
             
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-            await Clients.Group(gameId).SendAsync("GameCreated", JsonConvert.SerializeObject(new
+            game.Id = Guid.NewGuid().ToString();
+            game.CreatorId= appUser.Id;
+            game.CreatorConnectionId = Context.ConnectionId;
+            game.PlayerList.Add(appUser.Id, Context.ConnectionId);
+            
+            game.JoinCode= GameManager.RequestJoinCode();
+            GameManager.GameList.Add(game);
+            
+            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
+            await Clients.Group(game.Id).SendAsync("GameCreated", JsonConvert.SerializeObject(new
             {
-                CreatorSignalRId = Context.ConnectionId,
                 CreatorId = appUser.Id,
+                CreatorConnectionId = Context.ConnectionId,
                 CreatorName = appUser.Nickname,
+
+                GameId = game.Id,
                 GameType = gameType,
-                GameId = gameId
+                GameJoinCode = game.JoinCode,
             }));
         }
 
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task GetGame(string gameId)
-        {
-            var (game, manager, _) = await Validate(gameId);
-
-            var playerlist = game.PlayerList.Select(x => new
-            {
-                UserId = x.Value,
-                UserSignalRId = x.Key,
-                UserName = _dbContext.Users.Find(x.Value)?.Nickname,
-                UserEmail = _dbContext.Users.Find(x.Value)?.Email,
-                GameId = gameId,
-                Score = manager.GetScore(game, x.Key)
-            });
-
-            await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
-            {
-                GameId = gameId,
-                CreatorSignalRId = game.CreatorId,
-                PlayerList = playerlist
-            }));
-        }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task JoinGame(string gameId)
+        public async Task JoinGame(string joinCode)
         {
             var appUser = await _dbContext.Users.FindAsync(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
             if (appUser == null)
             {
                 throw new UnauthorizedAccessException();
             }
             
-            var game = GameManager.GetGame(gameId);
+            var game = GameManager.GetGameByJoinCode(joinCode);
+            if (game == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
             var manager = GameManager.GetGameManager(game.GameType);
 
             //看一下是不是已经在游戏里了
-            if (game.PlayerList.ContainsValue(appUser.Id))
+            if (game.PlayerList.ContainsKey(appUser.Id))
             {
                 //替换身份
-                var oldConnectionId = game.PlayerList.FirstOrDefault(x => x.Value == appUser.Id).Key;
-                game.PlayerList.Remove(oldConnectionId);
-                game.PlayerList.Add(Context.ConnectionId, appUser.Id);
-
-                if (game.CreatorId == oldConnectionId)
-                {
-                    game.CreatorId = Context.ConnectionId;
-                }
+                game.PlayerList[appUser.Id] = Context.ConnectionId;
             }
             else
             {
-                game.PlayerList.Add(Context.ConnectionId, appUser.Id);
+                game.PlayerList.Add(appUser.Id, Context.ConnectionId);
+            }
+            
+            //如果是房主，更新房主的ConnectionId
+            if (game.CreatorId == appUser.Id)
+            {
+                game.CreatorConnectionId = Context.ConnectionId;
             }
 
-            var playerlist = game.PlayerList.Select(x => new
-            {
-                UserId = x.Value,
-                UserSignalRId = x.Key,
-                UserName = _dbContext.Users.Find(x.Value)?.Nickname,
-                UserEmail = _dbContext.Users.Find(x.Value)?.Email,
-                GameId = gameId,
-                Score = manager.GetScore(game, x.Key)
-            });
-
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-            await Clients.Group(gameId).SendAsync("PlayerJoined", JsonConvert.SerializeObject(new
+            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
+            await Clients.Group(game.Id).SendAsync("PlayerJoined", JsonConvert.SerializeObject(new
             {
                 UserId = appUser.Id,
                 UserSignalRId = Context.ConnectionId,
                 UserName = appUser.Nickname,
                 UserEmail = appUser.Email,
-                GameId = gameId,
-                PlayerList = playerlist
+                GameId = game.Id,
+                PlayerList = FormatPlayerList(game),
             }) );
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task KickPlayer(string gameId, string playerId)
         {
-            var (game, manager, _) = await Validate(gameId);
+            var (game, manager, appUser) = await Validate(gameId);
 
-            if (game.CreatorId != Context.ConnectionId)
+            if (game.CreatorId != appUser.Id)
             {
                 throw new UnauthorizedAccessException();
             }
 
+            if (!game.PlayerList.ContainsKey(playerId))
+            {
+                return;
+            }
+            var oldConnectionId = game.PlayerList[playerId];
             game.PlayerList.Remove(playerId);
 
             var playerKickedResponse = JsonConvert.SerializeObject(new
             {
                 LeavingMethod = "Kicked",
-                LeavingPlayerSignalRId = playerId,
+                LeavingPlayerId = playerId,
+                LeavingPlayerConnectionId = oldConnectionId,
             });
 
             await Clients.Client(playerId).SendAsync("PlayerKicked", playerKickedResponse);
@@ -189,23 +215,24 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task LeaveGame(string gameId)
         {
-            var (game, manager, _) = await Validate(gameId);
+            var (game, manager, appUser) = await Validate(gameId);
 
-            game.PlayerList.Remove(Context.ConnectionId);
+            game.PlayerList.Remove(appUser.Id);
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
             await Clients.Group(gameId).SendAsync("PlayerLeft", JsonConvert.SerializeObject(new
             {
                 LeavingMethod = "Left",
-                LeavingPlayerSignalRId = Context.ConnectionId,
+                LeavingPlayerConnectionId = Context.ConnectionId,
+                LeavingPlayerId = appUser.Id,
             }));
         }
 
         public async Task CloseGame(string gameId)
         {
-            var (game, manager, _) = await Validate(gameId);
+            var (game, manager, appUser) = await Validate(gameId);
 
-            if (game.CreatorId != Context.ConnectionId)
+            if (game.CreatorId != appUser.Id)
             {
                 throw new UnauthorizedAccessException();
             }
@@ -215,9 +242,10 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameId = gameId,
             }));
 
+            //全部踢掉
             foreach (var player in game.PlayerList)   
             {
-                await Groups.RemoveFromGroupAsync(player.Key, gameId);
+                await Groups.RemoveFromGroupAsync(player.Value, gameId);
             }
 
             GameManager.GameList.Remove(game);
@@ -226,33 +254,30 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task StartGame(string gameId)
         {
-            var (game, manager, _) = await Validate(gameId);
+            var (game, manager, appUser)= await Validate(gameId);
 
-            var playerlist = game.PlayerList.Select(x => new
+            if (game.CreatorId != appUser.Id)
             {
-                UserId = x.Value,
-                UserSignalRId = x.Key,
-                UserName = _dbContext.Users.Find(x.Value)?.Nickname,
-                UserEmail = _dbContext.Users.Find(x.Value)?.Email,
-                GameId = gameId,
-                Score = manager.GetScore(game, x.Key)
-            });
+                throw new UnauthorizedAccessException();
+            }
 
+            game.Started = true;
+            
             await Clients.Group(gameId).SendAsync("GameStarted", JsonConvert.SerializeObject(new
             {
                 GameId = gameId,
-                PlayerList = playerlist
+                PlayerList = FormatPlayerList(game)
             }));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task SendMove(string gameId, string move)
         {
-            var (game, manager, _) = await Validate(gameId);
+            var (game, manager, appUser) = await Validate(gameId);
 
-            var ret = manager.HandleMove(game, Context.ConnectionId, move);
+            var ret = manager.HandleMove(game, appUser.Id, move);
 
-            await Clients.Group(gameId).SendAsync("ReceiveMove", Context.ConnectionId, ret);
+            await Clients.Group(gameId).SendAsync("ReceiveMove", ret);
         }
     }
 }

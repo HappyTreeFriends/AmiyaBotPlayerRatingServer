@@ -24,7 +24,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game.SchulteGrid
             new {
                 game.Grid,
                 game.PlayerList,
-                game.GameId,
+                game.Id,
                 game.GameType,
             });
         }
