@@ -151,7 +151,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var game = GameManager.GetGameByJoinCode(joinCode);
             if (game == null)
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Client(Context.ConnectionId).SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "该房间不存在",
+                }));
+                return;
             }
             var manager = GameManager.GetGameManager(game.GameType);
 
