@@ -145,7 +145,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var schulteGridGame = game as SchulteGridGame;
             return new
             {
-                AnswerList = schulteGridGame.AnswerList.Where(a=>a.Completed==true)
+                AnswerList = schulteGridGame!.AnswerList.Where(a=>a.Completed==true),
+                Grid = schulteGridGame.Grid,
             };
         }
 
@@ -153,7 +154,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         {
             var schulteGridGame = game as SchulteGridGame;
             
-            if (schulteGridGame.PlayerScore.ContainsKey(player))
+            if (schulteGridGame!.PlayerScore.ContainsKey(player))
             {
                 return schulteGridGame.PlayerScore[player];
             }

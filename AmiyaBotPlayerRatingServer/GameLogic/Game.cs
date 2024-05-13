@@ -12,6 +12,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public String CreatorId { get; set; }
         public String CreatorConnectionId { get; set; }
 
+        public bool IsPrivate { get; set; }
+        public String JoinPassword { get; set; }
+
         public bool IsStarted { get; set; }
         public bool IsCompleted { get; set; }
 
