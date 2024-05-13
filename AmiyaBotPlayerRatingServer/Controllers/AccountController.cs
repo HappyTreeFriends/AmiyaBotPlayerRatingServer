@@ -6,6 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
+using AmiyaBotPlayerRatingServer.Utility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -99,6 +100,84 @@ public class AccountController : ControllerBase
         return Ok(new { message = "用户注册成功" });
     }
 
+    [AllowAnonymous]
+    [HttpPost("quickRegister")]
+    public async Task<IActionResult> QuickRegister([FromBody] RegisterModel model)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
+
+        if (!String.IsNullOrWhiteSpace(model.Password))
+        {
+            if (!IsPasswordComplex(model.Password, 2))
+            {
+                return BadRequest(new { message = "密码不符合要求，至少需要包含大写字母、小写字母、数字和特殊符号（!@#$%^&*()-+）中的2种。" });
+            }
+        }
+        else
+        {
+            // 生成一个随机复杂密码
+            model.Password = CryptoHelper.GeneratePassword(16);
+        }
+
+        if (String.IsNullOrWhiteSpace(model.Email))
+        {
+            model.Email = Guid.NewGuid().ToString("N") + "@amiyabot.com";
+        }
+
+        var user = new ApplicationUser { UserName = model.Email, Email = model.Email, Nickname = model.Nickname };
+        var result = await _userManager.CreateAsync(user, model.Password);
+
+        if (!result.Succeeded)
+        {
+            await transaction.RollbackAsync();
+            return BadRequest(result.Errors);
+        }
+
+        var role = model.ClaimedRole == "开发者账户" ? "开发者账户" : "普通账户";
+        var addToRoleResult = await _userManager.AddToRoleAsync(user, role);
+
+        if (!addToRoleResult.Succeeded)
+        {
+            await transaction.RollbackAsync();
+            return BadRequest(new { message = "注册账户失败", errors = addToRoleResult.Errors });
+        }
+
+        await transaction.CommitAsync(); // 提交事务
+
+        // 然后立即登录
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, user.Id.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+        };
+        
+        claims.Add(new Claim(ClaimTypes.Role, role));
+        
+
+        var key = Encoding.ASCII.GetBytes(_configuration["JWT:Secret"]!);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddDays(1),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var jwtToken = tokenHandler.WriteToken(token);
+
+        // 设置名为 "jwt" 的 Cookie
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(24)
+        };
+        HttpContext.Response.Cookies.Append("jwt", jwtToken, cookieOptions);
+
+
+        return Ok(new { Token = jwtToken, Email=user.Email });
+    }
 
     public class LoginModel
     {

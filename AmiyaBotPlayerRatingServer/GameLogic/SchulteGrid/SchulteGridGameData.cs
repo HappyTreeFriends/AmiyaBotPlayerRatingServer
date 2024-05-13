@@ -6,8 +6,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
     public static class SchulteGridGameData
     {
         private static JObject? _characterMap;
-        public static Dictionary<string, Dictionary<string, Object>>? NameDicts;
-        private static JObject _skillMap;
+        private static Dictionary<string, Dictionary<string, Object>>? _nameDicts;
+        private static List<String> operatorList = new List<string>();
+        private static JObject? _skillMap;
 
         private static void LoadCharacterMap()
         {
@@ -29,7 +30,17 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 _skillMap = JObject.Parse(reader.ReadToEnd());
             }
 
-            NameDicts = new Dictionary<string, Dictionary<string, Object>>
+            if (_characterMap != null)
+            {
+                foreach (var op in _characterMap)
+                {
+                    var opName = op.Value?["name"]?.ToString();
+                    if(opName != null)
+                        operatorList.Add(opName);
+                }
+            }
+
+            _nameDicts = new Dictionary<string, Dictionary<string, Object>>
             {
                 { "skill", BuildNameDict(GetSkills, "skill_name") },
                 //{ "talent", BuildNameDict(GetTalents, "talent_name") },
@@ -38,7 +49,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         }
 
         // Simulate methods to get skills, talents, and equipment from an operator JObject
-        public static List<String> GetSkills(JObject op)
+        private static List<String> GetSkills(JObject op)
         {
             // Assuming there is a "skills" array in the operator's JObject
             var skills = new List<String>();
@@ -84,7 +95,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             return equipments;
         }
 
-        public static Dictionary<string, object> BuildNameDict(
+        private static Dictionary<string, object> BuildNameDict(
             Func<JObject, List<String>> dataFunction, string keyName)
         {
             Dictionary<string, string> tempDict = new Dictionary<string, string>();
@@ -139,10 +150,15 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             LoadCharacterMap();
         }
 
+        public static bool IsOperator(String operatorName)
+        {
+            return operatorList.Contains(operatorName);
+        }
+
         public static async Task<SchulteGridGame> BuildContinuousMode()
         {
             var wordType = "skill";
-            var namedictObject = NameDicts[wordType];
+            var namedictObject = _nameDicts[wordType];
             var wordsMap = ((Dictionary<string, string>)namedictObject["data"]);
             var words = wordsMap.Keys.ToList();
             var blackList = (List<string>)namedictObject["blackList"];
@@ -150,8 +166,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var (puzzle,answer) = await SchulteGridContinuousGameBuilder.BuildPuzzleContinuousMode(10, 10, words, blackList,3);
 
             var game = new SchulteGridGame();
-
-            //手动添加一些测试数据
+            
             game.GameType = "SchulteGrid";
             game.GridWidth = 10;
             game.GridHeight = 10;

@@ -4,7 +4,25 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 {
     public abstract class GameManager
     {
-        public static List<Game> GameList = new List<Game>();
+        public static readonly List<Game> GameList = new List<Game>();
+        private static readonly Task cleanTask = Task.CompletedTask;
+
+
+        static GameManager()
+        {
+            cleanTask = cleanTask.ContinueWith(async (_) =>
+            {
+                while (true)
+                {
+                    await Task.Delay(1000 * 60 * 5);
+                    GameManager.GameList.RemoveAll(x => x.IsCompleted && (
+                        DateTime.Now - x.CompleteTime > new TimeSpan(0, 1, 0, 0)));
+
+                    GameManager.GameList.RemoveAll(x => x.IsStarted && (
+                        DateTime.Now - x.StartTime > new TimeSpan(1, 0, 0, 0)));
+                }
+            });
+        }
 
         public static GameManager? GetGameManager(string gameType)
         {

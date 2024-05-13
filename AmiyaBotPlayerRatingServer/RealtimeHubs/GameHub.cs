@@ -92,6 +92,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameId = game.Id,
                 GameJoinCode = game.JoinCode,
                 GameStarted = game.IsStarted,
+                GameStartTime = game.StartTime,
                 GameCompleted = game.IsCompleted,
                 CreatorId = game.CreatorId,
                 CreatorConnectionId = game.CreatorConnectionId,
@@ -259,6 +260,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             game.IsStarted = true;
+            game.StartTime = DateTime.Now;
             
             await Clients.Group(gameId).SendAsync("GameStarted", JsonConvert.SerializeObject(new
             {
