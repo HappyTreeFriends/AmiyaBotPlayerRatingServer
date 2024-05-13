@@ -106,7 +106,7 @@ public class AccountController : ControllerBase
     {
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
 
-        if (String.IsNullOrWhiteSpace(model.Password))
+        if (!String.IsNullOrWhiteSpace(model.Password))
         {
             if (!IsPasswordComplex(model.Password, 2))
             {
