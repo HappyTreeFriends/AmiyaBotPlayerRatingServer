@@ -96,6 +96,17 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var moveObj = JObject.Parse(move);
             var characterName = moveObj["CharacterName"].ToString();
 
+            if (!SchulteGridGameData.IsOperator(characterName))
+            {
+                return JsonConvert.SerializeObject(new
+                {
+                    Result = "NotOperator",
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    Completed = game.IsCompleted
+                });
+            }
+
             var answers = game.AnswerList.Where(a => a.CharacterName == characterName).ToList();
             if (answers.Count==0)
             {
@@ -128,6 +139,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             if (game.AnswerList.All(a => a.Completed == true))
             {
                 game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
             }
 
             return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answers, Completed = game.IsCompleted});
@@ -143,6 +155,17 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         public override object GetGameStatus(Game game)
         {
             var schulteGridGame = game as SchulteGridGame;
+
+            if (schulteGridGame.IsStarted)
+            {
+                // 如果已经经过10分钟，游戏结束
+                if (DateTime.Now - schulteGridGame.StartTime > TimeSpan.FromMinutes(10))
+                {
+                    schulteGridGame.IsCompleted = true;
+                    schulteGridGame.CompleteTime = DateTime.Now;
+                }
+            }
+
             return new
             {
                 AnswerList = schulteGridGame.AnswerList.Where(a=>a.Completed==true)
