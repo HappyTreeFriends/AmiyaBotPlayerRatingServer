@@ -28,14 +28,26 @@ namespace AmiyaBotPlayerRatingServer.Data
             {
                 var fileStream = new FileStream(filePath, FileMode.Open);
                 using var reader = new StreamReader(fileStream);
-                var characterMap = JToken.Parse(reader.ReadToEnd());
-                _cache.Set(resKey, characterMap);
+                var text = reader.ReadToEnd();
+                var characterMap = JToken.Parse(text);
+                _cache.Set("JToken:"+resKey, characterMap);
+                _cache.Set("Text:"+resKey, text);
+
             }
         }
 
         public JToken? GetJson(String key)
         {
-            if (_cache.TryGetValue<JToken>(key, out var value))
+            if (_cache.TryGetValue<JToken>("JToken:" + key, out var value))
+            {
+                return value;
+            }
+            return null;
+        }
+
+        public String? GetText(String key)
+        {
+            if (_cache.TryGetValue<String>("Text:" + key, out var value))
             {
                 return value;
             }

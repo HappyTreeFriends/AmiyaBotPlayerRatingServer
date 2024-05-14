@@ -1,4 +1,5 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
+using DevLab.JmesPath;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,5 +48,29 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpPost("/jmes-path")]
+        public IActionResult QueryJmes([FromQuery] JsonPathQueryModel model)
+        {
+            try
+            {
+                var jsonData = _memeCache.GetText(model.File);
+                if (jsonData != null)
+                {
+                    JmesPath jmes = new JmesPath();
+                    var result = jmes.Transform(jsonData, model.Query);
+                    return Ok(result);
+                }
+
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }
