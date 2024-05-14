@@ -72,6 +72,30 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        
+
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpPost("operator-avatar")]
+        public IActionResult GetArknightsAvatar()
+        {
+            //首先获取所有干员
+
+            var operators = _memeCache.GetJson("character_table.json") as JObject;
+            if (operators == null)
+            {
+                return NotFound("character_table.json not found");
+            }
+
+            var skins = _memeCache.GetJson("skin_table.json") as JObject;
+
+            foreach(var opProp in operators.Properties())
+            {
+                var opId = opProp.Name;
+                var opName = opProp.Value["name"]?.Value<string>();
+                var opAvatar = opProp.Value["avatar"]?.Value<string>();
+            }
+
+            return Ok();
+        }
     }
 }
