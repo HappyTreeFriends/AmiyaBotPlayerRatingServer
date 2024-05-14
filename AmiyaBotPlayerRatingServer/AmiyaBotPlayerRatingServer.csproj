@@ -9,10 +9,17 @@
   <ItemGroup>
     <Content Remove="Resources\CharacterMap.json" />
     <Content Remove="Resources\SkillMap.json" />
+    <Content Remove="Resources\SkinTable.json" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Resources\rayslogo.gif" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Resources\SkinTable.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +32,7 @@
     <PackageReference Include="Hangfire.Core" Version="1.8.5" />
     <PackageReference Include="Hangfire.PostgreSql" Version="1.20.2" />
     <PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
+    <PackageReference Include="JsonPath.Net" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.21" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.10" />

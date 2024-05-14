@@ -195,6 +195,8 @@ builder.Services.AddSignalR();
 
 //注入自定义服务
 builder.Services.AddScoped<CreateMAATaskService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ArknightsMemoryCache>();
 
 var app = builder.Build();
 

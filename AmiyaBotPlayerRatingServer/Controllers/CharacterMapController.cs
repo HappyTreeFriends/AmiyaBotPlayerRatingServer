@@ -37,43 +37,6 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
             return NotFound("JSON file not found");
         }
-
-        [AllowAnonymous]
-        [HttpGet("/operator-ids")]
-        public object OperatorIds()
-        {
-            if (DateTime.Now - _operatorIdsCacheLastUpdate < new TimeSpan(1, 0, 0))
-            {
-                return Ok(_operatorIdsCache);
-            }
-
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "OperatorIds.json");
-
-            // 从磁盘读取JSON文件
-            if (System.IO.File.Exists(filePath))
-            {
-                var fileStream = new FileStream(filePath, FileMode.Open);
-                using var reader = new StreamReader(fileStream);
-                var characterMap = JObject.Parse(reader.ReadToEnd());
-
-                var tmpOperatorIdsCache = new Dictionary<string, string>();
-                foreach (var op in characterMap)
-                {
-                    var opName = op.Value?["name"]?.ToString();
-                    if (opName != null)
-                    {
-                        tmpOperatorIdsCache.Add(op.Key, opName);
-                    }
-                }
-
-                _operatorIdsCache = tmpOperatorIdsCache;
-                _operatorIdsCacheLastUpdate = DateTime.Now;
-                return Ok(_operatorIdsCache);
-
-            }
-
-            return NotFound("JSON file not found");
-        }
-
+        
     }
 }
