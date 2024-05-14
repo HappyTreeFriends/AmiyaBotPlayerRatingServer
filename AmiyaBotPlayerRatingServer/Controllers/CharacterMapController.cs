@@ -14,8 +14,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
     {
         private readonly PlayerRatingDatabaseContext _dbContext;
 
-        private static Dictionary<String,String> operatorIdsCache = new Dictionary<string, string>();
-        private static DateTime operatorIdsCacheLastUpdate = DateTime.MinValue;
+        private static Dictionary<String,String> _operatorIdsCache = new Dictionary<string, string>();
+        private static DateTime _operatorIdsCacheLastUpdate = DateTime.MinValue;
 
         public CharacterMapController(PlayerRatingDatabaseContext dbContext)
         {
@@ -42,9 +42,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         [HttpGet("/operator-ids")]
         public object OperatorIds()
         {
-            if (DateTime.Now - operatorIdsCacheLastUpdate < new TimeSpan(1, 0, 0))
+            if (DateTime.Now - _operatorIdsCacheLastUpdate < new TimeSpan(1, 0, 0))
             {
-                return Ok(operatorIdsCache);
+                return Ok(_operatorIdsCache);
             }
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "OperatorIds.json");
@@ -66,9 +66,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                     }
                 }
 
-                operatorIdsCache = tmpOperatorIdsCache;
-                operatorIdsCacheLastUpdate = DateTime.Now;
-                return Ok(operatorIdsCache);
+                _operatorIdsCache = tmpOperatorIdsCache;
+                _operatorIdsCacheLastUpdate = DateTime.Now;
+                return Ok(_operatorIdsCache);
 
             }
 
