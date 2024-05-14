@@ -7,5 +7,8 @@ namespace AmiyaBotPlayerRatingServer.Model;
 public class ApplicationUser : IdentityUser
 {
     public string Nickname { get; set; }
+
+    public string? Avatar { get; set; }
+    public string? AvatarType { get; set; }
 }
 

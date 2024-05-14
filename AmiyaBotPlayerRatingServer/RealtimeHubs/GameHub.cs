@@ -260,6 +260,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
+            await manager.GameStart(game);
+
             game.IsStarted = true;
             game.StartTime = DateTime.Now;
             

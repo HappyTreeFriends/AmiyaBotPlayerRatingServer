@@ -328,6 +328,50 @@ public class AccountController : ControllerBase
         return BadRequest("无法更改用户角色");
     }
 
+    public class ChangeUserInfoModel
+    {
+        public string? Nickname { get; set; }
+        public string? Avatar { get; set; }
+        public string? AvatarType { get; set; }
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [HttpPost("change-user-info")]
+    public async Task<IActionResult> ChangeUserInfo([FromBody] ChangeUserInfoModel model)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        if (!string.IsNullOrEmpty(model.Nickname))
+        {
+            user.Nickname = model.Nickname;
+        }
+
+        if (!string.IsNullOrEmpty(model.Avatar))
+        {
+            user.Avatar = model.Avatar;
+        }
+
+        if (!string.IsNullOrEmpty(model.AvatarType))
+        {
+            user.AvatarType = model.AvatarType;
+        }
+
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new { message = "用户信息已更新" });
+    }
+
     public class CreateClientModel
     {
         public string FriendlyName { get; set; }
