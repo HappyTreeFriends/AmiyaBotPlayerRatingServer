@@ -30,7 +30,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("json-path")]
-        public IActionResult Query([FromQuery] JsonPathQueryModel model)
+        public IActionResult Query([FromBody] JsonPathQueryModel model)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("jmes-path")]
-        public IActionResult QueryJmes([FromQuery] JsonPathQueryModel model)
+        public IActionResult QueryJmes([FromBody] JsonPathQueryModel model)
         {
             try
             {
