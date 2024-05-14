@@ -24,16 +24,20 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game.SchulteGrid
 
             return new
             {
-                game.Grid,
-                game.PlayerList,
                 game.Id,
                 game.GameType,
+                game.JoinCode,
                 game.CreatorId,
-                game.IsStarted,
-                game.IsCompleted,
-                game.IsPrivate,
                 game.CreatorConnectionId,
+                game.CreateTime,
+                game.IsStarted,
+                game.StartTime,
+                game.IsCompleted,
+                game.CompleteTime,
+                game.IsPrivate,
                 CreatorNickname = creator?.Nickname,
+                game.PlayerList,
+                game.Grid,
             };
         }
 

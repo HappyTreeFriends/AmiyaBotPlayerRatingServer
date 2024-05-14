@@ -80,7 +80,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         public override async Task<Game> CreateNewGame(string param)
         {
+            var paramObj = JObject.Parse(param);
+
             var game = await SchulteGridGameData.BuildContinuousMode();
+            game.IsPrivate  = paramObj["IsPrivate"]?.ToObject<bool>() ?? false;
             return game;
         }
 

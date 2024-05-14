@@ -121,6 +121,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             game.Id = Guid.NewGuid().ToString();
             game.CreatorId= appUser.Id;
             game.CreatorConnectionId = Context.ConnectionId;
+            game.CreateTime = DateTime.Now;
             game.PlayerList.Add(appUser.Id, Context.ConnectionId);
             
             game.JoinCode= GameManager.RequestJoinCode();
