@@ -61,7 +61,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 {
                     JmesPath jmes = new JmesPath();
                     var result = jmes.Transform(jsonData, model.Query);
-                    return Ok(result);
+                    var resultJson = JObject.Parse(result);
+                    return Ok(resultJson);
                 }
 
                 return NotFound();
@@ -71,6 +72,6 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
+        
     }
 }
