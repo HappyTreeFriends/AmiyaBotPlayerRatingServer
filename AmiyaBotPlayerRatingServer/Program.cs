@@ -84,7 +84,11 @@ builder.Services.AddHangfire(hfConf => hfConf
     .UseRecommendedSerializerSettings()
     .UseStorage(new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration))));
 
-builder.Services.AddHangfireServer();
+builder.Services.AddHangfireServer(options =>
+{
+    var queue = configuration["Hangfire:Queues"];
+    options.Queues = !string.IsNullOrWhiteSpace(queue) ? queue.Split(',') : new[] { "default" };
+});
 
 builder.Services.AddSingleton(provider =>
     JobStorage.Current.GetMonitoringApi());

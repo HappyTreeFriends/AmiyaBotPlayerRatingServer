@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Hangfire.Common;
+using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.Data
@@ -20,6 +22,66 @@ namespace AmiyaBotPlayerRatingServer.Data
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "CharacterMap.json"), "character_table.json");
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SkillMap.json"), "skill_table.json");
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SkinTable.json"), "skin_table.json");
+
+            try
+            {
+                //进行一点点逻辑处理
+                var characterTable = JsonConvert.DeserializeObject<JToken>(GetText("character_table.json")!) as JObject;
+
+                var skillTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
+                var skillDict = new Dictionary<String, JToken>();
+                foreach (var skillObj in skillTable!)
+                {
+                    var key = skillObj.Key;
+                    var value = skillObj.Value;
+                    skillDict.Add(key, value);
+                }
+
+                foreach (var charaObj in characterTable!)
+                {
+                    var value = charaObj.Value;
+                    var skills = value["skills"] as JArray;
+                    foreach (var skill in skills)
+                    {
+                        var skillId = skill["skillId"]?.ToString();
+                        var skillData = skillDict.GetValueOrDefault(skillId);
+                        if (skillData!=null)
+                        {
+                            skill["skillData"] = skillData;
+                        }
+                    }
+                }
+
+                var skinTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
+                foreach (var skinObj in (skinTable!["charSkins"] as JObject)!)
+                {
+                    var key = skinObj.Key;
+                    var value = skinObj.Value!;
+                    //value!["skinId"] = key;
+                    var charId = value["charId"]?.ToString()!;
+
+                    var chara = characterTable[charId];
+                    if (chara!=null)
+                    {
+                        var skin = chara["skins"] as JArray;
+                        if (skin == null)
+                        {
+                            skin = new JArray();
+                            chara["skins"] = skin;
+                        }
+                        skin.Add(value);
+                    }
+                }
+
+
+
+                LoadJson(characterTable,"character_table_full.json");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+
         }
 
         private void LoadFile(String filePath, String resKey)
@@ -34,6 +96,12 @@ namespace AmiyaBotPlayerRatingServer.Data
                 _cache.Set("Text:"+resKey, text);
 
             }
+        }
+
+        private void LoadJson(JToken json, String key)
+        {
+            _cache.Set("JToken:" + key, json);
+            _cache.Set("Text:" + key, json.ToString());
         }
 
         public JToken? GetJson(String key)
