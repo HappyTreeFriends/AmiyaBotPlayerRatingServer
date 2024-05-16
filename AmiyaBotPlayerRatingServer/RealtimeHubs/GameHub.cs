@@ -85,8 +85,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task GetGame(string id)
         {
-            var (game, manager, _) = await Validate(id);
+            var (game, manager, appUser) = await Validate(id);
 
+            if (game.PlayerList.ContainsKey(appUser.Id))
+            {
+                game.PlayerList[appUser.Id] = Context.ConnectionId;
+            }
+            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
             await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
             {
                 GameId = game.Id,
