@@ -63,5 +63,16 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game.SchulteGrid
             var list = GameManager.GameList.OfType<SchulteGridGame>().Where(g => g.IsPrivate == false && g.IsCompleted == false).Select(GetGameReturnObj);
             return Ok(list);
         }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("debug")]
+        public IActionResult Debug()
+        {
+            var dict = SchulteGridGameData.DebugGetNameDict();
+            return Ok(new
+            {
+                NameDict = dict,
+            });
+        }
     }
 }

@@ -202,5 +202,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             return game;
         }
+
+        public static Dictionary<string, Dictionary<string, Object>>? DebugGetNameDict()
+        {
+            return _nameDicts;
+        }
     }
 }
