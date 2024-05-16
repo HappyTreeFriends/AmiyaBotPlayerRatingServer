@@ -115,10 +115,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             foreach (var op in operators)
             {
                 var obtain = op.Value["itemObtainApproach"]?.ToString();
-                if (obtain != "凭证交易所" && obtain != "招募寻访" && obtain != "活动获得" && obtain != "主线剧情")
+                if (obtain != "凭证交易所" && obtain != "招募寻访" && 
+                    obtain != "活动获得" && obtain != "主线剧情" && 
+                    obtain != "信用交易所")
                 {
                     continue;
                 }
+
                 var items = dataFunction(op.Value);
                 foreach (var item in items)
                 {
