@@ -99,6 +99,9 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameStarted = game.IsStarted,
                 GameStartTime = game.StartTime,
                 GameCompleted = game.IsCompleted,
+                GameCompleteTime = game.CompleteTime,
+                GameClosed = game.IsClosed,
+                GameCloseTime = game.CloseTime,
                 CreatorId = game.CreatorId,
                 CreatorConnectionId = game.CreatorConnectionId,
                 PlayerList = FormatPlayerList(game),
@@ -251,6 +254,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             var ret = manager.CloseGame(game);
+
+            if (game.IsClosed == false)
+            {
+                game.IsClosed = true;
+                game.CloseTime = DateTime.Now;
+            }
 
             await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }

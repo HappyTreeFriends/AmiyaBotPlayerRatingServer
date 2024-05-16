@@ -34,6 +34,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game.SchulteGrid
                 game.StartTime,
                 game.IsCompleted,
                 game.CompleteTime,
+                game.IsClosed,
+                game.CloseTime,
                 game.IsPrivate,
                 CreatorNickname = creator?.Nickname,
                 game.PlayerList,

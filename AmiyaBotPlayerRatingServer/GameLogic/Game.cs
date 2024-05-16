@@ -20,6 +20,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public DateTime StartTime { get; set; }
         public bool IsCompleted { get; set; }
         public DateTime CompleteTime { get; set; }
+        public bool IsClosed { get; set; }
+        public DateTime CloseTime { get; set; }
 
         public Dictionary<String, String> PlayerList { get; set; } = new Dictionary<String,String>();
     }

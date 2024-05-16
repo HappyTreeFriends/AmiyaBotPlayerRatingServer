@@ -15,11 +15,19 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 while (true)
                 {
                     await Task.Delay(1000 * 60 * 5);
-                    GameManager.GameList.RemoveAll(x => x.IsCompleted && (
+                    var completedTimeout = GameManager.GameList.Where(x => x.IsClosed==false && x.IsCompleted && (
                         DateTime.Now - x.CompleteTime > new TimeSpan(0, 1, 0, 0)));
-
-                    GameManager.GameList.RemoveAll(x => x.IsStarted && (
+                    
+                    var startedTimeout = GameManager.GameList.Where(x => x.IsStarted && (
                         DateTime.Now - x.StartTime > new TimeSpan(1, 0, 0, 0)));
+
+                    var allTimeout = completedTimeout.Concat(startedTimeout).Distinct().ToList();
+
+                    foreach (var game in allTimeout)
+                    {
+                        game.IsClosed = true;
+                        game.CloseTime = DateTime.Now;
+                    }
                 }
             });
         }
@@ -39,7 +47,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         public static Game? GetGameByJoinCode(string joinCode)
         {
-            return GameList.Find(x => x.JoinCode==joinCode);
+            return GameList.Find(x => x.JoinCode==joinCode&&x.IsClosed==false);
         }
 
         public static Game? GetGame(string id)
@@ -59,7 +67,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 {
                     return "";
                 }
-            } while (GameManager.GameList.Any(g => g.JoinCode == joinCode));
+            } while (GameManager.GameList.Any(g => g.JoinCode == joinCode&&g.IsClosed==false));
 
             return joinCode;
         }
