@@ -3,6 +3,7 @@ using AmiyaBotPlayerRatingServer.Data;
 using System.Text;
 using System.Text.Json.Serialization;
 using AmiyaBotPlayerRatingServer.Controllers.Policy;
+using AmiyaBotPlayerRatingServer.GameLogic;
 using AmiyaBotPlayerRatingServer.Hangfire;
 using AmiyaBotPlayerRatingServer.Utility;
 using Hangfire;
@@ -201,6 +202,8 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<CreateMAATaskService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ArknightsMemoryCache>();
+
+builder.Services.AddGameManagers();
 
 var app = builder.Build();
 

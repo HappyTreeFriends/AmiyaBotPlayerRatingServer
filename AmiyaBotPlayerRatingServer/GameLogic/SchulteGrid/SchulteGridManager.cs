@@ -139,10 +139,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 game.PlayerScore.TryAdd(playerId, 200);
             }
 
-            if (game.AnswerList.All(a => a.Completed == true))
+            if (game.IsCompleted != true)
             {
-                game.IsCompleted = true;
-                game.CompleteTime = DateTime.Now;
+                if (game.AnswerList.All(a => a.Completed == true))
+                {
+                    game.IsCompleted = true;
+                    game.CompleteTime = DateTime.Now;
+                }
             }
 
             return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answers, Completed = game.IsCompleted});
@@ -161,11 +164,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             if (schulteGridGame.IsStarted)
             {
-                // 如果已经经过10分钟，游戏结束
-                if (DateTime.Now - schulteGridGame.StartTime > TimeSpan.FromMinutes(10))
+                if (DateTime.Now - schulteGridGame.StartTime > TimeSpan.FromMinutes(60*3))
                 {
-                    schulteGridGame.IsCompleted = true;
-                    schulteGridGame.CompleteTime = DateTime.Now;
+                    if (schulteGridGame.IsCompleted == false)
+                    {
+                        schulteGridGame.IsCompleted = true;
+                        schulteGridGame.CompleteTime = DateTime.Now;
+                    }
                 }
             }
 

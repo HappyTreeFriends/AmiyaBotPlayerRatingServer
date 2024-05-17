@@ -1,4 +1,5 @@
 ﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
@@ -31,20 +32,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 }
             });
         }
-
-        public static GameManager? GetGameManager(string gameType)
-        {
-            if (gameType == "SchulteGrid")
-            {
-                return new SchulteGridGameManager();
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-
+        
         public static Game? GetGameByJoinCode(string joinCode)
         {
             return GameList.Find(x => x.JoinCode==joinCode&&x.IsClosed==false);
@@ -74,7 +62,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         public abstract Task<Game> CreateNewGame(string param);
         public abstract Task GameStart(Game game);
-        public abstract string HandleMove(Game game, string contextConnectionId, string move);
+        public abstract string HandleMove(Game game, string playerId, string move);
         public abstract string CloseGame(Game game);
 
         public abstract object GetGameStatus(Game game);

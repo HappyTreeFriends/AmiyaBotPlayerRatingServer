@@ -20,10 +20,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
     public class GameHub : Hub
     {
         private readonly PlayerRatingDatabaseContext _dbContext;
+        private readonly GameManagerFactory _gameManagerFactory;
 
-        public GameHub(PlayerRatingDatabaseContext dbContext)
+
+        public GameHub(PlayerRatingDatabaseContext dbContext,GameManagerFactory gameManagerFactory)
         {
             _dbContext = dbContext;
+            _gameManagerFactory = gameManagerFactory;
         }
 
         private async Task<Tuple<Game, GameManager, ApplicationUser>> Validate(string gameId)
@@ -37,12 +40,17 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             var game = GameManager.GetGame(gameId);
 
-            if (game == null || !game.PlayerList.ContainsKey(appUser.Id))
+            if (game == null)
             {
                 throw new UnauthorizedAccessException();
             }
 
-            var manager = GameManager.GetGameManager(game.GameType);
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var manager = _gameManagerFactory.CreateGameManager(game.GameType);
 
             if (manager == null)
             {
@@ -54,7 +62,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
         private Object FormatPlayerList(Game game)
         {
-            var manager = GameManager.GetGameManager(game.GameType);
+            var manager = _gameManagerFactory.CreateGameManager(game.GameType);
             return game.PlayerList.Select(x =>
             {
                 var user = _dbContext.Users.Find(x.Key);
@@ -118,7 +126,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            var gameManager = GameManager.GetGameManager(gameType);
+            var gameManager = _gameManagerFactory.CreateGameManager(gameType);
             if (gameManager == null)
             {
                 throw new UnauthorizedAccessException();
@@ -167,7 +175,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 }));
                 return;
             }
-            var manager = GameManager.GetGameManager(game.GameType);
+            var manager = _gameManagerFactory.CreateGameManager(game.GameType);
 
             //看一下是不是已经在游戏里了
             if (game.PlayerList.ContainsKey(appUser.Id))
