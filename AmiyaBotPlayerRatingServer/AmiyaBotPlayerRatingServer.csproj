@@ -9,6 +9,9 @@
   <ItemGroup>
     <Content Remove="Resources\CharacterMap - 复制.json" />
     <Content Remove="Resources\CharacterMap.json" />
+    <Content Remove="Resources\gamedata\skill_table.json" />
+    <Content Remove="Resources\gamedata\skinUrls.json" />
+    <Content Remove="Resources\gamedata\skin_table.json" />
     <Content Remove="Resources\SkillMap.json" />
     <Content Remove="Resources\SkinTable.json" />
   </ItemGroup>
@@ -19,6 +22,15 @@
 
   <ItemGroup>
     <None Include="Resources\gamedata\character_table.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\gamedata\skill_table.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\gamedata\skinUrls.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\gamedata\skin_table.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Resources\SkinTable.json">
