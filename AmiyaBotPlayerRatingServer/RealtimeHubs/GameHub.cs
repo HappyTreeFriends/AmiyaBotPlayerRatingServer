@@ -109,7 +109,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                     UserId = x.Key,
                     UserSignalRId = x.Value,
                     UserName = user?.Nickname,
-                    UserAvatar = user?.Email==null?"/amiya.png":"https://www.gravatar.com/avatar/"+CryptoHelper.GetMd5Hash(user?.Email) + "?d=identicon",
+                    UserAvatar = user?.Avatar,
                     Score = manager?.GetScore(game, x.Key)
                 };
             });

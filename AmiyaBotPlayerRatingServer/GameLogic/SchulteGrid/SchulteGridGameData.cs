@@ -153,7 +153,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var wordsMap = ((Dictionary<string, string>)namedictObject["data"]);
             var words = wordsMap.Keys.ToList();
             var blackList = (List<string>)namedictObject["blackList"];
-
+            
             var (puzzle,answer) = await SchulteGridContinuousGameBuilder.BuildPuzzleContinuousMode(10, 10, words, blackList,3);
 
             var game = new SchulteGridGame();

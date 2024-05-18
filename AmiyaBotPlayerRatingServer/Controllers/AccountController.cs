@@ -546,6 +546,8 @@ public class AccountController : ControllerBase
             Id = user.Id,
             Email = user.Email,
             Nickname = user.Nickname,
+            Avatar = user.Avatar,
+            AvatarType = user.AvatarType,
             Roles = userRoles
         });
     }

@@ -30,9 +30,10 @@ namespace AmiyaBotPlayerRatingServer.Data
                 var characterTable = JsonConvert.DeserializeObject<JToken>(GetText("character_table.json")!) as JObject;
                 var character_names = new JObject();
 
+                var newCharaTable = new JObject();
+
                 foreach (var chara in characterTable)
                 {
-                    chara.Value["charId"] = chara.Key;
                     var obtain = chara.Value["itemObtainApproach"]?.ToString();
                     if (obtain != "凭证交易所" && obtain != "招募寻访" &&
                         obtain != "活动获得" && obtain != "主线剧情" &&
@@ -40,11 +41,14 @@ namespace AmiyaBotPlayerRatingServer.Data
                     {
                         continue;
                     }
+                    chara.Value["charId"] = chara.Key;
                     character_names[chara.Key] = chara.Value["name"];
+                    newCharaTable[chara.Key] = chara.Value;
                 }
 
                 LoadJson(character_names, "character_names.json");
 
+                characterTable = newCharaTable;
 
                 var skillTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
                 var skillDict = new Dictionary<String, JToken>();
