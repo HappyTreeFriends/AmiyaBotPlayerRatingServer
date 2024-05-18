@@ -79,20 +79,24 @@ builder.Services.AddControllers()
 
 #region Hangfire
 
-builder.Services.AddHangfire(hfConf => hfConf
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UseStorage(new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration))));
-
-builder.Services.AddHangfireServer(options =>
+if (!env.IsDevelopment())
 {
-    var queue = configuration["Hangfire:Queues"];
-    options.Queues = !string.IsNullOrWhiteSpace(queue) ? queue.Split(',') : new[] { "default" };
-});
 
-builder.Services.AddSingleton(provider =>
-    JobStorage.Current.GetMonitoringApi());
+    builder.Services.AddHangfire(hfConf => hfConf
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseStorage(new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration))));
+
+    builder.Services.AddHangfireServer(options =>
+    {
+        var queue = configuration["Hangfire:Queues"];
+        options.Queues = !string.IsNullOrWhiteSpace(queue) ? queue.Split(',') : new[] { "default" };
+    });
+
+    builder.Services.AddSingleton(provider =>
+        JobStorage.Current.GetMonitoringApi());
+}
 
 #endregion
 
@@ -227,20 +231,25 @@ using (var scope = app.Services.CreateScope())
     //执行数据迁移
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
-    
-    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-    // 初始化添加全局任务。
-    recurringJobManager.AddOrUpdate<MAATakeSnapshotOnAllConnectionsService>("MAATakeSnapshotOnAllConnectionsService", service => service.Collect(), Cron.Hourly);
+
+    if (!app.Environment.IsDevelopment())
+    {
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        // 初始化添加全局任务。
+        recurringJobManager.AddOrUpdate<MAATakeSnapshotOnAllConnectionsService>(
+            "MAATakeSnapshotOnAllConnectionsService", service => service.Collect(), Cron.Hourly);
+    }
 }
-
-
 
 app.AddSystemRoleAsync();
 
-app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
+if (!app.Environment.IsDevelopment())
 {
-    Authorization = new[] { new HangfireCustomFilter() }
-});
+    app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new HangfireCustomFilter() }
+    });
+}
 
 app.UseEndpoints(endpoints =>
 {

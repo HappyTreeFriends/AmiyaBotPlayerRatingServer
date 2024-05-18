@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Resources\CharacterMap - 复制.json" />
     <Content Remove="Resources\CharacterMap.json" />
     <Content Remove="Resources\SkillMap.json" />
     <Content Remove="Resources\SkinTable.json" />
@@ -17,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Resources\gamedata\character_table.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Resources\SkinTable.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

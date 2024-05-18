@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
+using AmiyaBotPlayerRatingServer.Data;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 {
@@ -10,26 +11,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         private static List<String> operatorList = new List<string>();
         private static JObject? _skillMap;
 
-        private static void LoadCharacterMap()
+        private static void LoadCharacterMap(ArknightsMemoryCache memyCache)
         {
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "CharacterMap.json");
-
-            if (System.IO.File.Exists(filePath))
+            if (_characterMap != null)
             {
-                var fileStream = new FileStream(filePath, FileMode.Open);
-                using var reader = new StreamReader(fileStream);
-                _characterMap = JObject.Parse(reader.ReadToEnd());
+                return;
             }
 
-            filePath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SkillMap.json");
-
-            if (System.IO.File.Exists(filePath))
-            {
-                var fileStream = new FileStream(filePath, FileMode.Open);
-                using var reader = new StreamReader(fileStream);
-                _skillMap = JObject.Parse(reader.ReadToEnd());
-            }
-
+            _characterMap = memyCache.GetJson("character_table.json") as JObject;
+            _skillMap = memyCache.GetJson("skill_table.json") as JObject;
+            
             if (_characterMap != null)
             {
                 foreach (var op in _characterMap)
@@ -147,19 +138,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 { "blackList", blackList }
             };
         }
-
-        static SchulteGridGameData()
-        {
-            LoadCharacterMap();
-        }
-
+        
         public static bool IsOperator(String operatorName)
         {
             return operatorList.Contains(operatorName);
         }
 
-        public static async Task<SchulteGridGame> BuildContinuousMode()
+        public static async Task<SchulteGridGame> BuildContinuousMode(ArknightsMemoryCache arknightsMemoryCache)
         {
+            LoadCharacterMap(arknightsMemoryCache);
+
             var wordType = "skill";
             var namedictObject = _nameDicts[wordType];
             var wordsMap = ((Dictionary<string, string>)namedictObject["data"]);

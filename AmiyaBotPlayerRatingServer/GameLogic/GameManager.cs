@@ -3,11 +3,18 @@ using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
+    public class SystemNotification
+    {
+        public string Id { get; set; }
+        public string Message { get; set; }
+        public DateTime ExpiredAt { get; set; }
+    }
+
     public abstract class GameManager
     {
         public static readonly List<Game> GameList = new List<Game>();
         private static readonly Task cleanTask = Task.CompletedTask;
-
+        public static readonly List<SystemNotification> Notifications = new List<SystemNotification>();
 
         static GameManager()
         {

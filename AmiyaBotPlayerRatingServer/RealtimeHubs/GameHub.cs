@@ -29,6 +29,44 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             _gameManagerFactory = gameManagerFactory;
         }
 
+        #region Helper Methods
+
+        private async Task<ApplicationUser> ValidateUser()
+        {
+            var appUser = await _dbContext.Users.FindAsync(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            if (appUser == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            return appUser;
+        }
+
+        private Task<Game> ValidateGame(string gameId)
+        {
+            var game = GameManager.GetGame(gameId);
+
+            if (game == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            return Task.FromResult(game);
+        }
+
+        private Task<GameManager> ValidateManager(String gameType)
+        {
+            var manager = _gameManagerFactory.CreateGameManager(gameType);
+
+            if (manager == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            return Task.FromResult(manager);
+        }
+
         private async Task<Tuple<Game, GameManager, ApplicationUser>> Validate(string gameId)
         {
             var appUser = await _dbContext.Users.FindAsync(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
@@ -77,6 +115,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             });
         }
 
+        #endregion
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task Me()
         {
@@ -87,6 +127,17 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 ConnectionId = Context.ConnectionId,
                 Id = userId,
                 CreatedGames = GameManager.GameList.Where(x => x.CreatorId == userId).Select(x => x.Id),
+            }));
+        }
+
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task GetServerTime()
+        {
+            await Clients.Caller.SendAsync("ServerTime", JsonConvert.SerializeObject(new
+            {
+                UtcNow = DateTime.UtcNow,
+                LocalNow = DateTime.Now
             }));
         }
 
@@ -261,13 +312,14 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            var ret = manager.CloseGame(game);
 
             if (game.IsClosed == false)
             {
                 game.IsClosed = true;
                 game.CloseTime = DateTime.Now;
             }
+
+            var ret = manager.CloseGame(game);
 
             await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }
@@ -307,6 +359,36 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var ret = manager.HandleMove(game, appUser.Id, move);
 
             await Clients.Group(gameId).SendAsync("ReceiveMove", ret);
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task GetNotification()
+        {
+            foreach (var notification in GameManager.Notifications)
+            {
+                if (notification.ExpiredAt > DateTime.Now)
+                {
+                    await Clients.Caller.SendAsync("SystemNotification", JsonConvert.SerializeObject(new
+                    {
+                        Id = notification.Id,
+                        Message = notification.Message,
+                        ExpiredAt = notification.ExpiredAt,
+                    }));
+                }
+            }
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task Chat(string gameId, string message)
+        {
+            var (game, manager, appUser) = await Validate(gameId);
+
+            await Clients.Group(gameId).SendAsync("Chat", JsonConvert.SerializeObject(new
+            {
+                UserId = appUser.Id,
+                UserName = appUser.Nickname,
+                Message = message,
+            }));
         }
     }
 }

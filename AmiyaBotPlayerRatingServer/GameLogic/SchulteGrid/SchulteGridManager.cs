@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -7,6 +8,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 {
     public class SchulteGridGameManager : GameManager
     {
+        private readonly ArknightsMemoryCache _arknightsMemoryCache;
+
+        public SchulteGridGameManager(ArknightsMemoryCache memoryCache)
+        {
+            _arknightsMemoryCache = memoryCache;
+        }
 
         private static SchulteGridGame GenerateTestGame()
         {
@@ -82,7 +89,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         {
             var paramObj = JObject.Parse(param);
 
-            var game = await SchulteGridGameData.BuildContinuousMode();
+            var game = await SchulteGridGameData.BuildContinuousMode(_arknightsMemoryCache);
             game.IsPrivate  = paramObj["IsPrivate"]?.ToObject<bool>() ?? false;
             return game;
         }
@@ -99,6 +106,18 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var moveObj = JObject.Parse(move);
             var characterName = moveObj["CharacterName"].ToString();
 
+            if (game.IsStarted == false)
+            {
+                return JsonConvert.SerializeObject(new
+                {
+                    Result = "NotStarted",
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    Completed = game.IsCompleted,
+                    CompleteTime = game.CompleteTime
+                });
+            }
+
             if (!SchulteGridGameData.IsOperator(characterName))
             {
                 return JsonConvert.SerializeObject(new
@@ -106,23 +125,34 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                     Result = "NotOperator",
                     PlayerId = playerId,
                     CharacterName = characterName,
-                    Completed = game.IsCompleted
+                    Completed = game.IsCompleted,
+                    CompleteTime = game.CompleteTime
                 });
             }
 
             var answers = game.AnswerList.Where(a => a.CharacterName == characterName).ToList();
-            if (answers.Count==0)
+            if (answers.Count == 0)
             {
-                return JsonConvert.SerializeObject(new { Result = "Wrong",
+                return JsonConvert.SerializeObject(new
+                {
+                    Result = "Wrong",
                     PlayerId = playerId,
-                    CharacterName = characterName, Completed = game.IsCompleted });
+                    CharacterName = characterName,
+                    Completed = game.IsCompleted,
+                    CompleteTime = game.CompleteTime
+                });
             }
 
             foreach (var answer in answers)
             {
                 if (answer.PlayerId != null)
                 {
-                    return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
+                    return JsonConvert.SerializeObject(new
+                    {
+                        Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer,
+                        Completed = game.IsCompleted,
+                        CompleteTime = game.CompleteTime
+                    });
                 }
 
                 answer.Completed = true;
@@ -148,14 +178,32 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 }
             }
 
-            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answers, Completed = game.IsCompleted});
+            return JsonConvert.SerializeObject(new
+            {
+                Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answers,
+                Completed = game.IsCompleted,
+                CompleteTime = game.CompleteTime
+            });
 
         }
 
         public override string CloseGame(Game rawGame)
         {
             var game = rawGame as SchulteGridGame;
-            return JsonConvert.SerializeObject(new { GameId= game.Id, RemainingAnswers = game.AnswerList.Where(a=>a.Completed==false) });
+
+            if (!game.IsCompleted)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
+            }
+
+            return JsonConvert.SerializeObject(new { GameId= game.Id, 
+                RemainingAnswers = game.AnswerList.Where(a=>a.Completed==false),
+                IsCompleted = game.IsCompleted,
+                CompleteTime = game.CompleteTime,
+                IsClosed = true,
+                CloseTime = game.CloseTime
+            });
         }
 
         public override object GetGameStatus(Game game)

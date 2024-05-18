@@ -61,8 +61,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 {
                     JmesPath jmes = new JmesPath();
                     var result = jmes.Transform(jsonData, model.Query);
-                    var resultJson = JObject.Parse(result);
-                    return Ok(resultJson);
+                    return Content(result, "application/json");
                 }
 
                 return NotFound();

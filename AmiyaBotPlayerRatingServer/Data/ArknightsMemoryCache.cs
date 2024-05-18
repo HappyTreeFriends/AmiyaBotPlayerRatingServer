@@ -19,7 +19,7 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         private void UpdateCache(object? state)
         {
-            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "CharacterMap.json"), "character_table.json");
+            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "character_table.json"), "character_table.json");
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SkillMap.json"), "skill_table.json");
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SkinTable.json"), "skin_table.json");
 
@@ -27,6 +27,11 @@ namespace AmiyaBotPlayerRatingServer.Data
             {
                 //进行一点点逻辑处理
                 var characterTable = JsonConvert.DeserializeObject<JToken>(GetText("character_table.json")!) as JObject;
+
+                foreach (var chara in characterTable)
+                {
+                    chara.Value["charId"] = chara.Key;
+                }
 
                 var skillTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
                 var skillDict = new Dictionary<String, JToken>();
@@ -52,7 +57,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                     }
                 }
 
-                var skinTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
+                var skinTable = JsonConvert.DeserializeObject<JToken>(GetText("skin_table.json")!) as JObject;
                 foreach (var skinObj in (skinTable!["charSkins"] as JObject)!)
                 {
                     var key = skinObj.Key;
@@ -88,7 +93,7 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
             if (File.Exists(filePath))
             {
-                var fileStream = new FileStream(filePath, FileMode.Open);
+                using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
                 using var reader = new StreamReader(fileStream);
                 var text = reader.ReadToEnd();
                 var characterMap = JToken.Parse(text);
