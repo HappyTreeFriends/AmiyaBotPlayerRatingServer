@@ -154,6 +154,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
             {
                 GameId = game.Id,
+                GameType = game.GameType,
                 GameJoinCode = game.JoinCode,
                 GameStarted = game.IsStarted,
                 GameStartTime = game.StartTime,

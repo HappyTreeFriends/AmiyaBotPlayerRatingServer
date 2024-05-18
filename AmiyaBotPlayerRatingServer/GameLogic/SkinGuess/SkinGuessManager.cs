@@ -39,11 +39,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                     CharacterId = "char_109_silent",
                     SkinName = "破晓",
                     SkinId = "char_109_silent@nian#2",
-                    ImageUrl = "https://media.prts.wiki/6/6e/%E7%AB%8B%E7%BB%98_%E9%9C%9C%E5%8F%B6_skin1.png",
+                    ImageUrl = "https://media.prts.wiki/8/8c/立绘_霜叶_skin1.png",
                     RandomNumber = RandomNumberGenerator()
                 },
-
-
             };
 
             return game;
@@ -82,8 +80,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 });
             }
 
-            var answers = game.AnswerList.Where(a => a.CharacterName == characterName).ToList();
-            if (answers.Count == 0)
+            var answer = game.AnswerList[game.CurrentQuestionIndex];
+            if (answer.CharacterName != characterName)
             {
                 return JsonConvert.SerializeObject(new
                 {
@@ -93,18 +91,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                     Completed = game.IsCompleted
                 });
             }
-
-            foreach (var answer in answers)
+            
+            if (answer.PlayerId != null)
             {
-                if (answer.PlayerId != null)
-                {
-                    return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
-                }
-
-                answer.Completed = true;
-                answer.AnswerTime = DateTime.Now;
-                answer.PlayerId = playerId;
+                return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
             }
+
+            answer.Completed = true;
+            answer.AnswerTime = DateTime.Now;
+            answer.PlayerId = playerId;
+            
 
             if (game.PlayerScore.ContainsKey(playerId))
             {
@@ -115,16 +111,18 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 game.PlayerScore.TryAdd(playerId, 200);
             }
 
-            if (game.IsCompleted != true)
+            game.CurrentQuestionIndex++;
+
+            if (game.CurrentQuestionIndex >= game.AnswerList.Count)
             {
-                if (game.AnswerList.All(a => a.Completed == true))
-                {
-                    game.IsCompleted = true;
-                    game.CompleteTime = DateTime.Now;
-                }
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
             }
 
-            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answers, Completed = game.IsCompleted });
+            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId,
+                CharacterName = characterName, Answer = answer, Completed = game.IsCompleted,
+                CurrentQuestionIndex = game.CurrentQuestionIndex
+            });
 
         }
 
@@ -136,7 +134,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         public override object GetGameStatus(Game game)
         {
-            var schulteGridGame = game as SchulteGridGame;
+            var schulteGridGame = game as SkinGuessGame;
 
             if (schulteGridGame.IsStarted)
             {
@@ -152,8 +150,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             return new
             {
-                AnswerList = schulteGridGame!.AnswerList.Where(a => a.Completed == true),
-                Grid = schulteGridGame.Grid,
+                AnswerList = schulteGridGame!.AnswerList,
+                schulteGridGame.CurrentQuestionIndex,
             };
         }
 

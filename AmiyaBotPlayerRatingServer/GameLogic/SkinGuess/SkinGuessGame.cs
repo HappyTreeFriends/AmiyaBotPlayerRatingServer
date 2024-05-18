@@ -23,6 +23,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             public string? PlayerId { get; set; }
         }
 
+        public int CurrentQuestionIndex { get; set; } = 0;
+
         public List<Answer> AnswerList { get; set; }
 
         public ConcurrentDictionary<String, double> PlayerScore { get; set; } = new ConcurrentDictionary<string, double>();
