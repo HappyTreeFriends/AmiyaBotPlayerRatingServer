@@ -20,18 +20,31 @@ namespace AmiyaBotPlayerRatingServer.Data
         private void UpdateCache(object? state)
         {
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "character_table.json"), "character_table.json");
-            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SkillMap.json"), "skill_table.json");
-            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SkinTable.json"), "skin_table.json");
+            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skill_table.json"), "skill_table.json");
+            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skin_table.json"), "skin_table.json");
+            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skinUrls.json"), "skinUrls.json");
 
             try
             {
                 //进行一点点逻辑处理
                 var characterTable = JsonConvert.DeserializeObject<JToken>(GetText("character_table.json")!) as JObject;
+                var character_names = new JObject();
 
                 foreach (var chara in characterTable)
                 {
                     chara.Value["charId"] = chara.Key;
+                    var obtain = chara.Value["itemObtainApproach"]?.ToString();
+                    if (obtain != "凭证交易所" && obtain != "招募寻访" &&
+                        obtain != "活动获得" && obtain != "主线剧情" &&
+                        obtain != "信用交易所")
+                    {
+                        continue;
+                    }
+                    character_names[chara.Key] = chara.Value["name"];
                 }
+
+                LoadJson(character_names, "character_names.json");
+
 
                 var skillTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
                 var skillDict = new Dictionary<String, JToken>();

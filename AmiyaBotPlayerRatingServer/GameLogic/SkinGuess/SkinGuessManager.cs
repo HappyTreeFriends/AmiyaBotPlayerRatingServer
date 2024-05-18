@@ -1,5 +1,7 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.Utility;
+using Hangfire.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -47,12 +49,85 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             return game;
         }
 
+        private SkinGuessGame GenerateRealGame()
+        {
+            var game = new SkinGuessGame();
+
+            //手动添加一些测试数据
+            game.GameType = "SkinGuess";
+            game.AnswerList= new List<SkinGuessGame.Answer>();
+
+            var charMaps = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
+            var skinUrls = _arknightsMemoryCache.GetJson("skinUrls.json") as JObject;
+
+            if (charMaps == null || skinUrls == null)
+            {
+                //ERROR
+                return GenerateTestGame();
+            }
+            
+            var operatorIdList = charMaps.Keys.ToList();
+            var max = operatorIdList.Count();
+            var random = new Random();
+
+            while(game.AnswerList.Count<15)
+            {
+                var rand = random.Next(0, max);
+                var charId = operatorIdList[rand];
+                if (game.AnswerList.Any(x => x.CharacterId == charId))
+                {
+                    continue;
+                }
+
+                var charName = charMaps[charId];
+                var skinList = (skinUrls[charId] as JObject)?.Properties().Select(p=>p.Value).ToList();
+
+                if (skinList==null||skinList.Count <= 1)
+                {
+                    continue;
+                }
+
+                //randomly select a skin except the first one
+                var randSkin = random.Next(1, skinList.Count);
+                var skinUrl = skinList[randSkin]?.ToString();
+
+                if (skinUrl == null)
+                {
+                    continue;
+                }
+
+                var answer = new SkinGuessGame.Answer()
+                {
+                    CharacterName = charName,
+                    CharacterId = charId,
+                    SkinName = "",
+                    SkinId = "",
+                    ImageUrl = skinUrl,
+                    RandomNumber = RandomNumberGenerator()
+                };
+                game.AnswerList.Add(answer);
+            }
+
+            return game;
+        }
+
+        private bool IsOperatorName(string name)
+        {
+            var charDataJson = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
+            if (charDataJson == null)
+            {
+                //ERROR
+                return false;
+            }
+
+            return charDataJson.Values.Contains(name);
+        }
 
         public override async Task<Game> CreateNewGame(string param)
         {
             var paramObj = JObject.Parse(param);
 
-            var game = GenerateTestGame();
+            var game = GenerateRealGame();
             game.IsPrivate = paramObj["IsPrivate"]?.ToObject<bool>() ?? false;
             return game;
         }
@@ -69,7 +144,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             var moveObj = JObject.Parse(move);
             var characterName = moveObj["CharacterName"].ToString();
 
-            if (!SchulteGridGameData.IsOperator(characterName))
+            if (!IsOperatorName(characterName))
             {
                 return JsonConvert.SerializeObject(new
                 {
