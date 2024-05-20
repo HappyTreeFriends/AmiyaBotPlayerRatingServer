@@ -190,7 +190,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             game.CreatorId= appUser.Id;
             game.CreatorConnectionId = Context.ConnectionId;
             game.CreateTime = DateTime.Now;
-            game.PlayerList.Add(appUser.Id, Context.ConnectionId);
+            game.PlayerList.TryAdd(appUser.Id, Context.ConnectionId);
             
             game.JoinCode= GameManager.RequestJoinCode();
             GameManager.GameList.Add(game);
@@ -237,7 +237,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
             else
             {
-                game.PlayerList.Add(appUser.Id, Context.ConnectionId);
+                game.PlayerList.TryAdd(appUser.Id, Context.ConnectionId);
             }
             
             //如果是房主，更新房主的ConnectionId
@@ -273,7 +273,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 return;
             }
             var oldConnectionId = game.PlayerList[playerId];
-            game.PlayerList.Remove(playerId);
+            game.PlayerList.TryRemove(playerId,out _);
 
             var playerKickedResponse = JsonConvert.SerializeObject(new
             {
@@ -292,7 +292,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             var (game, manager, appUser) = await Validate(gameId);
 
-            game.PlayerList.Remove(appUser.Id);
+            game.PlayerList.TryRemove(appUser.Id,out _);
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
             await Clients.Group(gameId).SendAsync("PlayerLeft", JsonConvert.SerializeObject(new
@@ -345,6 +345,16 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameId = gameId,
                 PlayerList = FormatPlayerList(game)
             }));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task RallyPoint(string gameId,string rallyData)
+        {
+            var (game, manager, appUser) = await Validate(gameId);
+            
+            
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]

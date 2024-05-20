@@ -1,4 +1,5 @@
-﻿using AmiyaBotPlayerRatingServer.Model;
+﻿using System.Collections.Concurrent;
+using AmiyaBotPlayerRatingServer.Model;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
@@ -23,6 +24,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public bool IsClosed { get; set; }
         public DateTime CloseTime { get; set; }
 
-        public Dictionary<String, String> PlayerList { get; set; } = new Dictionary<String,String>();
+        public ConcurrentDictionary<String, String> PlayerList { get; set; } = new ConcurrentDictionary<String,String>();
+
+        public ConcurrentDictionary<String, ConcurrentDictionary<String,String>> RallyPoints { get; set; } = new ConcurrentDictionary<String, ConcurrentDictionary<String,String>>();
     }
 }
