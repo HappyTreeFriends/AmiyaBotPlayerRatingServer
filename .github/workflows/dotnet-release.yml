@@ -23,6 +23,7 @@ jobs:
       run: dotnet restore
     - name: Write the secret to file
       run: echo "${{ secrets.ASPNET_SETTINGS_LIVE }}" | base64 -d > AmiyaBotPlayerRatingServer/appsettings.Production.json
+      run: cat AmiyaBotPlayerRatingServer/appsettings.Production.json
     - name: Build
       run: |
           cd AmiyaBotPlayerRatingServer
