@@ -22,6 +22,7 @@ using Microsoft.Extensions.Options;
 using Hangfire.Storage;
 using AmiyaBotPlayerRatingServer.Localization;
 using AmiyaBotPlayerRatingServer.RealtimeHubs;
+using Hangfire.MySql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,7 +87,7 @@ if (!env.IsDevelopment())
         .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
         .UseSimpleAssemblyNameTypeSerializer()
         .UseRecommendedSerializerSettings()
-        .UseStorage(new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration))));
+        .UseStorage(PlayerRatingDatabaseContext.GetHangfireJobStorage(configuration)));
 
     builder.Services.AddHangfireServer(options =>
     {

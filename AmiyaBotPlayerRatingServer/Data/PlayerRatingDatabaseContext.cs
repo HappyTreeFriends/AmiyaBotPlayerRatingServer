@@ -2,6 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using System.Data;
+using Hangfire;
+using Hangfire.MySql;
+using Hangfire.PostgreSql;
 #pragma warning disable CS8618
 
 namespace AmiyaBotPlayerRatingServer.Data
@@ -22,16 +27,48 @@ namespace AmiyaBotPlayerRatingServer.Data
             var database = configuration["Db:Database"];
             var username = configuration["Db:Username"];
             var password = configuration["Db:Password"];
-            var conn =
-                $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
+            var dbType = configuration["Db:Type"]?.ToUpper();
+            String conn;
+            if (dbType == "MYSQL")
+            {
+                conn =
+                    $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};Maximum Pool Size=50";
+            }
+            else
+            {
+                conn =
+                    $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
+            }
+
             return conn;
+        }
+
+        public static JobStorage GetHangfireJobStorage(IConfiguration configuration)
+        {
+            var dbType = configuration["Db:Type"]?.ToUpper();
+            if (dbType == "MYSQL")
+            {
+                return new MySqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration), new MySqlStorageOptions());
+            }
+            else
+            {
+                return new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
+            }
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             base.OnConfiguring(options);
 
-            options.UseNpgsql(GetConnectionString(Configuration));
+            var dbType = Configuration["Db:Type"];
+            if (dbType == "MySql")
+            {
+                options.UseMySQL(GetConnectionString(Configuration));
+            }
+            else
+            { 
+                options.UseNpgsql(GetConnectionString(Configuration));
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
