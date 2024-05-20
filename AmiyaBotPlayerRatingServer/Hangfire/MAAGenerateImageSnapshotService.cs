@@ -1,9 +1,6 @@
-﻿using System.Drawing;
-using System.Drawing.Drawing2D;
-using AmiyaBotPlayerRatingServer.Data;
-using AmiyaBotPlayerRatingServer.Model;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
+﻿using AmiyaBotPlayerRatingServer.Data;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace AmiyaBotPlayerRatingServer.Hangfire
 {

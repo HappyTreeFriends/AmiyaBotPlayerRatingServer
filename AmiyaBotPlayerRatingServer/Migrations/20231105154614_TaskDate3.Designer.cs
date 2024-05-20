@@ -205,11 +205,11 @@ namespace AmiyaBotPlayerRatingServer.Migrations
 
                     b.Property<byte?[]>("ImagePayload")
                         .IsRequired()
-                        .HasColumnType("smallint[]");
+                        .HasColumnType("bytea");
 
                     b.Property<byte?[]>("ImagePayloadThumbnail")
                         .IsRequired()
-                        .HasColumnType("smallint[]");
+                        .HasColumnType("bytea");
 
                     b.Property<string>("Payload")
                         .IsRequired()

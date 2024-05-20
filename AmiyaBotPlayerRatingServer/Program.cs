@@ -22,7 +22,6 @@ using Microsoft.Extensions.Options;
 using Hangfire.Storage;
 using AmiyaBotPlayerRatingServer.Localization;
 using AmiyaBotPlayerRatingServer.RealtimeHubs;
-using Hangfire.MySql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -232,6 +231,7 @@ using (var scope = app.Services.CreateScope())
     //执行数据迁移
     var dbContext = scope.ServiceProvider.GetRequiredService<PlayerRatingDatabaseContext>();
     dbContext.Database.Migrate();
+    
 
     if (!app.Environment.IsDevelopment())
     {

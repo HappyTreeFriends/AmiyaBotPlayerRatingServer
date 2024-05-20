@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AmiyaBotPlayerRatingServer.Model;
 #pragma warning disable CS8618
@@ -6,7 +7,9 @@ namespace AmiyaBotPlayerRatingServer.Model;
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class ClientInfo
 {
-    [Key] public Guid Id { get; set; } = Guid.NewGuid();
+
+    [Key]
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public string ClientId { get; set; }
     public string FriendlyName { get; set; }

@@ -4,7 +4,6 @@ using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -17,72 +16,70 @@ namespace AmiyaBotPlayerRatingServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
-
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+                .HasAnnotation("ProductVersion", "8.0.5")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<int>("AccessFailedCount")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("Avatar")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("AvatarType")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("varchar(256)");
 
                     b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime");
 
                     b.Property<string>("Nickname")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("varchar(256)");
 
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("varchar(256)");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("varchar(256)");
 
                     b.HasKey("Id");
 
@@ -99,40 +96,40 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.CharacterStatistics", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("AverageEquipLevel")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<double>("AverageLevel")
-                        .HasColumnType("double precision");
+                        .HasColumnType("double");
 
                     b.Property<double>("AverageSkillLevel")
-                        .HasColumnType("double precision");
+                        .HasColumnType("double");
 
                     b.Property<string>("AverageSpecializeLevel")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<long>("BatchCount")
                         .HasColumnType("bigint");
 
                     b.Property<string>("CharacterId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<int>("Rarity")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<long>("SampleCount")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime>("VersionEnd")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("VersionStart")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
@@ -143,31 +140,31 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("ClientId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("FriendlyName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("IconBase64")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("RedirectUri")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -178,21 +175,21 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("DeviceIdentity")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("UserIdentity")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -205,43 +202,43 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("AvailableFrom")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("AvailableTo")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("ConnectionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("IsPaused")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<DateTime?>("LastRunAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Parameters")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("UtcCronString")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -254,23 +251,23 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<byte[]>("ImagePayload")
-                        .HasColumnType("bytea");
+                        .HasColumnType("longblob");
 
                     b.Property<byte[]>("ImagePayloadThumbnail")
-                        .HasColumnType("bytea");
+                        .HasColumnType("longblob");
 
                     b.Property<string>("Payload")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<Guid>("TaskId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
@@ -283,38 +280,38 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("ConnectionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsCompleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("IsSystemGenerated")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Parameters")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<Guid?>("ParentRepetitiveTaskId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid?>("ParentTaskId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -330,18 +327,18 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.SKLandCharacterBox", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("CharacterBoxJson")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("CredentialId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<DateTime>("RefreshedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
@@ -353,33 +350,33 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.SKLandCredential", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("AvatarUrl")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Credential")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Nickname")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("RefreshSuccess")
-                        .HasColumnType("boolean");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<DateTime>("RefreshedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("SKLandUid")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
 
@@ -391,19 +388,19 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("varchar(256)");
 
                     b.Property<string>("NormalizedName")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("varchar(256)");
 
                     b.HasKey("Id");
 
@@ -418,19 +415,17 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("int");
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("RoleId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
 
@@ -443,19 +438,17 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("int");
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
 
@@ -467,17 +460,17 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ProviderKey")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ProviderDisplayName")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("LoginProvider", "ProviderKey");
 
@@ -489,10 +482,10 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("RoleId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("UserId", "RoleId");
 
@@ -504,16 +497,16 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Value")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
@@ -524,48 +517,58 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("ApplicationType")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("ClientId")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("varchar(100)");
 
                     b.Property<string>("ClientSecret")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ClientType")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("ConcurrencyToken")
                         .IsConcurrencyToken()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("ConsentType")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("DisplayName")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("DisplayNames")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("JsonWebKeySet")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Permissions")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("PostLogoutRedirectUris")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Properties")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("RedirectUris")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Requirements")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
-                    b.Property<string>("Type")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                    b.Property<string>("Settings")
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -579,36 +582,36 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ApplicationId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ConcurrencyToken")
                         .IsConcurrencyToken()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.Property<DateTime?>("CreationDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Properties")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Scopes")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Status")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("Subject")
                         .HasMaxLength(400)
-                        .HasColumnType("character varying(400)");
+                        .HasColumnType("varchar(400)");
 
                     b.Property<string>("Type")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.HasKey("Id");
 
@@ -621,34 +624,34 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ConcurrencyToken")
                         .IsConcurrencyToken()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Descriptions")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("DisplayName")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("DisplayNames")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("varchar(200)");
 
                     b.Property<string>("Properties")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Resources")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -662,49 +665,49 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ApplicationId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("AuthorizationId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ConcurrencyToken")
                         .IsConcurrencyToken()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.Property<DateTime?>("CreationDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Payload")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Properties")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime?>("RedemptionDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("ReferenceId")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("varchar(100)");
 
                     b.Property<string>("Status")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("Subject")
                         .HasMaxLength(400)
-                        .HasColumnType("character varying(400)");
+                        .HasColumnType("varchar(400)");
 
                     b.Property<string>("Type")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("varchar(50)");
 
                     b.HasKey("Id");
 

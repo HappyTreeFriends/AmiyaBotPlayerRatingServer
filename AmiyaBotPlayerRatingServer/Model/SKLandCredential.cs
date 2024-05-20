@@ -1,9 +1,13 @@
-﻿namespace AmiyaBotPlayerRatingServer.Model;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+
+namespace AmiyaBotPlayerRatingServer.Model;
 #pragma warning disable CS8618
 // ReSharper disable UnusedMember.Global
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class SKLandCredential
 {
+    [Key]
     public string Id { get; set; }
     public string UserId { get; set; } // ForeignKey to ApplicationUser
     public ApplicationUser User { get; set; } // Navigation Property

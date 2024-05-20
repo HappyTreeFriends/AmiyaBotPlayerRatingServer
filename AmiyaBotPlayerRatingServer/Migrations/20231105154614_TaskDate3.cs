@@ -14,16 +14,14 @@ namespace AmiyaBotPlayerRatingServer.Migrations
             migrationBuilder.AddColumn<byte?[]>(
                 name: "ImagePayload",
                 table: "MAAResponses",
-                type: "smallint[]",
-                nullable: false,
-                defaultValue: new byte?[0]);
+                type: "bytea",
+                nullable: false);
 
             migrationBuilder.AddColumn<byte?[]>(
                 name: "ImagePayloadThumbnail",
                 table: "MAAResponses",
-                type: "smallint[]",
-                nullable: false,
-                defaultValue: new byte?[0]);
+                type: "bytea",
+                nullable: false);
         }
 
         /// <inheritdoc />

@@ -2,10 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using System.Data;
 using Hangfire;
-using Hangfire.MySql;
 using Hangfire.PostgreSql;
 #pragma warning disable CS8618
 
@@ -29,15 +26,14 @@ namespace AmiyaBotPlayerRatingServer.Data
             var password = configuration["Db:Password"];
             var dbType = configuration["Db:Type"]?.ToUpper();
             String conn;
-            if (dbType == "MYSQL")
+            switch (dbType)
             {
-                conn =
-                    $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};Maximum Pool Size=50";
-            }
-            else
-            {
-                conn =
-                    $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
+                case "POSTGRESQL":
+                    conn =
+                        $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
+                    break;
+                default:
+                    return "";
             }
 
             return conn;
@@ -46,13 +42,12 @@ namespace AmiyaBotPlayerRatingServer.Data
         public static JobStorage GetHangfireJobStorage(IConfiguration configuration)
         {
             var dbType = configuration["Db:Type"]?.ToUpper();
-            if (dbType == "MYSQL")
+            switch (dbType)
             {
-                return new MySqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration), new MySqlStorageOptions());
-            }
-            else
-            {
-                return new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
+                case "POSTGRESQL":
+                    return new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
+                default:
+                    return null;
             }
         }
 
@@ -60,14 +55,14 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
             base.OnConfiguring(options);
 
-            var dbType = Configuration["Db:Type"];
-            if (dbType == "MySql")
+            var dbType = Configuration["Db:Type"]?.ToUpper();
+            switch (dbType)
             {
-                options.UseMySQL(GetConnectionString(Configuration));
-            }
-            else
-            { 
-                options.UseNpgsql(GetConnectionString(Configuration));
+                case "POSTGRESQL":
+                    options.UseNpgsql(GetConnectionString(Configuration));
+                    break;
+                default:
+                    return;
             }
         }
 

@@ -22,9 +22,9 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Write the secret to file
+      # use https://base64.us/ to encode json file
       run: |
           echo "${{ secrets.ASPNET_SETTINGS_LIVE }}" | base64 -d > AmiyaBotPlayerRatingServer/appsettings.Production.json
-          cat AmiyaBotPlayerRatingServer/appsettings.Production.json
     - name: Build
       run: |
           cd AmiyaBotPlayerRatingServer

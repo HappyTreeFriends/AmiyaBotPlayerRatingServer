@@ -1,9 +1,13 @@
-﻿namespace AmiyaBotPlayerRatingServer.Model;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+
+namespace AmiyaBotPlayerRatingServer.Model;
 #pragma warning disable CS8618
 // ReSharper disable UnusedMember.Global
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class CharacterStatistics
 {
+    [Key]
     public String Id { get; set; }
 
     /// <summary>
