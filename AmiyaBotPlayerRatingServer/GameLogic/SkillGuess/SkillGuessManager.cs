@@ -42,7 +42,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             var max = operators.Count();
             var random = new Random();
 
-            while (game.AnswerList.Count < 15)
+            while (game.AnswerList.Count < 16)
             {
                 var rand = random.Next(0, max);
                 var operatorData = operators[rand].Children().First();
