@@ -112,7 +112,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         public override string HandleMove(Game rawGame, string playerId, string move)
         {
-            var game = rawGame as SkinGuessGame;
+            var game = rawGame as SkillGuessGame;
 
             var moveObj = JObject.Parse(move);
             var characterName = moveObj["CharacterName"].ToString();
@@ -181,40 +181,40 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         public override string CloseGame(Game rawGame)
         {
-            var game = rawGame as SkinGuessGame;
+            var game = rawGame as SkillGuessGame;
             return JsonConvert.SerializeObject(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
         }
 
-        public override object GetGameStatus(Game game)
+        public override object GetGameStatus(Game rawGame)
         {
-            var schulteGridGame = game as SkinGuessGame;
+            var game = rawGame as SkillGuessGame;
 
-            if (schulteGridGame.IsStarted)
+            if (game.IsStarted)
             {
-                if (DateTime.Now - schulteGridGame.StartTime > TimeSpan.FromMinutes(60 * 3))
+                if (DateTime.Now - game.StartTime > TimeSpan.FromMinutes(60 * 3))
                 {
-                    if (schulteGridGame.IsCompleted == false)
+                    if (game.IsCompleted == false)
                     {
-                        schulteGridGame.IsCompleted = true;
-                        schulteGridGame.CompleteTime = DateTime.Now;
+                        game.IsCompleted = true;
+                        game.CompleteTime = DateTime.Now;
                     }
                 }
             }
 
             return new
             {
-                AnswerList = schulteGridGame!.AnswerList,
-                schulteGridGame.CurrentQuestionIndex,
+                AnswerList = game!.AnswerList,
+                game.CurrentQuestionIndex,
             };
         }
 
-        public override double GetScore(Game game, string player)
+        public override double GetScore(Game rawGame, string player)
         {
-            var schulteGridGame = game as SkinGuessGame;
+            var game = rawGame as SkillGuessGame;
 
-            if (schulteGridGame!.PlayerScore.ContainsKey(player))
+            if (game!.PlayerScore.ContainsKey(player))
             {
-                return schulteGridGame.PlayerScore[player];
+                return game.PlayerScore[player];
             }
 
             return 0;
