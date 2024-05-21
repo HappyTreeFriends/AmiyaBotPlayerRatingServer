@@ -1,4 +1,5 @@
 ﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.GameLogic.SkillGuess;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
@@ -10,6 +11,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             service.AddSingleton<GameManagerFactory>();
             service.AddSingleton<SchulteGridGameManager>();
             service.AddSingleton<SkinGuessManager>();
+            service.AddSingleton<SkillGuessManager>();
         }
     }
 }

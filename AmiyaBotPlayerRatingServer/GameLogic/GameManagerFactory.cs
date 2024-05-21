@@ -1,4 +1,5 @@
 ﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.GameLogic.SkillGuess;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
@@ -18,6 +19,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             {
                 "SchulteGrid" => _serviceProvider!.GetService<SchulteGridGameManager>()!,
                 "SkinGuess" => _serviceProvider!.GetService<SkinGuessManager>()!,
+                "SkillGuess" => _serviceProvider!.GetService<SkillGuessManager>()!,
                 _ => throw new ArgumentException("Invalid game type"),
             };
         }

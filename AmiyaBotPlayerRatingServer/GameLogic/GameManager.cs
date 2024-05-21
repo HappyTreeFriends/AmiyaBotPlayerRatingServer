@@ -1,5 +1,6 @@
 ﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
+using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
@@ -67,7 +68,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return joinCode;
         }
 
-        public abstract Task<Game> CreateNewGame(string param);
+        public abstract Task<Game> CreateNewGame(Dictionary<String, JToken> param);
         public abstract Task GameStart(Game game);
         public abstract string HandleMove(Game game, string playerId, string move);
         public abstract string CloseGame(Game game);

@@ -14,6 +14,7 @@ using OpenIddict.Abstractions;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using AmiyaBotPlayerRatingServer.Utility;
+using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 {
@@ -184,8 +185,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            var game = await gameManager.CreateNewGame(param);
+
+            var paramObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(param);
             
+            var game = await gameManager.CreateNewGame(paramObj);
+
+            game.IsPrivate = paramObj["IsPrivate"]?.ToObject<bool>() ?? false;
             game.Id = Guid.NewGuid().ToString();
             game.CreatorId= appUser.Id;
             game.CreatorConnectionId = Context.ConnectionId;

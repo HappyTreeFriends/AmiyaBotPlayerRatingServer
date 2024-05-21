@@ -1,109 +1,85 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
-using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 using AmiyaBotPlayerRatingServer.Utility;
-using Hangfire.Common;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using static System.Net.WebRequestMethods;
 
-namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
+namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 {
-    public class SkinGuessManager : GameManager
+    public class SkillGuessManager : GameManager
     {
         private readonly ArknightsMemoryCache _arknightsMemoryCache;
 
-        public SkinGuessManager(ArknightsMemoryCache arknightsMemoryCache)
+        public SkillGuessManager(ArknightsMemoryCache arknightsMemoryCache)
         {
             _arknightsMemoryCache = arknightsMemoryCache;
         }
 
-        private static int RandomNumberGenerator ()=> new Random().Next(0, 100000);
+        private static int RandomNumberGenerator() => new Random().Next(0, 100000);
 
-        private static SkinGuessGame GenerateTestGame()
+        
+        private SkillGuessGame GenerateRealGame()
         {
-            var game = new SkinGuessGame();
+            var game = new SkillGuessGame();
 
             //手动添加一些测试数据
             game.GameType = "SkinGuess";
-            game.AnswerList = new List<SkinGuessGame.Answer>()
-            {
-                new SkinGuessGame.Answer()
-                {
-                    CharacterName = "雷蛇",
-                    CharacterId = "char_107_liskam",
-                    SkinName = "春竜",
-                    SkinId = "char_107_liskam@nian#2",
-                    ImageUrl = "https://media.prts.wiki/3/3d/%E7%AB%8B%E7%BB%98_%E9%9B%B7%E8%9B%87_skin1.png",
-                    RandomNumber = RandomNumberGenerator()
-                },
-                new SkinGuessGame.Answer()
-                {
-                    CharacterName = "霜叶",
-                    CharacterId = "char_109_silent",
-                    SkinName = "破晓",
-                    SkinId = "char_109_silent@nian#2",
-                    ImageUrl = "https://media.prts.wiki/8/8c/立绘_霜叶_skin1.png",
-                    RandomNumber = RandomNumberGenerator()
-                },
-            };
+            game.AnswerList = new List<SkillGuessGame.Answer>();
 
-            return game;
-        }
-
-        private SkinGuessGame GenerateRealGame()
-        {
-            var game = new SkinGuessGame();
-
-            //手动添加一些测试数据
-            game.GameType = "SkinGuess";
-            game.AnswerList= new List<SkinGuessGame.Answer>();
-
-            var charMaps = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
-            var skinUrls = _arknightsMemoryCache.GetJson("skinUrls.json") as JObject;
-
-            if (charMaps == null || skinUrls == null)
+            var charMaps = _arknightsMemoryCache.GetJson("character_table_full.json");
+            var charSkillMap = charMaps?.JMESPathQuery("map(&{\"charId\":@.charId, \"name\":@.name, \"skills\":map(&{\"skillId\":@.skillId,\"skillName\":@.skillData.levels[0].name},to_array(@.skills))},values(@))");
+            
+            if (charSkillMap == null)
             {
                 //ERROR
-                return GenerateTestGame();
+                return null;
             }
-            
-            var operatorIdList = charMaps.Keys.ToList();
-            var max = operatorIdList.Count();
+
+            //获取一个全部技能列表，用来排除重复技能名称
+            var allSkills = charSkillMap.SelectMany(x => x["skills"].Select(y => y["skillName"].ToString())).ToList();
+
+            var operators = charMaps.ToList();
+            var max = operators.Count();
             var random = new Random();
 
-            while(game.AnswerList.Count<15)
+            while (game.AnswerList.Count < 15)
             {
                 var rand = random.Next(0, max);
-                var charId = operatorIdList[rand];
+                var charId = operators[rand]["charId"]?.ToString();
+
                 if (game.AnswerList.Any(x => x.CharacterId == charId))
                 {
                     continue;
                 }
 
-                var charName = charMaps[charId];
-                var skinList = (skinUrls[charId] as JObject)?.Properties().Select(p=>p.Value).ToList();
+                var charName = charMaps[charId]["name"]?.ToString();
+                var skillList = charMaps[charId]["skills"].ToList();
 
-                if (skinList==null||skinList.Count <= 1)
+                if (skillList == null || skillList.Count <= 1)
                 {
                     continue;
                 }
 
                 //randomly select a skin except the first one
-                var randSkin = random.Next(1, skinList.Count);
-                var skinUrl = skinList[randSkin]?.ToString();
+                var randSkill = random.Next(1, skillList.Count);
+                var selectedSkill = skillList[randSkill];
 
-                if (skinUrl == null)
+                if (allSkills.Count(s => s == selectedSkill["skillName"]?.ToString())>1)
                 {
                     continue;
                 }
 
-                var answer = new SkinGuessGame.Answer()
+                var skillUrl = "https://web.hycdn.cn/arknights/game/assets/char_skill/" +
+                               selectedSkill["skillId"]?.ToString() + ".png";
+
+                var answer = new SkillGuessGame.Answer()
                 {
                     CharacterName = charName,
                     CharacterId = charId,
-                    SkinName = "",
-                    SkinId = "",
-                    ImageUrl = skinUrl,
-                    RandomNumber = RandomNumberGenerator()
+                    SkillName = selectedSkill["skillName"]?.ToString(),
+                    SkillId = selectedSkill["skillId"]?.ToString(),
+                    ImageUrl = skillUrl,
                 };
                 game.AnswerList.Add(answer);
             }
@@ -113,7 +89,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         private bool IsOperatorName(string name)
         {
-            var charDataJson = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
+            var charDataJson = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String, String>>();
             if (charDataJson == null)
             {
                 //ERROR
@@ -163,7 +139,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                     Completed = game.IsCompleted
                 });
             }
-            
+
             if (answer.PlayerId != null)
             {
                 return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
@@ -172,7 +148,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             answer.Completed = true;
             answer.AnswerTime = DateTime.Now;
             answer.PlayerId = playerId;
-            
+
 
             if (game.PlayerScore.ContainsKey(playerId))
             {
@@ -191,8 +167,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 game.CompleteTime = DateTime.Now;
             }
 
-            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId,
-                CharacterName = characterName, Answer = answer, Completed = game.IsCompleted,
+            return JsonConvert.SerializeObject(new
+            {
+                Result = "Correct",
+                PlayerId = playerId,
+                CharacterName = characterName,
+                Answer = answer,
+                Completed = game.IsCompleted,
                 CurrentQuestionIndex = game.CurrentQuestionIndex
             });
 
