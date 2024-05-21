@@ -22,9 +22,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
         private SkillGuessGame GenerateRealGame()
         {
             var game = new SkillGuessGame();
-
-            //手动添加一些测试数据
-            game.GameType = "SkinGuess";
+            
+            game.GameType = "SkillGuess";
             game.AnswerList = new List<SkillGuessGame.Answer>();
 
             var charMaps = _arknightsMemoryCache.GetJson("character_table_full.json");
@@ -46,15 +45,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             while (game.AnswerList.Count < 15)
             {
                 var rand = random.Next(0, max);
-                var charId = operators[rand]["charId"]?.ToString();
+                var operatorData = operators[rand].Children().First();
+                var charId = operatorData.Path;
 
                 if (game.AnswerList.Any(x => x.CharacterId == charId))
                 {
                     continue;
                 }
 
-                var charName = charMaps[charId]["name"]?.ToString();
-                var skillList = charMaps[charId]["skills"].ToList();
+                var charName = operatorData["name"]?.ToString();
+                var skillList = operatorData["skills"].ToList();
 
                 if (skillList == null || skillList.Count <= 1)
                 {
@@ -77,7 +77,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 {
                     CharacterName = charName,
                     CharacterId = charId,
-                    SkillName = selectedSkill["skillName"]?.ToString(),
+                    SkillName = selectedSkill["skillData"]["levels"][0]["name"]?.ToString(),
                     SkillId = selectedSkill["skillId"]?.ToString(),
                     ImageUrl = skillUrl,
                 };
