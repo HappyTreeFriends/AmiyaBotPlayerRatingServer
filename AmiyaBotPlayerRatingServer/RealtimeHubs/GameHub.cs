@@ -446,10 +446,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await Clients.Group(gameId).SendAsync("ReceiveMove", response);
 
-            if (game.IsCompleted == false || oldCompleteState == false)
+            if (game.IsCompleted == true || oldCompleteState == false)
             {
-                game.IsCompleted = true;
-                game.CompleteTime ??= DateTime.Now;
                 await Clients.Group(gameId).SendAsync("GameCompleted", response);
             }
         }
