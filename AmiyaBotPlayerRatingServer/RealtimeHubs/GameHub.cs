@@ -446,8 +446,92 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await Clients.Group(gameId).SendAsync("ReceiveMove", response);
 
-            if (game.IsCompleted == true || oldCompleteState == false)
+            if (game.IsCompleted == true && oldCompleteState == false)
             {
+                await Clients.Group(gameId).SendAsync("GameCompleted", response);
+            }
+        }
+
+        //请求给出提示(可能导致该题被放弃)
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task RequestHint(string gameId)
+        {
+            var (game, manager, appUser) = await Validate(gameId);
+
+            if (game.IsCompleted)
+            {
+                return;
+            }
+
+            var oldCompleteState = game.IsCompleted;
+
+            var (ret,giveup) = await manager.RequestHint(game, appUser.Id);
+
+            var response = JsonConvert.SerializeObject(new
+            {
+                Payload = ret,
+                Game = FormatGame(game),
+                PlayerList = await FormatPlayerList(game),
+            });
+
+            if (giveup)
+            { 
+                await Clients.Group(gameId).SendAsync("GiveUp", JsonConvert.SerializeObject(new 
+                {
+                    PlayerId = appUser.Id,
+                    GameId = gameId,
+                    Payload = ret,
+                    Game = FormatGame(game),
+                    PlayerList = await FormatPlayerList(game),
+                }));
+            
+            }
+            else
+            {
+                await Clients.Group(gameId).SendAsync("Hint", response);
+            }
+
+
+            if (game.IsCompleted == true && oldCompleteState == false)
+            {
+                await Clients.Group(gameId).SendAsync("GameCompleted", response);
+            }
+        }
+
+        //放弃一小题
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task GiveUp(string gameId)
+        {
+            var (game, manager, appUser) = await Validate(gameId);
+
+            if (game.IsCompleted)
+            {
+                return;
+            }
+
+            var oldCompleteState = game.IsCompleted;
+
+            var ret = await manager.GiveUp(game, appUser.Id);
+            
+            await Clients.Group(gameId).SendAsync("GiveUp", JsonConvert.SerializeObject(new
+            {
+                PlayerId = appUser.Id,
+                GameId = gameId,
+                Payload = ret,
+                Game = FormatGame(game),
+                PlayerList = await FormatPlayerList(game),
+            }));
+
+
+            if (game.IsCompleted == true && oldCompleteState == false)
+            {
+                var response = JsonConvert.SerializeObject(new
+                {
+                    Payload = ret,
+                    Game = FormatGame(game),
+                    PlayerList = await FormatPlayerList(game),
+                });
+
                 await Clients.Group(gameId).SendAsync("GameCompleted", response);
             }
         }
@@ -468,7 +552,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 }
             }
         }
-
+        
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task Chat(string gameId, string message)
         {

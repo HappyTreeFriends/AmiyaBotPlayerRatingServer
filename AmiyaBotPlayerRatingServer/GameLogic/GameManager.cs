@@ -109,5 +109,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         public abstract Task<double> GetScore(Game game, string player);
 
+        public async Task<object> GiveUp(Game game, string appUserId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<(object ret, object giveup)> RequestHint(Game game, string appUserId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
