@@ -16,12 +16,14 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
 
         private readonly PlayerRatingDatabaseContext _dbContext;
         private readonly IConfiguration _configuration;
+        private readonly GameManager _gameManager;
 
 
-        public GameHubController(PlayerRatingDatabaseContext dbContext,IConfiguration configuration)
+        public GameHubController(PlayerRatingDatabaseContext dbContext,IConfiguration configuration,GameManager gameManager)
         {
             _dbContext = dbContext;
             _configuration = configuration;
+            _gameManager = gameManager;
         }
 
         public class SendNotificationModel
@@ -34,7 +36,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpPost("sendNotificationToAll")]
         public Task SendNotificationToAll([FromBody] SendNotificationModel model)
         {
-            GameManager.Notifications.Add(new SystemNotification
+            _gameManager.Notifications.Add(new SystemNotification
             {
                 Id = Guid.NewGuid().ToString(),
                 Message = model.Message,
@@ -72,7 +74,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpGet("{gameId}")]
         public IActionResult GetGame(String gameId)
         {
-            var game = GameManager.GetGame(gameId);
+            var game = _gameManager.GetGame(gameId);
             if (game == null)
             {
                 return NotFound();
@@ -85,7 +87,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpGet]
         public IActionResult ListGame()
         {
-            var list = GameManager.GameList.Where(g => g.IsPrivate == false && g.IsCompleted == false).Select(GetGameReturnObj);
+            var list = _gameManager.GameList.Where(g => g.IsPrivate == false && g.IsCompleted == false).Select(GetGameReturnObj);
             return Ok(list);
         }
 
@@ -93,7 +95,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpGet("{gameId}/url")]
         public IActionResult GenerateShortenUrl(string gameId)
         {
-            var game = GameManager.GetGame(gameId);
+            var game = _gameManager.GetGame(gameId);
             if (game == null)
             {
                 return NotFound();

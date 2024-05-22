@@ -21,6 +21,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             public bool Completed { get; set; }
             public DateTime AnswerTime { get; set; }
             public string? PlayerId { get; set; }
+
+            public int HintLevel { get; set; } = 0;
         }
 
         public int CurrentQuestionIndex { get; set; } = 0;

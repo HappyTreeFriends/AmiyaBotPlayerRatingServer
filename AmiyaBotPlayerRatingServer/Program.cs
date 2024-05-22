@@ -239,6 +239,9 @@ using (var scope = app.Services.CreateScope())
         // 初始化添加全局任务。
         recurringJobManager.AddOrUpdate<MAATakeSnapshotOnAllConnectionsService>(
             "MAATakeSnapshotOnAllConnectionsService", service => service.Collect(), Cron.Hourly);
+
+        recurringJobManager.AddOrUpdate<GameManagerCleanService>(
+            "GameManagerCleanService", service => service.Clean(), Cron.Hourly);
     }
 }
 

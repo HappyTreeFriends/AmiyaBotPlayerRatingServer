@@ -1,60 +1,49 @@
 ﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.GameLogic.SkillGuess;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 using AmiyaBotPlayerRatingServer.RealtimeHubs;
 using Microsoft.AspNetCore.SignalR;
-using Newtonsoft.Json.Linq;
 using static AmiyaBotPlayerRatingServer.GameLogic.Game;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
-    public class SystemNotification
+    public class GameManager
     {
-        public string Id { get; set; }
-        public string Message { get; set; }
-        public DateTime ExpiredAt { get; set; }
-    }
+        public readonly List<Game> GameList = new List<Game>();
+        public readonly List<SystemNotification> Notifications = new List<SystemNotification>();
 
-    public abstract class GameManager
-    {
-        public static readonly List<Game> GameList = new List<Game>();
-        private static readonly Task cleanTask = Task.CompletedTask;
-        public static readonly List<SystemNotification> Notifications = new List<SystemNotification>();
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IHubContext<GameHub> _gameHub;
 
-        static GameManager()
+        public GameManager(IServiceProvider serviceProvider, IHubContext<GameHub> gameHub)
         {
-            cleanTask = cleanTask.ContinueWith(async (_) =>
+            _serviceProvider = serviceProvider;
+            _gameHub = gameHub;
+        }
+
+        public IGameManager CreateGameManager(string gameType)
+        {
+            return gameType switch
             {
-                while (true)
-                {
-                    await Task.Delay(1000 * 60 * 5);
-                    var completedTimeout = GameManager.GameList.Where(x => x.IsClosed==false && x.IsCompleted && (
-                        DateTime.Now - x.CompleteTime > new TimeSpan(0, 1, 0, 0)));
-                    
-                    var startedTimeout = GameManager.GameList.Where(x => x.IsStarted && (
-                        DateTime.Now - x.StartTime > new TimeSpan(1, 0, 0, 0)));
-
-                    var allTimeout = completedTimeout.Concat(startedTimeout).Distinct().ToList();
-
-                    foreach (var game in allTimeout)
-                    {
-                        game.IsClosed = true;
-                        game.CloseTime = DateTime.Now;
-                    }
-                }
-            });
+                "SchulteGrid" => _serviceProvider!.GetService<SchulteGridGameManager>()!,
+                "SkinGuess" => _serviceProvider!.GetService<SkinGuessManager>()!,
+                "SkillGuess" => _serviceProvider!.GetService<SkillGuessManager>()!,
+                _ => throw new ArgumentException("Invalid game type"),
+            };
         }
-        
-        public static Game? GetGameByJoinCode(string joinCode)
+
+
+        public Game? GetGameByJoinCode(string joinCode)
         {
-            return GameList.Find(x => x.JoinCode==joinCode&&x.IsClosed==false);
+            return GameList.Find(x => x.JoinCode == joinCode && x.IsClosed == false);
         }
 
-        public static Game? GetGame(string id)
+        public Game? GetGame(string id)
         {
             return GameList.Find(x => x.Id == id);
         }
 
-        public static async Task<String> RequestJoinCode()
+        public async Task<String> RequestJoinCode()
         {
             int maxTry = 100;
             string joinCode;
@@ -66,12 +55,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 {
                     return "";
                 }
-            } while (GameManager.GameList.Any(g => g.JoinCode == joinCode&&g.IsClosed==false));
+            } while (GameList.Any(g => g.JoinCode == joinCode && g.IsClosed == false));
 
             return joinCode;
         }
 
-        public static async Task RallyPoint(Game game, int playerId, string rallyName, int timeout)
+        public async Task RallyPoint(Game game, int playerId, string rallyName, int timeout)
         {
             if (!game.RallyNodes.ContainsKey(rallyName))
             {
@@ -89,7 +78,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 {
                     if (!rallyNode.IsCompleted)
                     {
-                        rallyNode.IsCompleted= true;
+                        rallyNode.IsCompleted = true;
                         // DI IHubContext<GameHub>
                         //var hubContext = GlobalHost.ConnectionManager.GetHubContext()
                         //hubContext.Clients.Group(groupName).sendMessage(message);
@@ -99,24 +88,5 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         }
 
-        public abstract Task<Game> CreateNewGame(Dictionary<String, JToken> param);
-
-        public abstract Task<object> HandleMove(Game game, string playerId, string move);
-
-        public abstract Task<object> GetGamePayload(Game game);
-        public abstract Task<object> GetGameStartPayload(Game game);
-        public abstract Task<object> GetCloseGamePayload(Game game);
-
-        public abstract Task<double> GetScore(Game game, string player);
-
-        public async Task<object> GiveUp(Game game, string appUserId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<(object ret, object giveup)> RequestHint(Game game, string appUserId)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

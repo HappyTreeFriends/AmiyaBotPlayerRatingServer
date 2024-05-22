@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 {
-    public class SchulteGridGameManager : GameManager
+    public class SchulteGridGameManager : IGameManager
     {
         private readonly ArknightsMemoryCache _arknightsMemoryCache;
 
@@ -85,18 +85,18 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             return game;
         }
 
-        public override async Task<Game> CreateNewGame(Dictionary<String, JToken> param)
+        public async Task<Game> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = await SchulteGridGameData.BuildContinuousMode(_arknightsMemoryCache);
             return game;
         }
 
-        public override Task<object> GetGameStartPayload(Game game)
+        public Task<object> GetGameStartPayload(Game game)
         {
             return Task.FromResult<object>(new { });
         }
 
-        public override Task<object> HandleMove(Game rawGame, string playerId, string move)
+        public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SchulteGridGame;
 
@@ -184,7 +184,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         }
 
-        public override Task<object> GetCloseGamePayload(Game rawGame)
+        public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SchulteGridGame;
 
@@ -203,7 +203,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             });
         }
 
-        public override async Task<object> GetGamePayload(Game game)
+        public async Task<object> GetGamePayload(Game game)
         {
             await Task.CompletedTask;
 
@@ -228,7 +228,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             };
         }
 
-        public override async Task<double> GetScore(Game game, string player)
+        public async Task<double> GetScore(Game game, string player)
         {
             await Task.CompletedTask;
 
@@ -240,6 +240,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             }
 
             return 0;
+        }
+
+        public Task<IGameManager.RequestHintOrGiveUpResult> GiveUp(Game game, string appUserId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IGameManager.RequestHintOrGiveUpResult> RequestHint(Game game, string appUserId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,19 +1,11 @@
-﻿using AmiyaBotPlayerRatingServer.Controllers.Game.SchulteGrid;
-using AmiyaBotPlayerRatingServer.GameLogic;
-using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+﻿using AmiyaBotPlayerRatingServer.GameLogic;
 using Microsoft.AspNetCore.SignalR;
-using System.Security.AccessControl;
 using Newtonsoft.Json;
 using System.Security.Claims;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using OpenIddict.Abstractions;
-using System.Text.RegularExpressions;
-using System.Collections.Generic;
-using AmiyaBotPlayerRatingServer.Utility;
 using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.RealtimeHubs
@@ -21,13 +13,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
     public class GameHub : Hub
     {
         private readonly PlayerRatingDatabaseContext _dbContext;
-        private readonly GameManagerFactory _gameManagerFactory;
+        private readonly GameManager _gameManager;
 
 
-        public GameHub(PlayerRatingDatabaseContext dbContext,GameManagerFactory gameManagerFactory)
+        public GameHub(PlayerRatingDatabaseContext dbContext,GameManager gameManager)
         {
             _dbContext = dbContext;
-            _gameManagerFactory = gameManagerFactory;
+            _gameManager = gameManager;
         }
 
         #region Helper Methods
@@ -46,7 +38,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
         private Task<Game> ValidateGame(string gameId)
         {
-            var game = GameManager.GetGame(gameId);
+            var game = _gameManager.GetGame(gameId);
 
             if (game == null)
             {
@@ -56,9 +48,9 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             return Task.FromResult(game);
         }
 
-        private Task<GameManager> ValidateManager(String gameType)
+        private Task<IGameManager> ValidateManager(String gameType)
         {
-            var manager = _gameManagerFactory.CreateGameManager(gameType);
+            var manager = _gameManager.CreateGameManager(gameType);
 
             if (manager == null)
             {
@@ -68,7 +60,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             return Task.FromResult(manager);
         }
 
-        private async Task<Tuple<Game, GameManager, ApplicationUser>> Validate(string gameId)
+        private async Task<Tuple<Game, IGameManager, ApplicationUser>> Validate(string gameId)
         {
             var appUser = await _dbContext.Users.FindAsync(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
@@ -77,7 +69,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            var game = GameManager.GetGame(gameId);
+            var game = _gameManager.GetGame(gameId);
 
             if (game == null)
             {
@@ -89,7 +81,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            var manager = _gameManagerFactory.CreateGameManager(game.GameType);
+            var manager = _gameManager.CreateGameManager(game.GameType);
 
             if (manager == null)
             {
@@ -101,7 +93,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
         private async Task<Object> FormatPlayerList(Game game)
         {
-            var manager = _gameManagerFactory.CreateGameManager(game.GameType)!;
+            var manager = _gameManager.CreateGameManager(game.GameType)!;
             return await Task.WhenAll(game.PlayerList.Select(async x =>
             {
                 var user = await _dbContext.Users.FindAsync(x.Key);
@@ -150,7 +142,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 ConnectionId = Context.ConnectionId,
                 Id = userId,
-                CreatedGames = GameManager.GameList.Where(x => x.CreatorId == userId).Select(x => x.Id),
+                CreatedGames = _gameManager.GameList.Where(x => x.CreatorId == userId).Select(x => x.Id),
             }));
         }
 
@@ -205,7 +197,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            var gameManager = _gameManagerFactory.CreateGameManager(gameType);
+            var gameManager = _gameManager.CreateGameManager(gameType);
             if (gameManager == null)
             {
                 throw new UnauthorizedAccessException();
@@ -223,8 +215,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             game.CreateTime = DateTime.Now;
             game.PlayerList.TryAdd(appUser.Id, Context.ConnectionId);
             
-            game.JoinCode= await GameManager.RequestJoinCode();
-            GameManager.GameList.Add(game);
+            game.JoinCode= await _gameManager.RequestJoinCode();
+            _gameManager.GameList.Add(game);
             
             await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
             await Clients.Group(game.Id).SendAsync("GameCreated", JsonConvert.SerializeObject(new
@@ -251,7 +243,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
             
-            var game = GameManager.GetGameByJoinCode(joinCode);
+            var game = _gameManager.GetGameByJoinCode(joinCode);
             if (game == null)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("Alert", JsonConvert.SerializeObject(new
@@ -260,7 +252,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 }));
                 return;
             }
-            var manager = _gameManagerFactory.CreateGameManager(game.GameType);
+            var manager = _gameManager.CreateGameManager(game.GameType);
 
             //看一下是不是已经在游戏里了
             if (game.PlayerList.ContainsKey(appUser.Id))
@@ -465,36 +457,39 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             var oldCompleteState = game.IsCompleted;
 
-            var (ret,giveup) = await manager.RequestHint(game, appUser.Id);
-
-            var response = JsonConvert.SerializeObject(new
-            {
-                Payload = ret,
-                Game = FormatGame(game),
-                PlayerList = await FormatPlayerList(game),
-            });
-
-            if (giveup)
+            var hintResult = await manager.RequestHint(game, appUser.Id);
+            
+            if (hintResult.GiveUpTriggered)
             { 
                 await Clients.Group(gameId).SendAsync("GiveUp", JsonConvert.SerializeObject(new 
                 {
                     PlayerId = appUser.Id,
                     GameId = gameId,
-                    Payload = ret,
+                    Payload = hintResult.Payload,
                     Game = FormatGame(game),
                     PlayerList = await FormatPlayerList(game),
                 }));
             
             }
-            else
+            else if(hintResult.HintTriggered)
             {
-                await Clients.Group(gameId).SendAsync("Hint", response);
+                await Clients.Group(gameId).SendAsync("Hint", JsonConvert.SerializeObject(new
+                {
+                    Payload = hintResult.Payload,
+                    Game = FormatGame(game),
+                    PlayerList = await FormatPlayerList(game),
+                }));
             }
 
 
             if (game.IsCompleted == true && oldCompleteState == false)
             {
-                await Clients.Group(gameId).SendAsync("GameCompleted", response);
+                await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
+                {
+                    Payload = hintResult.Payload,
+                    Game = FormatGame(game),
+                    PlayerList = await FormatPlayerList(game),
+                }));
             }
         }
 
@@ -511,23 +506,25 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             var oldCompleteState = game.IsCompleted;
 
-            var ret = await manager.GiveUp(game, appUser.Id);
-            
-            await Clients.Group(gameId).SendAsync("GiveUp", JsonConvert.SerializeObject(new
-            {
-                PlayerId = appUser.Id,
-                GameId = gameId,
-                Payload = ret,
-                Game = FormatGame(game),
-                PlayerList = await FormatPlayerList(game),
-            }));
+            var giveUpResult = await manager.GiveUp(game, appUser.Id);
 
+            if (giveUpResult.GiveUpTriggered)
+            {
+                await Clients.Group(gameId).SendAsync("GiveUp", JsonConvert.SerializeObject(new
+                {
+                    PlayerId = appUser.Id,
+                    GameId = gameId,
+                    Payload = giveUpResult.Payload,
+                    Game = FormatGame(game),
+                    PlayerList = await FormatPlayerList(game),
+                }));
+            }
 
             if (game.IsCompleted == true && oldCompleteState == false)
             {
                 var response = JsonConvert.SerializeObject(new
                 {
-                    Payload = ret,
+                    Payload = giveUpResult.Payload,
                     Game = FormatGame(game),
                     PlayerList = await FormatPlayerList(game),
                 });
@@ -539,7 +536,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task GetNotification()
         {
-            foreach (var notification in GameManager.Notifications)
+            foreach (var notification in _gameManager.Notifications)
             {
                 if (notification.ExpiredAt > DateTime.Now)
                 {

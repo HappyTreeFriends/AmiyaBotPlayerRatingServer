@@ -4,10 +4,11 @@ using AmiyaBotPlayerRatingServer.Utility;
 using Hangfire.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static AmiyaBotPlayerRatingServer.GameLogic.IGameManager;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 {
-    public class SkinGuessManager : GameManager
+    public class SkinGuessManager : IGameManager
     {
         private readonly ArknightsMemoryCache _arknightsMemoryCache;
 
@@ -18,7 +19,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         private static int RandomNumberGenerator ()=> new Random().Next(0, 100000);
 
-        private static SkinGuessGame GenerateTestGame()
+        private SkinGuessGame GenerateTestGame()
         {
             var game = new SkinGuessGame();
 
@@ -123,18 +124,18 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             return charDataJson.Values.Contains(name);
         }
 
-        public override Task<Game> CreateNewGame(Dictionary<String, JToken> param)
+        public Task<Game> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = GenerateRealGame();
             return Task.FromResult<Game>(game);
         }
 
-        public override Task<object> GetGameStartPayload(Game game)
+        public Task<object> GetGameStartPayload(Game game)
         {
             return Task.FromResult<object>(new {});
         }
 
-        public override Task<object> HandleMove(Game rawGame, string playerId, string move)
+        public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SkinGuessGame;
 
@@ -198,13 +199,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         }
 
-        public override Task<object> GetCloseGamePayload(Game rawGame)
+        public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkinGuessGame;
             return Task.FromResult<object>(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
         }
 
-        public override Task<object> GetGamePayload(Game game)
+        public Task<object> GetGamePayload(Game game)
         {
             var schulteGridGame = game as SkinGuessGame;
 
@@ -227,7 +228,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             });
         }
 
-        public override Task<double> GetScore(Game game, string player)
+        public Task<double> GetScore(Game game, string player)
         {
             var schulteGridGame = game as SkinGuessGame;
 
@@ -237,6 +238,77 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             }
 
             return Task.FromResult<double>(0);
+        }
+
+        public Task<RequestHintOrGiveUpResult> GiveUp(Game rawGame, string appUserId)
+        {
+            var game = rawGame as SkinGuessGame;
+            if (game.CreatorId != appUserId)
+            {
+                return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+                {
+                    Payload = new { Message = "只有房主可以放弃题目." },
+                    GiveUpTriggered = false
+                });
+            }
+
+            var answer = game.AnswerList[game.CurrentQuestionIndex];
+
+            answer.Completed = true;
+            answer.AnswerTime = DateTime.Now;
+            game.CurrentQuestionIndex++;
+            if (game.CurrentQuestionIndex >= game.AnswerList.Count)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
+            }
+
+            return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+            {
+                Payload = new { Question = answer },
+                GiveUpTriggered = true
+            });
+
+        }
+
+        public Task<RequestHintOrGiveUpResult> RequestHint(Game rawGame, string appUserId)
+        {
+            //判断是否进行过提示
+            var game = rawGame as SkinGuessGame;
+
+            var answer = game.AnswerList[game.CurrentQuestionIndex];
+
+            if (answer.HintLevel == 0)
+            {
+                //第一次提示
+                answer.HintLevel++;
+
+                return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+                {
+                    Payload =
+                        new
+                        {
+                            Question = answer,
+                            CurrentQuestionIndex = game.CurrentQuestionIndex,
+                            HintLevel = answer.HintLevel
+                        },
+                    GiveUpTriggered = false,
+                    HintTriggered = true
+                });
+
+            }
+            else
+            {
+                //不允许再次提示
+                return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+                {
+                    Payload = answer,
+                    GiveUpTriggered = false,
+                    HintTriggered = false,
+                });
+            }
+
+            
         }
     }
 }

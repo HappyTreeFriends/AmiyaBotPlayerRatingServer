@@ -7,7 +7,7 @@ using static System.Net.WebRequestMethods;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 {
-    public class SkillGuessManager : GameManager
+    public class SkillGuessManager : IGameManager
     {
         private readonly ArknightsMemoryCache _arknightsMemoryCache;
 
@@ -99,18 +99,18 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             return charDataJson.Values.Contains(name);
         }
 
-        public override Task<Game> CreateNewGame(Dictionary<String, JToken> param)
+        public Task<Game> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = GenerateRealGame();
             return Task.FromResult<Game>(game);
         }
 
-        public override Task<object> GetGameStartPayload(Game game)
+        public Task<object> GetGameStartPayload(Game game)
         {
             return Task.FromResult<object>(new { });
         }
 
-        public override Task<object> HandleMove(Game rawGame, string playerId, string move)
+        public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SkillGuessGame;
 
@@ -179,13 +179,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         }
 
-        public override Task<object> GetCloseGamePayload(Game rawGame)
+        public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
             return Task.FromResult<object>(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
         }
 
-        public override Task<object> GetGamePayload(Game rawGame)
+        public Task<object> GetGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
 
@@ -207,8 +207,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 game.CurrentQuestionIndex,
             });
         }
-
-        public override Task<double> GetScore(Game rawGame, string player)
+        
+        public Task<double> GetScore(Game rawGame, string player)
         {
             var game = rawGame as SkillGuessGame;
 
@@ -218,6 +218,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             }
 
             return Task.FromResult<double>(0);
+        }
+
+        public Task<IGameManager.RequestHintOrGiveUpResult> GiveUp(Game game, string appUserId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IGameManager.RequestHintOrGiveUpResult> RequestHint(Game game, string appUserId)
+        {
+            throw new NotImplementedException();
         }
     }
 }
