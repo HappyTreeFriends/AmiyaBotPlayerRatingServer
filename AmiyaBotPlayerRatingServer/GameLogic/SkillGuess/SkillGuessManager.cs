@@ -105,7 +105,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             return Task.FromResult<Game>(game);
         }
 
-        public override Task GameStart(Game game)
+        public override Task GetGameStartPayload(Game game)
         {
             return Task.CompletedTask;
         }
@@ -179,13 +179,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         }
 
-        public override string CloseGame(Game rawGame)
+        public override string GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
             return JsonConvert.SerializeObject(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
         }
 
-        public override object GetGameStatus(Game rawGame)
+        public override object GetGamePayload(Game game)
         {
             var game = rawGame as SkillGuessGame;
 

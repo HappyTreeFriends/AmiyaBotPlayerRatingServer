@@ -129,7 +129,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             return Task.FromResult<Game>(game);
         }
 
-        public override Task GameStart(Game game)
+        public override Task GetGameStartPayload(Game game)
         {
             return Task.CompletedTask;
         }
@@ -198,13 +198,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         }
 
-        public override string CloseGame(Game rawGame)
+        public override string GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkinGuessGame;
             return JsonConvert.SerializeObject(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
         }
 
-        public override object GetGameStatus(Game game)
+        public override object GetGamePayload(Game game)
         {
             var schulteGridGame = game as SkinGuessGame;
 

@@ -99,21 +99,44 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             return Tuple.Create(game, manager, appUser);
         }
 
-        private Object FormatPlayerList(Game game)
+        private async Task<Object> FormatPlayerList(Game game)
         {
-            var manager = _gameManagerFactory.CreateGameManager(game.GameType);
-            return game.PlayerList.Select(x =>
+            var manager = _gameManagerFactory.CreateGameManager(game.GameType)!;
+            return await Task.WhenAll(game.PlayerList.Select(async x =>
             {
-                var user = _dbContext.Users.Find(x.Key);
+                var user = await _dbContext.Users.FindAsync(x.Key);
                 return new
                 {
                     UserId = x.Key,
                     UserSignalRId = x.Value,
                     UserName = user?.Nickname,
                     UserAvatar = user?.Avatar,
-                    Score = manager?.GetScore(game, x.Key)
+                    Score = await manager.GetScore(game, x.Key)
                 };
-            });
+            }));
+        }
+
+        private object FormatGame(Game game)
+        {
+            return new
+            {
+                game.Id,
+                game.GameType,
+                game.JoinCode,
+
+                game.CreatorId,
+                game.CreatorConnectionId,
+                game.CreateTime,
+
+                game.IsStarted,
+                game.StartTime,
+
+                game.IsCompleted,
+                game.CompleteTime,
+
+                game.IsClosed,
+                game.CloseTime,
+            };
         }
 
         #endregion
@@ -157,6 +180,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameId = game.Id,
                 GameType = game.GameType,
                 GameJoinCode = game.JoinCode,
+                GameCreated = game.CreateTime,
                 GameStarted = game.IsStarted,
                 GameStartTime = game.StartTime,
                 GameCompleted = game.IsCompleted,
@@ -165,8 +189,10 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameCloseTime = game.CloseTime,
                 CreatorId = game.CreatorId,
                 CreatorConnectionId = game.CreatorConnectionId,
-                PlayerList = FormatPlayerList(game),
-                CurrentStatus = manager.GetGameStatus(game),
+
+                Game = FormatGame(game),
+                PlayerList = await FormatPlayerList(game),
+                Payload = await manager.GetGamePayload(game),
             }));
         }
 
@@ -197,7 +223,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             game.CreateTime = DateTime.Now;
             game.PlayerList.TryAdd(appUser.Id, Context.ConnectionId);
             
-            game.JoinCode= GameManager.RequestJoinCode();
+            game.JoinCode= await GameManager.RequestJoinCode();
             GameManager.GameList.Add(game);
             
             await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
@@ -210,6 +236,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameId = game.Id,
                 GameType = gameType,
                 GameJoinCode = game.JoinCode,
+
+                Game = FormatGame(game),
             }));
         }
 
@@ -259,7 +287,15 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 UserName = appUser.Nickname,
                 UserEmail = appUser.Email,
                 GameId = game.Id,
-                PlayerList = FormatPlayerList(game),
+
+                PlayerList = await FormatPlayerList(game),
+                JoinedPlayer = new
+                {
+                    Id = appUser.Id,
+                    ConnectionId = Context.ConnectionId,
+                    Nickname = appUser.Nickname
+                },
+                Game = FormatGame(game),
             }) );
         }
 
@@ -285,6 +321,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 LeavingMethod = "Kicked",
                 LeavingPlayerId = playerId,
                 LeavingPlayerConnectionId = oldConnectionId,
+                LeavingPlayer = new
+                {
+                    Id = playerId,
+                    ConnectionId = oldConnectionId,
+                },
+                Game = FormatGame(game),
             });
 
             await Clients.Client(playerId).SendAsync("PlayerKicked", playerKickedResponse);
@@ -305,6 +347,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 LeavingMethod = "Left",
                 LeavingPlayerConnectionId = Context.ConnectionId,
                 LeavingPlayerId = appUser.Id,
+                LeavingPlayer = new
+                {
+                    Id = appUser.Id,
+                    ConnectionId = Context.ConnectionId,
+                },
+                Game = FormatGame(game),
             }));
         }
 
@@ -318,14 +366,25 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-
+            var oldCompleteState = game.IsCompleted;
             if (game.IsClosed == false)
             {
                 game.IsClosed = true;
                 game.CloseTime = DateTime.Now;
             }
 
-            var ret = manager.CloseGame(game);
+            var ret = await manager.GetCloseGamePayload(game);
+
+            if (game.IsCompleted == false|| oldCompleteState==false)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime ??= DateTime.Now;
+                await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
+                {
+                    Game = FormatGame(game),
+                    Payload = ret,
+                }));
+            }
 
             await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }
@@ -340,7 +399,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            await manager.GameStart(game);
+            var payload = await manager.GetGameStartPayload(game);
 
             game.IsStarted = true;
             game.StartTime = DateTime.Now;
@@ -348,7 +407,9 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             await Clients.Group(gameId).SendAsync("GameStarted", JsonConvert.SerializeObject(new
             {
                 GameId = gameId,
-                PlayerList = FormatPlayerList(game)
+                PlayerList = FormatPlayerList(game),
+                Payload = payload,
+                Game = FormatGame(game),
             }));
         }
 
@@ -357,7 +418,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             var (game, manager, appUser) = await Validate(gameId);
             
-            
+            //TODO: RallyPoint
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         }
@@ -372,9 +433,25 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 return;
             }
 
-            var ret = manager.HandleMove(game, appUser.Id, move);
+            var oldCompleteState = game.IsCompleted;
 
-            await Clients.Group(gameId).SendAsync("ReceiveMove", ret);
+            var ret = await manager.HandleMove(game, appUser.Id, move);
+
+            var response = JsonConvert.SerializeObject(new
+            {
+                Payload = ret,
+                Game = FormatGame(game),
+                PlayerList = await FormatPlayerList(game),
+            });
+
+            await Clients.Group(gameId).SendAsync("ReceiveMove", response);
+
+            if (game.IsCompleted == false || oldCompleteState == false)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime ??= DateTime.Now;
+                await Clients.Group(gameId).SendAsync("GameCompleted", response);
+            }
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
