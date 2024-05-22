@@ -1,9 +1,11 @@
-﻿using AmiyaBotPlayerRatingServer.Data;
+﻿using System.Text;
+using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.GameLogic;
 using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace AmiyaBotPlayerRatingServer.Controllers.Game
 {
@@ -13,10 +15,13 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
     {
 
         private readonly PlayerRatingDatabaseContext _dbContext;
+        private readonly IConfiguration _configuration;
 
-        public GameHubController(PlayerRatingDatabaseContext dbContext)
+
+        public GameHubController(PlayerRatingDatabaseContext dbContext,IConfiguration configuration)
         {
             _dbContext = dbContext;
+            _configuration = configuration;
         }
 
         public class SendNotificationModel
@@ -84,5 +89,47 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             return Ok(list);
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("{gameId}/url")]
+        public IActionResult GenerateShortenUrl(string gameId)
+        {
+            var game = GameManager.GetGame(gameId);
+            if (game == null)
+            {
+                return NotFound();
+            }
+
+            /*
+
+            https://kutt.anonymous-test.top/links
+            X-API-KEY
+            {
+  "target": "string",
+  "description": "string",
+  "expire_in": "2 minutes/hours/days",
+  "password": "string",
+  "customurl": "string",
+  "reuse": false,
+  "domain": "string"
+}
+            
+             */
+
+            var shortenUrl = "https://game.anonymous-test.top/#/regular-home/room-waiting/" + game.Id;
+
+            // HTTP Access
+            var httpClient = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://kutt.anonymous-test.top/links");
+            request.Content = new StringContent(JsonConvert.SerializeObject(new
+            {
+                target = shortenUrl,
+                expire_in = "1 days",
+                reuse = true
+            }), Encoding.UTF8, "application/json");
+            request.Headers.Add("X-API-KEY", _configuration["Kutt:ApiKey"]);
+
+
+            return Ok();
+        }
     }
 }
