@@ -70,7 +70,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             var max = operatorIdList.Count();
             var random = new Random();
 
-            while(game.AnswerList.Count<15)
+            while(game.AnswerList.Count<16)
             {
                 var rand = random.Next(0, max);
                 var charId = operatorIdList[rand];
