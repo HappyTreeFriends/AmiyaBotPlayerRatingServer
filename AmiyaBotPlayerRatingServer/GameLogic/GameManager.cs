@@ -1,6 +1,9 @@
 ﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
+using AmiyaBotPlayerRatingServer.RealtimeHubs;
+using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
+using static AmiyaBotPlayerRatingServer.GameLogic.Game;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
@@ -51,7 +54,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return GameList.Find(x => x.Id == id);
         }
 
-        public static String RequestJoinCode()
+        public static async Task<String> RequestJoinCode()
         {
             int maxTry = 100;
             string joinCode;
@@ -68,13 +71,43 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return joinCode;
         }
 
-        public abstract Task<Game> CreateNewGame(Dictionary<String, JToken> param);
-        public abstract Task GameStart(Game game);
-        public abstract string HandleMove(Game game, string playerId, string move);
-        public abstract string CloseGame(Game game);
+        public static async Task RallyPoint(Game game, int playerId, string rallyName, int timeout)
+        {
+            if (!game.RallyNodes.ContainsKey(rallyName))
+            {
+                game.RallyNodes[rallyName] = new RallyNode(rallyName);
+            }
 
-        public abstract object GetGameStatus(Game game);
-        public abstract double GetScore(Game game, string player);
+            var rallyNode = game.RallyNodes[rallyName];
+            rallyNode.AddPlayer(playerId);
+
+            await Task.Delay(timeout);
+
+            if (rallyNode.PlayerIds.Count == game.PlayerList.Count)
+            {
+                lock (rallyNode)
+                {
+                    if (!rallyNode.IsCompleted)
+                    {
+                        rallyNode.IsCompleted= true;
+                        // DI IHubContext<GameHub>
+                        //var hubContext = GlobalHost.ConnectionManager.GetHubContext()
+                        //hubContext.Clients.Group(groupName).sendMessage(message);
+                    }
+                }
+            }
+
+        }
+
+        public abstract Task<Game> CreateNewGame(Dictionary<String, JToken> param);
+
+        public abstract Task<object> HandleMove(Game game, string playerId, string move);
+
+        public abstract Task<object> GetGamePayload(Game game);
+        public abstract Task<object> GetGameStartPayload(Game game);
+        public abstract Task<object> GetCloseGamePayload(Game game);
+
+        public abstract Task<double> GetScore(Game game, string player);
 
     }
 }

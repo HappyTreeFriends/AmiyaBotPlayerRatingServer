@@ -26,6 +26,23 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         public ConcurrentDictionary<String, String> PlayerList { get; set; } = new ConcurrentDictionary<String,String>();
 
-        public ConcurrentDictionary<String, ConcurrentDictionary<String,String>> RallyPoints { get; set; } = new ConcurrentDictionary<String, ConcurrentDictionary<String,String>>();
+        public class RallyNode
+        {
+            public string Name { get; }
+            public HashSet<int> PlayerIds { get; } = new HashSet<int>();
+            public bool IsCompleted { get; set; }
+
+            public RallyNode(string name)
+            {
+                Name = name;
+            }
+
+            public void AddPlayer(int playerId)
+            {
+                PlayerIds.Add(playerId);
+            }
+        }
+
+        public ConcurrentDictionary<string, RallyNode> RallyNodes { get; } = new ConcurrentDictionary<string, RallyNode>();
     }
 }

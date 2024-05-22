@@ -91,7 +91,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             return game;
         }
 
-        public override Task GameStart(Game game)
+        public override Task GetGameStartPayload(Game game)
         {
             return Task.CompletedTask;
         }
@@ -184,7 +184,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         }
 
-        public override string CloseGame(Game rawGame)
+        public override string GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SchulteGridGame;
 
@@ -203,7 +203,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             });
         }
 
-        public override object GetGameStatus(Game game)
+        public override object GetGamePayload(Game game)
         {
             var schulteGridGame = game as SchulteGridGame;
 
