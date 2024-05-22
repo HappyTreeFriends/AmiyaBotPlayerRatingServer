@@ -157,12 +157,32 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameId = game.Id,
                 GameType = game.GameType,
                 GameJoinCode = game.JoinCode,
+                GameCreated = game.CreateTime,
                 GameStarted = game.IsStarted,
                 GameStartTime = game.StartTime,
                 GameCompleted = game.IsCompleted,
                 GameCompleteTime = game.CompleteTime,
                 GameClosed = game.IsClosed,
                 GameCloseTime = game.CloseTime,
+                Game = new
+                {
+                    game.Id,
+                    game.GameType,
+                    game.JoinCode,
+
+                    game.CreatorId,
+                    game.CreatorConnectionId,
+                    game.CreateTime,
+
+                    game.IsStarted,
+                    game.StartTime,
+
+                    game.IsCompleted,
+                    game.CompleteTime,
+
+                    game.IsClosed,
+                    game.CloseTime,
+                },
                 CreatorId = game.CreatorId,
                 CreatorConnectionId = game.CreatorConnectionId,
                 PlayerList = FormatPlayerList(game),
@@ -318,7 +338,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-
+            var oldCompleteState = game.IsCompleted;
             if (game.IsClosed == false)
             {
                 game.IsClosed = true;
@@ -326,6 +346,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             var ret = manager.CloseGame(game);
+
+            if (game.IsCompleted == false|| oldCompleteState==false)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime ??= DateTime.Now;
+                await Clients.Group(gameId).SendAsync("GameCompleted", ret);
+            }
 
             await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }
@@ -356,8 +383,6 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         public async Task RallyPoint(string gameId,string rallyData)
         {
             var (game, manager, appUser) = await Validate(gameId);
-            
-            
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         }
@@ -372,9 +397,18 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 return;
             }
 
+            var oldCompleteState = game.IsCompleted;
+
             var ret = manager.HandleMove(game, appUser.Id, move);
 
             await Clients.Group(gameId).SendAsync("ReceiveMove", ret);
+
+            if (game.IsCompleted == false || oldCompleteState == false)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime ??= DateTime.Now;
+                await Clients.Group(gameId).SendAsync("GameCompleted", ret);
+            }
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]

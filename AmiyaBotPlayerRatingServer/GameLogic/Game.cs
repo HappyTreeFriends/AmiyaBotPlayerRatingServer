@@ -18,11 +18,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public String JoinPassword { get; set; }
 
         public bool IsStarted { get; set; }
-        public DateTime StartTime { get; set; }
+        public DateTime? StartTime { get; set; }
         public bool IsCompleted { get; set; }
-        public DateTime CompleteTime { get; set; }
+        public DateTime? CompleteTime { get; set; }
         public bool IsClosed { get; set; }
-        public DateTime CloseTime { get; set; }
+        public DateTime? CloseTime { get; set; }
 
         public ConcurrentDictionary<String, String> PlayerList { get; set; } = new ConcurrentDictionary<String,String>();
 
