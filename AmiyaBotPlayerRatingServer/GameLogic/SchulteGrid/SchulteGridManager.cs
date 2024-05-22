@@ -91,12 +91,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             return game;
         }
 
-        public override Task GetGameStartPayload(Game game)
+        public override Task<object> GetGameStartPayload(Game game)
         {
-            return Task.CompletedTask;
+            return Task.FromResult<object>(new { });
         }
 
-        public override string HandleMove(Game rawGame, string playerId, string move)
+        public override Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SchulteGridGame;
 
@@ -105,7 +105,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             if (game.IsStarted == false)
             {
-                return JsonConvert.SerializeObject(new
+                return Task.FromResult<object>(new
                 {
                     Result = "NotStarted",
                     PlayerId = playerId,
@@ -117,7 +117,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             if (!SchulteGridGameData.IsOperator(characterName))
             {
-                return JsonConvert.SerializeObject(new
+                return Task.FromResult<object>(new
                 {
                     Result = "NotOperator",
                     PlayerId = playerId,
@@ -130,7 +130,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var answers = game.AnswerList.Where(a => a.CharacterName == characterName).ToList();
             if (answers.Count == 0)
             {
-                return JsonConvert.SerializeObject(new
+                return Task.FromResult<object>(new
                 {
                     Result = "Wrong",
                     PlayerId = playerId,
@@ -144,7 +144,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             {
                 if (answer.PlayerId != null)
                 {
-                    return JsonConvert.SerializeObject(new
+                    return Task.FromResult<object>(new
                     {
                         Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer,
                         Completed = game.IsCompleted,
@@ -175,7 +175,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 }
             }
 
-            return JsonConvert.SerializeObject(new
+            return Task.FromResult<object>(new
             {
                 Result = "Correct", PlayerId = playerId, CharacterName = characterName, Answer = answers,
                 Completed = game.IsCompleted,
@@ -184,7 +184,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         }
 
-        public override string GetCloseGamePayload(Game rawGame)
+        public override Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SchulteGridGame;
 
@@ -194,7 +194,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 game.CompleteTime = DateTime.Now;
             }
 
-            return JsonConvert.SerializeObject(new { GameId= game.Id, 
+            return Task.FromResult<object>(new { GameId= game.Id, 
                 RemainingAnswers = game.AnswerList.Where(a=>a.Completed==false),
                 IsCompleted = game.IsCompleted,
                 CompleteTime = game.CompleteTime,
@@ -203,8 +203,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             });
         }
 
-        public override object GetGamePayload(Game game)
+        public override async Task<object> GetGamePayload(Game game)
         {
+            await Task.CompletedTask;
+
             var schulteGridGame = game as SchulteGridGame;
 
             if (schulteGridGame.IsStarted)
@@ -226,8 +228,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             };
         }
 
-        public override double GetScore(Game game, string player)
+        public override async Task<double> GetScore(Game game, string player)
         {
+            await Task.CompletedTask;
+
             var schulteGridGame = game as SchulteGridGame;
             
             if (schulteGridGame!.PlayerScore.ContainsKey(player))

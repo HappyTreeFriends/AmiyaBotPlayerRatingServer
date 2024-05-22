@@ -129,12 +129,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             return Task.FromResult<Game>(game);
         }
 
-        public override Task GetGameStartPayload(Game game)
+        public override Task<object> GetGameStartPayload(Game game)
         {
-            return Task.CompletedTask;
+            return Task.FromResult<object>(new {});
         }
 
-        public override string HandleMove(Game rawGame, string playerId, string move)
+        public override Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SkinGuessGame;
 
@@ -143,7 +143,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             if (!IsOperatorName(characterName))
             {
-                return JsonConvert.SerializeObject(new
+                return Task.FromResult<object>(new
                 {
                     Result = "NotOperator",
                     PlayerId = playerId,
@@ -155,7 +155,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             var answer = game.AnswerList[game.CurrentQuestionIndex];
             if (answer.CharacterName != characterName)
             {
-                return JsonConvert.SerializeObject(new
+                return Task.FromResult<object>(new
                 {
                     Result = "Wrong",
                     PlayerId = playerId,
@@ -166,7 +166,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             
             if (answer.PlayerId != null)
             {
-                return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
+                return Task.FromResult<object>(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
             }
 
             answer.Completed = true;
@@ -191,20 +191,20 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 game.CompleteTime = DateTime.Now;
             }
 
-            return JsonConvert.SerializeObject(new { Result = "Correct", PlayerId = playerId,
+            return Task.FromResult<object>(new { Result = "Correct", PlayerId = playerId,
                 CharacterName = characterName, Answer = answer, Completed = game.IsCompleted,
                 CurrentQuestionIndex = game.CurrentQuestionIndex
             });
 
         }
 
-        public override string GetCloseGamePayload(Game rawGame)
+        public override Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkinGuessGame;
-            return JsonConvert.SerializeObject(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
+            return Task.FromResult<object>(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
         }
 
-        public override object GetGamePayload(Game game)
+        public override Task<object> GetGamePayload(Game game)
         {
             var schulteGridGame = game as SkinGuessGame;
 
@@ -220,23 +220,23 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 }
             }
 
-            return new
+            return Task.FromResult<object>(new
             {
                 AnswerList = schulteGridGame!.AnswerList,
                 schulteGridGame.CurrentQuestionIndex,
-            };
+            });
         }
 
-        public override double GetScore(Game game, string player)
+        public override Task<double> GetScore(Game game, string player)
         {
             var schulteGridGame = game as SkinGuessGame;
 
             if (schulteGridGame!.PlayerScore.ContainsKey(player))
             {
-                return schulteGridGame.PlayerScore[player];
+                return Task.FromResult<double>(schulteGridGame.PlayerScore[player]);
             }
 
-            return 0;
+            return Task.FromResult<double>(0);
         }
     }
 }

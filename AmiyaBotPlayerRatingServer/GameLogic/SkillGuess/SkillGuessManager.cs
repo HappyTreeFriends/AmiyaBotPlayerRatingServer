@@ -105,12 +105,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             return Task.FromResult<Game>(game);
         }
 
-        public override Task GetGameStartPayload(Game game)
+        public override Task<object> GetGameStartPayload(Game game)
         {
-            return Task.CompletedTask;
+            return Task.FromResult<object>(new { });
         }
 
-        public override string HandleMove(Game rawGame, string playerId, string move)
+        public override Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SkillGuessGame;
 
@@ -119,7 +119,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
             if (!IsOperatorName(characterName))
             {
-                return JsonConvert.SerializeObject(new
+                return Task.FromResult<object>(new
                 {
                     Result = "NotOperator",
                     PlayerId = playerId,
@@ -131,7 +131,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             var answer = game.AnswerList[game.CurrentQuestionIndex];
             if (answer.CharacterName != characterName)
             {
-                return JsonConvert.SerializeObject(new
+                return Task.FromResult<object>(new
                 {
                     Result = "Wrong",
                     PlayerId = playerId,
@@ -142,7 +142,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
             if (answer.PlayerId != null)
             {
-                return JsonConvert.SerializeObject(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
+                return Task.FromResult<object>(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
             }
 
             answer.Completed = true;
@@ -167,7 +167,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 game.CompleteTime = DateTime.Now;
             }
 
-            return JsonConvert.SerializeObject(new
+            return Task.FromResult<object>(new
             {
                 Result = "Correct",
                 PlayerId = playerId,
@@ -179,13 +179,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         }
 
-        public override string GetCloseGamePayload(Game rawGame)
+        public override Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
-            return JsonConvert.SerializeObject(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
+            return Task.FromResult<object>(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
         }
 
-        public override object GetGamePayload(Game game)
+        public override Task<object> GetGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
 
@@ -201,23 +201,23 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 }
             }
 
-            return new
+            return Task.FromResult<object>(new
             {
                 AnswerList = game!.AnswerList,
                 game.CurrentQuestionIndex,
-            };
+            });
         }
 
-        public override double GetScore(Game rawGame, string player)
+        public override Task<double> GetScore(Game rawGame, string player)
         {
             var game = rawGame as SkillGuessGame;
 
             if (game!.PlayerScore.ContainsKey(player))
             {
-                return game.PlayerScore[player];
+                return Task.FromResult<double>(game.PlayerScore[player]);
             }
 
-            return 0;
+            return Task.FromResult<double>(0);
         }
     }
 }
