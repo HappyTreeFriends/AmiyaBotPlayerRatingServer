@@ -131,36 +131,39 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task GetGame(string id)
         {
-            var game= await ValidateGame(id);
+            await using var game = await ValidateGame(id,false);
             var manager = await ValidateManager(game.GameType);
             var appUser = await ValidateUser();
 
-            if (game.PlayerList.ContainsKey(appUser.Id))
+            if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                game.PlayerList[appUser.Id] = Context.ConnectionId;
-                await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
-                await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
-                {
-                    GameId = game.Id,
-                    GameType = game.GameType,
-                    GameJoinCode = game.JoinCode,
-                    GameCreated = game.CreateTime,
-                    GameStarted = game.IsStarted,
-                    GameStartTime = game.StartTime,
-                    GameCompleted = game.IsCompleted,
-                    GameCompleteTime = game.CompleteTime,
-                    GameClosed = game.IsClosed,
-                    GameCloseTime = game.CloseTime,
-                    CreatorId = game.CreatorId,
-                    CreatorConnectionId = game.CreatorConnectionId,
-
-                    Game = FormatGame(game),
-                    PlayerList = await FormatPlayerList(game),
-                    Payload = await manager.GetGamePayload(game),
-                }));
+                throw new UnauthorizedAccessException();
             }
 
-            throw new UnauthorizedAccessException();
+            game.PlayerList[appUser.Id] = Context.ConnectionId;
+            await _gameManager.SaveGameAsync(game);
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
+            await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
+            {
+                GameId = game.Id,
+                GameType = game.GameType,
+                GameJoinCode = game.JoinCode,
+                GameCreated = game.CreateTime,
+                GameStarted = game.IsStarted,
+                GameStartTime = game.StartTime,
+                GameCompleted = game.IsCompleted,
+                GameCompleteTime = game.CompleteTime,
+                GameClosed = game.IsClosed,
+                GameCloseTime = game.CloseTime,
+                CreatorId = game.CreatorId,
+                CreatorConnectionId = game.CreatorConnectionId,
+
+                Game = FormatGame(game),
+                PlayerList = await FormatPlayerList(game),
+                Payload = await manager.GetGamePayload(game),
+            }));
+            
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -171,8 +174,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
 
             var paramObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(param);
-            
-            var game = await gameManager.CreateNewGame(paramObj);
+
+            await using var game = await gameManager.CreateNewGame(paramObj);
 
             game.IsPrivate = paramObj["IsPrivate"]?.ToObject<bool>() ?? false;
             game.CreatorId= appUser.Id;
@@ -205,7 +208,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             var appUser = await ValidateUser();
 
-            var game = (await _gameManager.GetGameByJoinCodeAsync(joinCode,false))?.FirstOrDefault();
+            await using var game = await _gameManager.GetGameByJoinCodeAsync(joinCode,false);
             if (game == null)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("Alert", JsonConvert.SerializeObject(new
@@ -259,7 +262,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task KickPlayer(string gameId, string playerId)
         {
-            var game= await ValidateGame(gameId,false);
+            await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
 
             if (game.CreatorId != appUser.Id)
@@ -267,10 +270,6 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            if (!game.PlayerList.ContainsKey(playerId))
-            {
-                return;
-            }
             var oldConnectionId = game.PlayerList[playerId];
             game.PlayerList.TryRemove(playerId,out _);
 
@@ -296,10 +295,17 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task LeaveGame(string gameId)
         {
-            var (game, manager, appUser) = await Validate(gameId);
+            await using var game = await ValidateGame(gameId,false);
+            var appUser = await ValidateUser();
+
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
             game.PlayerList.TryRemove(appUser.Id,out _);
 
+            await _gameManager.SaveGameAsync(game);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
             await Clients.Group(gameId).SendAsync("PlayerLeft", JsonConvert.SerializeObject(new
             {
@@ -318,7 +324,9 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task CloseGame(string gameId)
         {
-            var (game, manager, appUser) = await Validate(gameId);
+            var game = await ValidateGame(gameId,false);
+            var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
 
             if (game.CreatorId != appUser.Id)
             {
@@ -345,14 +353,17 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 }));
             }
 
+            await _gameManager.SaveGameAsync(game);
             await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task StartGame(string gameId)
         {
-            var (game, manager, appUser)= await Validate(gameId);
-
+            await using var game = await ValidateGame(gameId,false);
+            var manager = await ValidateManager(game.GameType);
+            var appUser = await ValidateUser();
+            
             if (game.CreatorId != appUser.Id)
             {
                 throw new UnauthorizedAccessException();
@@ -363,6 +374,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             game.IsStarted = true;
             game.StartTime = DateTime.Now;
             
+            await _gameManager.SaveGameAsync(game);
+
             await Clients.Group(gameId).SendAsync("GameStarted", JsonConvert.SerializeObject(new
             {
                 GameId = gameId,
@@ -375,8 +388,6 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task RallyPoint(string gameId,string rallyData)
         {
-            var (game, manager, appUser) = await Validate(gameId);
-            
             //TODO: RallyPoint
 
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
@@ -385,7 +396,14 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task SendMove(string gameId, string move)
         {
-            var (game, manager, appUser) = await Validate(gameId);
+            await using var game = await ValidateGame(gameId,false);
+            var manager = await ValidateManager(game.GameType);
+            var appUser = await ValidateUser();
+
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
             if (game.IsCompleted)
             {
@@ -395,6 +413,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var oldCompleteState = game.IsCompleted;
 
             var ret = await manager.HandleMove(game, appUser.Id, move);
+
+            await _gameManager.SaveGameAsync(game);
 
             var response = JsonConvert.SerializeObject(new
             {
@@ -415,7 +435,14 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task RequestHint(string gameId)
         {
-            var (game, manager, appUser) = await Validate(gameId);
+            await using var game = await ValidateGame(gameId,false);
+            var manager = await ValidateManager(game.GameType);
+            var appUser = await ValidateUser();
+
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
             if (game.IsCompleted)
             {
@@ -458,13 +485,22 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                     PlayerList = await FormatPlayerList(game),
                 }));
             }
+
+            await _gameManager.SaveGameAsync(game);
         }
 
         //放弃一小题
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task GiveUp(string gameId)
         {
-            var (game, manager, appUser) = await Validate(gameId);
+            await using var game = await ValidateGame(gameId,false);
+            var manager = await ValidateManager(game.GameType);
+            var appUser = await ValidateUser();
+
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
             if (game.IsCompleted)
             {
@@ -498,6 +534,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
                 await Clients.Group(gameId).SendAsync("GameCompleted", response);
             }
+
+            await _gameManager.SaveGameAsync(game);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -520,7 +558,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task Chat(string gameId, string message)
         {
-            var (game, manager, appUser) = await Validate(gameId);
+            await using var game = await ValidateGame(gameId);
+            var appUser = await ValidateUser();
+
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
             await Clients.Group(gameId).SendAsync("Chat", JsonConvert.SerializeObject(new
             {

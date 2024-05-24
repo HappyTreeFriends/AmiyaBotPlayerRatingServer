@@ -127,6 +127,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 {
                     // 获取锁成功，继续操作
                     var game = await GetGameFromRedis(gameInfo.Id);
+                    if (game == null)
+                    {
+                        return null;
+                    }
                     game.RedLock= redisLock;
                     game.IsLocked = true;
                     return game;
@@ -142,7 +146,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return null;
         }
 
-        public async Task<List<Game>> GetGameByCreatorIdAsync(string creatorId, bool readOnly = true)
+        public async Task<List<Game>> GetGameByCreatorIdAsync(string creatorId)
         {
             //从数据库中获取查id
 
@@ -152,36 +156,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
             foreach (var info in gameInfo)
             {
-                if (readOnly)
-                {
                     // 不需要获取锁，直接获取数据
                     var game = await GetGameFromRedis(info.Id);
                     if (game == null)
                     {
                         continue;
                     }
-                }
-                else
-                {
-                    // 获取锁
-                    var redisLock = await _redLockFactory.CreateLockAsync("AmiyaBot-Minigame-Game-Lock-", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-
-                    if (redisLock.IsAcquired)
-                    {
-                        // 获取锁成功，继续操作
-                        var game = await GetGameFromRedis(info.Id);
-                        game.RedLock= redisLock;
-                        game.IsLocked = true;
-                        
-                        ret.Add(game);
-                    }
-                    else
-                    {
-                        // 获取锁失败
-                        continue;
-                    }
-
-                }
 
             }
 
@@ -238,52 +218,46 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         }
 
-        public async Task<List<Game>> GetGameByJoinCodeAsync(string joinCode, bool readOnly = true)
+        public async Task<Game> GetGameByJoinCodeAsync(string joinCode, bool readOnly = true)
         {
             //从数据库中获取查id
 
-            var gameInfo = await _dbContext.GameInfos.Where(x => x.JoinCode == joinCode.ToString()).ToListAsync();
+            var info = await _dbContext.GameInfos.Where(x => x.JoinCode == joinCode.ToString()).FirstOrDefaultAsync();
 
-            var ret = new List<Game>();
-
-            foreach (var info in gameInfo)
+            if (readOnly)
             {
-                if (readOnly)
+                // 不需要获取锁，直接获取数据
+                var game = await GetGameFromRedis(info.Id);
+                if (game == null)
                 {
-                    // 不需要获取锁，直接获取数据
+                    return null;
+                }
+            }
+            else
+            {
+                // 获取锁
+                var redisLock = await _redLockFactory.CreateLockAsync("AmiyaBot-Minigame-Game-Lock-",
+                    TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+
+                if (redisLock.IsAcquired)
+                {
+                    // 获取锁成功，继续操作
                     var game = await GetGameFromRedis(info.Id);
-                    if (game == null)
-                    {
-                        continue;
-                    }
+                    game.RedLock = redisLock;
+                    game.IsLocked = true;
+
+                    return game;
                 }
                 else
                 {
-                    // 获取锁
-                    var redisLock = await _redLockFactory.CreateLockAsync("AmiyaBot-Minigame-Game-Lock-", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-
-                    if (redisLock.IsAcquired)
-                    {
-                        // 获取锁成功，继续操作
-                        var game = await GetGameFromRedis(info.Id);
-                        game.RedLock= redisLock;
-                        game.IsLocked = true;
-                        
-                        ret.Add(game);
-                    }
-                    else
-                    {
-                        // 获取锁失败
-                        continue;
-                    }
-
+                    return null;
                 }
 
             }
 
-            return ret;
+            return null;
         }
-        
+
         public async Task<bool> SaveGameAsync(Game game)
         {
             if (game == null)
