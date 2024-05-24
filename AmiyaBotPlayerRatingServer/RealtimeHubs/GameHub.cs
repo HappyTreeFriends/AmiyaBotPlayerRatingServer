@@ -378,7 +378,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 }));
             }
 
-            await Clients.Group(gameId).SendAsync("GameClosed", ret);
+            await Clients.Group(gameId).SendAsync("GameClosed",JsonConvert.SerializeObject(ret));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
