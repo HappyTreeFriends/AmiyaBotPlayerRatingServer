@@ -72,9 +72,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet("{gameId}")]
-        public IActionResult GetGame(String gameId)
+        public async Task<IActionResult> GetGame(String gameId)
         {
-            var game = _gameManager.GetGame(gameId);
+            var game = await _gameManager.GetGameAsync(gameId);
             if (game == null)
             {
                 return NotFound();
@@ -85,38 +85,32 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet]
-        public IActionResult ListGame()
+        public async Task<IActionResult> ListGame()
         {
-            var list = _gameManager.GameList.Where(g => g.IsPrivate == false && g.IsCompleted == false).Select(GetGameReturnObj);
-            return Ok(list);
+            var allGameInfos = _dbContext.GameInfos.Where(g=>g.IsClosed==false).ToList();
+            var allGames = new List<GameLogic.Game>();
+            foreach (var gameInfo in allGameInfos)
+            {
+                var game = await _gameManager.GetGameAsync(gameInfo.Id);
+                if (!game.IsPrivate&&!game.IsCompleted)
+                {
+                    allGames.Add(game);
+                }
+            }
+            
+            return Ok(allGames.Select(GetGameReturnObj));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpGet("{gameId}/url")]
-        public IActionResult GenerateShortenUrl(string gameId)
+        public async Task<IActionResult> GenerateShortenUrl(string gameId)
         {
-            var game = _gameManager.GetGame(gameId);
+            var game = await _gameManager.GetGameAsync(gameId);
             if (game == null)
             {
                 return NotFound();
             }
-
-            /*
-
-            https://kutt.anonymous-test.top/links
-            X-API-KEY
-            {
-  "target": "string",
-  "description": "string",
-  "expire_in": "2 minutes/hours/days",
-  "password": "string",
-  "customurl": "string",
-  "reuse": false,
-  "domain": "string"
-}
             
-             */
-
             var shortenUrl = "https://game.anonymous-test.top/#/regular-home/room-waiting/" + game.Id;
 
             // HTTP Access

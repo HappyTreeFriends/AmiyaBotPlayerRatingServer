@@ -22,6 +22,9 @@ using Microsoft.Extensions.Options;
 using Hangfire.Storage;
 using AmiyaBotPlayerRatingServer.Localization;
 using AmiyaBotPlayerRatingServer.RealtimeHubs;
+using RedLockNet.SERedis;
+using RedLockNet.SERedis.Configuration;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +53,15 @@ builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
 {
     options.UseOpenIddict();
 });
+
+var redisConn = configuration["Redis:ConnectionString"];
+var connectionMultiplexer = ConnectionMultiplexer.Connect(redisConn);
+builder.Services.AddSingleton(connectionMultiplexer);
+
+builder.Services.AddSingleton((_)=> RedLockFactory.Create(new List<RedLockMultiplexer>
+{
+    new(connectionMultiplexer)
+}));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<PlayerRatingDatabaseContext>()

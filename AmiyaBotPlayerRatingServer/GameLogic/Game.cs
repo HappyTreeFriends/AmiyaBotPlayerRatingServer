@@ -1,9 +1,12 @@
 ﻿using System.Collections.Concurrent;
 using AmiyaBotPlayerRatingServer.Model;
+using Newtonsoft.Json;
+using RedLockNet;
+using RedLockNet.SERedis;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
-    public class Game
+    public class Game:IDisposable,IAsyncDisposable
     {
         public String Id { get; set; }
         public String JoinCode { get; set; }
@@ -44,5 +47,29 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         }
 
         public ConcurrentDictionary<string, RallyNode> RallyNodes { get; } = new ConcurrentDictionary<string, RallyNode>();
+
+        public int Version { get; set; }
+
+        [JsonIgnore]
+        public bool IsLocked { get; set; }
+        [JsonIgnore]
+        public IRedLock RedLock { get; set; }
+
+        public void Dispose()
+        {
+            if (RedLock != null)
+            {
+                RedLock.Dispose();
+            }
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            if (RedLock != null)
+            {
+                RedLock.Dispose();
+            }
+            return ValueTask.CompletedTask;
+        }
     }
 }
