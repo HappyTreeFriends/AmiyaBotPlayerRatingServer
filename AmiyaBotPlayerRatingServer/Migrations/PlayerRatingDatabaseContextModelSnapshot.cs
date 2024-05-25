@@ -96,6 +96,40 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.ApplicationUserMinigameStatistics", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("TotalAnswersCorrect")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalAnswersWrong")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesFirstPlace")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesSecondPlace")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesThirdPlace")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ApplicationUserMinigameStatistics");
+                });
+
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.CharacterStatistics", b =>
                 {
                     b.Property<string>("Id")
@@ -772,6 +806,17 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.HasIndex("ApplicationId", "Status", "Subject", "Type");
 
                     b.ToTable("OpenIddictTokens", (string)null);
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.ApplicationUserMinigameStatistics", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.GameInfo", b =>

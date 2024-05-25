@@ -28,7 +28,7 @@ namespace AmiyaBotPlayerRatingServer.Data
             String conn;
             switch (dbType)
             {
-                case "POSTGRESQL":
+                //case "POSTGRESQL":
                 default:
                     conn =
                         $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
@@ -43,9 +43,11 @@ namespace AmiyaBotPlayerRatingServer.Data
             var dbType = configuration["Db:Type"]?.ToUpper();
             switch (dbType)
             {
-                case "POSTGRESQL":
+                //case "POSTGRESQL":
                 default:
-                    return new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
+#pragma warning disable CS0618
+                    return new PostgreSqlStorage(GetConnectionString(configuration));
+#pragma warning restore CS0618
             }
         }
 
@@ -56,7 +58,7 @@ namespace AmiyaBotPlayerRatingServer.Data
             var dbType = Configuration["Db:Type"]?.ToUpper();
             switch (dbType)
             {
-                case "POSTGRESQL":
+                //case "POSTGRESQL":
                 default:
                     options.UseNpgsql(GetConnectionString(Configuration));
                     break;
@@ -109,5 +111,6 @@ namespace AmiyaBotPlayerRatingServer.Data
         public DbSet<MAAResponse> MAAResponses { get; set; }
 
         public DbSet<GameInfo> GameInfos { get; set; }
+        public DbSet<ApplicationUserMinigameStatistics> ApplicationUserMinigameStatistics { get; set; }
     }
 }

@@ -110,7 +110,9 @@ namespace AmiyaBotPlayerRatingServer.Localization
         /// </summary>
         /// <param name="userName">The user name that is invalid.</param>
         /// <returns>An <see cref="IdentityError"/> indicating the specified user <paramref name="userName"/> is invalid.</returns>
+#pragma warning disable CS8765
         public override IdentityError InvalidUserName(string userName)
+#pragma warning restore CS8765
         {
             return new IdentityError
             {
@@ -124,7 +126,9 @@ namespace AmiyaBotPlayerRatingServer.Localization
         /// </summary>
         /// <param name="email">The email that is invalid.</param>
         /// <returns>An <see cref="IdentityError"/> indicating the specified <paramref name="email"/> is invalid.</returns>
+#pragma warning disable CS8765
         public override IdentityError InvalidEmail(string email)
+#pragma warning restore CS8765
         {
             return new IdentityError
             {
@@ -166,7 +170,9 @@ namespace AmiyaBotPlayerRatingServer.Localization
         /// </summary>
         /// <param name="role">The invalid role.</param>
         /// <returns>An <see cref="IdentityError"/> indicating the specific role <paramref name="role"/> name is invalid.</returns>
+#pragma warning disable CS8765
         public override IdentityError InvalidRoleName(string role)
+#pragma warning restore CS8765
         {
             return new IdentityError
             {

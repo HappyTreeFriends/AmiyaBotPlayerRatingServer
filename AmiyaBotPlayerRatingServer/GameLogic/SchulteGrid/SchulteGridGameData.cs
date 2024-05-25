@@ -144,7 +144,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             return operatorList.Contains(operatorName);
         }
 
-        public static async Task<SchulteGridGame> BuildContinuousMode(ArknightsMemoryCache arknightsMemoryCache)
+        public static async Task<SchulteGridGame?> BuildContinuousMode(ArknightsMemoryCache arknightsMemoryCache)
         {
             LoadCharacterMap(arknightsMemoryCache);
 

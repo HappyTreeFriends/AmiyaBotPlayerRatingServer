@@ -140,5 +140,42 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
                 url=links
             });
         }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("player/{userId}/statistics")]
+        public async Task<IActionResult> GetPlayerStatistics(string userId)
+        {
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            
+            var stat = _dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(s => s.UserId == userId);
+            if (stat == null)
+            {
+                return Ok(new
+                {
+                    TotalGamesPlayed = 0,
+                    TotalGamesFirstPlace = 0,
+                    TotalGamesSecondPlace = 0,
+                    TotalGamesThirdPlace = 0,
+                    TotalAnswersCorrect = 0,
+                    TotalAnswersWrong = 0
+                });
+            }
+
+            return Ok(new
+            {
+                stat.TotalGamesPlayed,
+                stat.TotalGamesFirstPlace,
+                stat.TotalGamesSecondPlace,
+                stat.TotalGamesThirdPlace,
+                stat.TotalAnswersCorrect,
+                stat.TotalAnswersWrong
+            });
+        }
+
+
     }
 }

@@ -9,7 +9,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 {
     public interface IGameManager
     {
-        public Task<Game> CreateNewGame(Dictionary<String, JToken> param);
+        public Task<Game?> CreateNewGame(Dictionary<String, JToken> param);
 
         public Task<object> HandleMove(Game game, string playerId, string move);
 

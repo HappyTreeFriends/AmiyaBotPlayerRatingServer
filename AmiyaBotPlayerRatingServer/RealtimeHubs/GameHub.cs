@@ -1,9 +1,11 @@
-﻿using AmiyaBotPlayerRatingServer.GameLogic;
+﻿using System.Data;
+using AmiyaBotPlayerRatingServer.GameLogic;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using System.Security.Claims;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json.Linq;
@@ -103,6 +105,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         #endregion
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task Me()
         {
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -119,6 +122,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task GetServerTime()
         {
             await Clients.Caller.SendAsync("ServerTime", JsonConvert.SerializeObject(new
@@ -129,6 +133,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task GetGame(string id)
         {
             await using var game = await ValidateGame(id,false);
@@ -167,6 +172,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task CreateGame(string gameType,string param)
         {
             var gameManager = await ValidateManager(gameType);
@@ -176,6 +182,15 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var paramObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(param);
 
             await using var game = await gameManager.CreateNewGame(paramObj);
+
+            if (game == null)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "服务器过忙，请稍候再试。",
+                }));
+                return;
+            }
 
             game.IsPrivate = paramObj["IsPrivate"]?.ToObject<bool>() ?? false;
             game.CreatorId= appUser.Id;
@@ -204,6 +219,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task JoinGame(string joinCode)
         {
             var appUser = await ValidateUser();
@@ -260,6 +276,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task KickPlayer(string gameId, string playerId)
         {
             await using var game = await ValidateGame(gameId,false);
@@ -293,6 +310,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task LeaveGame(string gameId)
         {
             await using var game = await ValidateGame(gameId,false);
@@ -322,6 +340,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task CloseGame(string gameId)
         {
             await using var game = await ValidateGame(gameId,false);
@@ -358,6 +377,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task StartGame(string gameId)
         {
             await using var game = await ValidateGame(gameId,false);
@@ -386,6 +406,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task RallyPoint(string gameId,string rallyData)
         {
             //TODO: RallyPoint
@@ -394,6 +415,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task SendMove(string gameId, string move)
         {
             await using var game = await ValidateGame(gameId,false);
@@ -433,6 +455,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
         //请求给出提示(可能导致该题被放弃)
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task RequestHint(string gameId)
         {
             await using var game = await ValidateGame(gameId,false);
@@ -491,6 +514,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
         //放弃一小题
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task GiveUp(string gameId)
         {
             await using var game = await ValidateGame(gameId,false);
@@ -539,6 +563,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task GetNotification()
         {
             foreach (var notification in _gameManager.Notifications)
@@ -556,6 +581,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         }
         
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
         public async Task Chat(string gameId, string message)
         {
             await using var game = await ValidateGame(gameId);

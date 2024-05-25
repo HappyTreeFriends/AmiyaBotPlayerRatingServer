@@ -11,6 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace AmiyaBotPlayerRatingServer.Migrations
 {
+#pragma warning disable CS8981 // 该类型名称仅包含小写 ascii 字符。此类名称可能会成为该语言的保留值。
+#pragma warning disable IDE1006 // 命名样式
     [DbContext(typeof(PlayerRatingDatabaseContext))]
     [Migration("20231108021912_sys")]
     partial class sys

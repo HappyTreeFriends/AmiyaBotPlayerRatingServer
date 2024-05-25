@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using AmiyaBotPlayerRatingServer.Data;
+using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,83 +10,15 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
     public class SchulteGridGameManager : IGameManager
     {
         private readonly ArknightsMemoryCache _arknightsMemoryCache;
+        private readonly PlayerRatingDatabaseContext _dbContext;
 
-        public SchulteGridGameManager(ArknightsMemoryCache memoryCache)
+        public SchulteGridGameManager(ArknightsMemoryCache memoryCache,PlayerRatingDatabaseContext dbContext)
         {
             _arknightsMemoryCache = memoryCache;
+            _dbContext = dbContext;
         }
-
-        private static SchulteGridGame GenerateTestGame()
-        {
-            var game = new SchulteGridGame();
-
-            //手动添加一些测试数据
-            game.GameType = "SchulteGrid";
-            game.GridWidth = 4;
-            game.GridHeight = 4;
-            game.Grid = new List<List<string>>()
-            {
-                new List<string>{"情", "坚", "守", "模"},
-                new List<string>{"共", "崩", "毁", "式"},
-                new List<string>{"恸", "见", "之", "判"},
-                new List<string>{"哀", "我", "前", "决"}
-            };
-            game.AnswerList = new List<SchulteGridGame.GridAnswer>()
-            {
-                new SchulteGridGame.GridAnswer()
-                {
-                    CharacterName = "凛视",
-                    SkillName = "我见崩毁之前",
-                    GridPointList = new List<SchulteGridGame.GridPoint>()
-                    {
-                        new SchulteGridGame.GridPoint() {X = 1, Y = 3},
-                        new SchulteGridGame.GridPoint() {X = 1, Y = 2},
-                        new SchulteGridGame.GridPoint() {X = 1, Y = 1},
-                        new SchulteGridGame.GridPoint() {X = 2, Y = 1},
-                        new SchulteGridGame.GridPoint() {X = 2, Y = 2},
-                        new SchulteGridGame.GridPoint() {X = 2, Y = 3},
-                    }
-                },
-                new SchulteGridGame.GridAnswer()
-                {
-                    CharacterName = "艾丽妮",
-                    SkillName = "判决",
-                    GridPointList = new List<SchulteGridGame.GridPoint>()
-                    {
-                        new SchulteGridGame.GridPoint() {X = 3, Y = 2},
-                        new SchulteGridGame.GridPoint() {X = 3, Y = 3},
-                    }
-                },
-                new SchulteGridGame.GridAnswer()
-                {
-                    CharacterName = "火神",
-                    SkillName = "坚守模式",
-                    GridPointList = new List<SchulteGridGame.GridPoint>()
-                    {
-                        new SchulteGridGame.GridPoint() {X = 1, Y = 0},
-                        new SchulteGridGame.GridPoint() {X = 2, Y = 0},
-                        new SchulteGridGame.GridPoint() {X = 3, Y = 0},
-                        new SchulteGridGame.GridPoint() {X = 3, Y = 1},
-                    }
-                },
-                new SchulteGridGame.GridAnswer()
-                {
-                    CharacterName = "阿米娅",
-                    SkillName = "哀恸共情",
-                    GridPointList = new List<SchulteGridGame.GridPoint>()
-                    {
-                        new SchulteGridGame.GridPoint() {X = 0, Y = 3},
-                        new SchulteGridGame.GridPoint() {X = 0, Y = 2},
-                        new SchulteGridGame.GridPoint() {X = 0, Y = 1},
-                        new SchulteGridGame.GridPoint() {X = 0, Y = 0},
-                    }
-                },
-            };
-
-            return game;
-        }
-
-        public async Task<Game> CreateNewGame(Dictionary<String, JToken> param)
+        
+        public async Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = await SchulteGridGameData.BuildContinuousMode(_arknightsMemoryCache);
             return game;
@@ -117,6 +50,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             if (!SchulteGridGameData.IsOperator(characterName))
             {
+                game.PlayerMoveList.Add(new SchulteGridGame.PlayerMove()
+                {
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    IsCorrect = false,
+                    IsOperator = false,
+                });
+
                 return Task.FromResult<object>(new
                 {
                     Result = "NotOperator",
@@ -130,6 +71,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             var answers = game.AnswerList.Where(a => a.CharacterName == characterName).ToList();
             if (answers.Count == 0)
             {
+                game.PlayerMoveList.Add(new SchulteGridGame.PlayerMove()
+                {
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    IsCorrect = false,
+                    IsOperator = true,
+                });
+
                 return Task.FromResult<object>(new
                 {
                     Result = "Wrong",
@@ -144,6 +93,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             {
                 if (answer.PlayerId != null)
                 {
+                    game.PlayerMoveList.Add(new SchulteGridGame.PlayerMove()
+                    {
+                        PlayerId = playerId,
+                        CharacterName = characterName,
+                        IsCorrect = false,
+                        IsOperator = true,
+                    });
+
                     return Task.FromResult<object>(new
                     {
                         Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer,
@@ -156,6 +113,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 answer.AnswerTime = DateTime.Now;
                 answer.PlayerId = playerId;
             }
+            
+            game.PlayerMoveList.Add(new SchulteGridGame.PlayerMove()
+            {
+                PlayerId = playerId,
+                CharacterName = characterName,
+                IsCorrect = true,
+                IsOperator = true,
+            });
 
             if (game.PlayerScore.ContainsKey(playerId))
             {
@@ -172,6 +137,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 {
                     game.IsCompleted = true;
                     game.CompleteTime = DateTime.Now;
+
+                    CreateStatistics(game);
                 }
             }
 
@@ -194,6 +161,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 game.CompleteTime = DateTime.Now;
             }
 
+            CreateStatistics(game);
+
             return Task.FromResult<object>(new { GameId= game.Id, 
                 RemainingAnswers = game.AnswerList.Where(a=>a.Completed==false),
                 IsCompleted = game.IsCompleted,
@@ -201,6 +170,70 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 IsClosed = true,
                 CloseTime = game.CloseTime
             });
+        }
+
+        private void CreateStatistics(SchulteGridGame game)
+        {
+                //统计第一名第二名和第三名
+                var playerScoreList = game.PlayerScore.ToList();
+                playerScoreList.Sort((a, b) => b.Value.CompareTo(a.Value));
+
+                var firstPlace = playerScoreList[0];
+                var secondPlace = playerScoreList.Count > 1 ? playerScoreList[1] : default;
+                var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
+
+                //统计每个玩家的正确和错误次数
+                var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator == true).GroupBy(p => p.PlayerId)
+                    .Select(p => new
+                    {
+                        PlayerId = p.Key,
+                        CorrectCount = p.Count(c => c.IsCorrect),
+                        WrongCount = p.Count(c => !c.IsCorrect)
+                    }).ToList();
+
+                foreach (var pl in game.PlayerList)
+                {
+                    var playerId = pl.Key;
+
+                    var playerSt =
+                        _dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
+                    if (playerSt == null)
+                    {
+                        playerSt = new ApplicationUserMinigameStatistics()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            UserId = playerId,
+                            TotalGamesPlayed = 0,
+                            TotalGamesFirstPlace = 0,
+                            TotalGamesSecondPlace = 0,
+                            TotalGamesThirdPlace = 0,
+                            TotalAnswersCorrect = 0,
+                            TotalAnswersWrong = 0
+                        };
+                        _dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
+                    }
+
+                    playerSt.TotalGamesPlayed++;
+                    playerSt.TotalAnswersCorrect +=
+                        playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.CorrectCount ?? 0;
+                    playerSt.TotalAnswersWrong +=
+                        playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.WrongCount ?? 0;
+
+                    if (firstPlace.Key == playerId)
+                    {
+                        playerSt.TotalGamesFirstPlace++;
+                    }
+                    else if (secondPlace.Key == playerId)
+                    {
+                        playerSt.TotalGamesSecondPlace++;
+                    }
+                    else if (thirdPlace.Key == playerId)
+                    {
+                        playerSt.TotalGamesThirdPlace++;
+                    }
+
+                    _dbContext.SaveChanges();
+                }
         }
 
         public async Task<object> GetGamePayload(Game game)
@@ -241,6 +274,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             return 0;
         }
+        
 
         public Task<IGameManager.RequestHintOrGiveUpResult> GiveUp(Game game, string appUserId)
         {

@@ -11,18 +11,16 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace AmiyaBotPlayerRatingServer.Migrations
 {
-#pragma warning disable CS8981 // 该类型名称仅包含小写 ascii 字符。此类名称可能会成为该语言的保留值。
-#pragma warning disable IDE1006 // 命名样式
     [DbContext(typeof(PlayerRatingDatabaseContext))]
-    [Migration("20230916150952_boxdate")]
-    partial class boxdate
+    [Migration("20240525164914_GameStatistics")]
+    partial class GameStatistics
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.10")
+                .HasAnnotation("ProductVersion", "8.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -34,6 +32,12 @@ namespace AmiyaBotPlayerRatingServer.Migrations
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Avatar")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AvatarType")
+                        .HasColumnType("text");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -51,6 +55,10 @@ namespace AmiyaBotPlayerRatingServer.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Nickname")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -89,6 +97,40 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.ApplicationUserMinigameStatistics", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("TotalAnswersCorrect")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalAnswersWrong")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesFirstPlace")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesSecondPlace")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalGamesThirdPlace")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ApplicationUserMinigameStatistics");
                 });
 
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.CharacterStatistics", b =>
@@ -169,6 +211,190 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.ToTable("ClientInfos");
                 });
 
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.GameInfo", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatorId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("JoinCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "CreatorId" }, "Index_CreatorId");
+
+                    b.HasIndex(new[] { "IsClosed" }, "Index_IsClosed");
+
+                    b.HasIndex(new[] { "JoinCode" }, "Index_JoinCode");
+
+                    b.ToTable("GameInfos");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAAConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DeviceIdentity")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserIdentity")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MAAConnections");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAARepetitiveTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AvailableFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("AvailableTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPaused")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Parameters")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UtcCronString")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConnectionId");
+
+                    b.ToTable("MAARepetitiveTasks");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAAResponse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("ImagePayload")
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("ImagePayloadThumbnail")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("MAAResponses");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAATask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AvailableAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSystemGenerated")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Parameters")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ParentRepetitiveTaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ParentTaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConnectionId");
+
+                    b.HasIndex("ParentRepetitiveTaskId");
+
+                    b.HasIndex("ParentTaskId");
+
+                    b.ToTable("MAATasks");
+                });
+
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.SKLandCharacterBox", b =>
                 {
                     b.Property<string>("Id")
@@ -228,6 +454,21 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("SKLandCredentials");
+                });
+
+            modelBuilder.Entity("ApplicationUserGameInfo", b =>
+                {
+                    b.Property<string>("GameInfoId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlayerListId")
+                        .HasColumnType("text");
+
+                    b.HasKey("GameInfoId", "PlayerListId");
+
+                    b.HasIndex("PlayerListId");
+
+                    b.ToTable("ApplicationUserGameInfo");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -368,12 +609,20 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text");
 
+                    b.Property<string>("ApplicationType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<string>("ClientId")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
                     b.Property<string>("ClientSecret")
                         .HasColumnType("text");
+
+                    b.Property<string>("ClientType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("ConcurrencyToken")
                         .IsConcurrencyToken()
@@ -388,6 +637,9 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("DisplayNames")
+                        .HasColumnType("text");
+
+                    b.Property<string>("JsonWebKeySet")
                         .HasColumnType("text");
 
                     b.Property<string>("Permissions")
@@ -405,9 +657,8 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.Property<string>("Requirements")
                         .HasColumnType("text");
 
-                    b.Property<string>("Type")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                    b.Property<string>("Settings")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -560,6 +811,86 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.ToTable("OpenIddictTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.ApplicationUserMinigameStatistics", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.GameInfo", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.ApplicationUser", "Creator")
+                        .WithMany()
+                        .HasForeignKey("CreatorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Creator");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAAConnection", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAARepetitiveTask", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.MAAConnection", "Connection")
+                        .WithMany()
+                        .HasForeignKey("ConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Connection");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAAResponse", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.MAATask", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAATask", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.MAAConnection", "Connection")
+                        .WithMany()
+                        .HasForeignKey("ConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.MAARepetitiveTask", "ParentRepetitiveTask")
+                        .WithMany("SubTasks")
+                        .HasForeignKey("ParentRepetitiveTaskId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.MAATask", "ParentTask")
+                        .WithMany("SubTasks")
+                        .HasForeignKey("ParentTaskId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Connection");
+
+                    b.Navigation("ParentRepetitiveTask");
+
+                    b.Navigation("ParentTask");
+                });
+
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.SKLandCharacterBox", b =>
                 {
                     b.HasOne("AmiyaBotPlayerRatingServer.Model.SKLandCredential", "Credential")
@@ -580,6 +911,21 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ApplicationUserGameInfo", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.GameInfo", null)
+                        .WithMany()
+                        .HasForeignKey("GameInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -655,6 +1001,16 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.Navigation("Application");
 
                     b.Navigation("Authorization");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAARepetitiveTask", b =>
+                {
+                    b.Navigation("SubTasks");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAATask", b =>
+                {
+                    b.Navigation("SubTasks");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication", b =>

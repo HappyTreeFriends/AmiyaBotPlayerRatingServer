@@ -55,18 +55,21 @@ builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
 });
 
 var redisConn = configuration["Redis:ConnectionString"];
-var connectionMultiplexer = ConnectionMultiplexer.Connect(redisConn);
-builder.Services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
-
-builder.Services.AddSingleton((_)=> RedLockFactory.Create(new List<RedLockMultiplexer>
+if (!string.IsNullOrWhiteSpace(redisConn))
 {
-    new(connectionMultiplexer)
-}));
+    var connectionMultiplexer = ConnectionMultiplexer.Connect(redisConn);
+    builder.Services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
+
+    builder.Services.AddSingleton((_) => RedLockFactory.Create(new List<RedLockMultiplexer>
+    {
+        new(connectionMultiplexer)
+    }));
+}
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<PlayerRatingDatabaseContext>()
     .AddDefaultTokenProviders()
-    .AddErrorDescriber<LocalizationIdentityErrorDescriber>(); ;
+    .AddErrorDescriber<LocalizationIdentityErrorDescriber>();
 
 builder.Services.Configure<IdentityOptions>(options =>
 {

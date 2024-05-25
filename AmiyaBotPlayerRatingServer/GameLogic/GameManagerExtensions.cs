@@ -9,9 +9,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public static void AddGameManagers(this IServiceCollection service)
         {
             service.AddScoped<GameManager>();
-            service.AddSingleton<SchulteGridGameManager>();
-            service.AddSingleton<SkinGuessManager>();
-            service.AddSingleton<SkillGuessManager>();
+            service.AddScoped<SchulteGridGameManager>();
+            service.AddScoped<SkinGuessManager>();
+            service.AddScoped<SkillGuessManager>();
         }
     }
 }

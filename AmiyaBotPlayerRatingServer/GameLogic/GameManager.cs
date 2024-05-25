@@ -234,7 +234,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         {
             //从数据库中获取查id
 
-            var info = await _dbContext.GameInfos.Where(x => x.JoinCode == joinCode.ToString()).FirstOrDefaultAsync();
+            var info = await _dbContext.GameInfos.Where(x => x.JoinCode == joinCode&&x.IsClosed==false).FirstOrDefaultAsync();
 
             if (info == null)
             {

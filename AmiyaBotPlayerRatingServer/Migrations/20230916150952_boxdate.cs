@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace AmiyaBotPlayerRatingServer.Migrations
 {
+#pragma warning disable CS8981 // 该类型名称仅包含小写 ascii 字符。此类名称可能会成为该语言的保留值。
+#pragma warning disable IDE1006 // 命名样式
     /// <inheritdoc />
     public partial class boxdate : Migration
     {
