@@ -115,7 +115,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
 
             // HTTP Access
             var httpClient = new HttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://kutt.anonymous-test.top/links");
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://kutt.anonymous-test.top/api/v2/links");
             request.Content = new StringContent(JsonConvert.SerializeObject(new
             {
                 target = shortenUrl,
@@ -124,8 +124,20 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             }), Encoding.UTF8, "application/json");
             request.Headers.Add("X-API-KEY", _configuration["Kutt:ApiKey"]);
 
+            var response = await httpClient.SendAsync(request);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var responseJson = JsonConvert.DeserializeObject<dynamic>(responseContent);
 
-            return Ok();
+            //{ "id":"a0d9d575-a405-4ee5-a3ee-9998ee6adda7","address":"YCPD0E","description":null,"banned":false,"password":false,"expire_in":"2024-05-26T04:46:21.375Z","target":"https://game.anonymous-test.top/#/regular-home/room-waiting/7e9b9930-8934-40c7-ba7c-7de805c8f571","visit_count":0,"created_at":"2024-05-25T04:46:22.280Z","updated_at":"2024-05-25T04:46:22.280Z","link":"https://kutt.anonymous-test.top/YCPD0E"}
+
+            var links = (responseJson.link)?.ToString();
+
+            links = links.Replace("kutt.anonymous-test.top", "amiya.cn");
+
+            return Ok(new
+            {
+                url=links
+            });
         }
     }
 }
