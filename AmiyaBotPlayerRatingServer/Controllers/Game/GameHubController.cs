@@ -114,8 +114,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             var shortenUrl = "https://game.anonymous-test.top/#/regular-home/room-waiting/" + game.Id;
 
             // HTTP Access
+            var kuttUrl = _configuration["Kutt:Url"];
             var httpClient = new HttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://kutt.anonymous-test.top/api/v2/links");
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://"+ kuttUrl + "/api/v2/links");
             request.Content = new StringContent(JsonConvert.SerializeObject(new
             {
                 target = shortenUrl,
