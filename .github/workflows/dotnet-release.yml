@@ -50,7 +50,7 @@ jobs:
       uses: azure/k8s-set-context@v1
       with:
         method: kubeconfig
-        kubeconfig: ${{ secrets.HOMECLOUD_KUBECONFIG }}
+        kubeconfig: ${{ secrets.ALIYUN_KUBECONFIG }}
       id: setcontext
     - name: Push to k8s
       uses: Azure/k8s-deploy@v4
