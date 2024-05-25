@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using RedLockNet.SERedis;
 using StackExchange.Redis;
-using static AmiyaBotPlayerRatingServer.GameLogic.Game;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
@@ -69,7 +68,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         }
         
         [ItemCanBeNull]
-        private async Task<Game> GetGameFromRedis(string gameid)
+        private async Task<Game?> GetGameFromRedis(string gameid)
         {
             var gameJson = await _redisService.StringGetAsync("AmiyaBot-Minigame-Game-" + gameid);
             if (gameJson.IsNullOrEmpty)
@@ -88,9 +87,17 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             await _redisService.StringSetAsync("AmiyaBot-Minigame-Game-" + game.Id, gameJson);
         }
 
-        private Game DeserializeGame(string gameJson)
+        private Game? DeserializeGame(string gameJson)
         {
-            return JsonConvert.DeserializeObject<Game>(gameJson);
+            var peek = JsonConvert.DeserializeObject<Game>(gameJson);
+            var gameType = peek.GameType;
+            return gameType switch
+            {
+                "SchulteGrid" => JsonConvert.DeserializeObject<SchulteGridGame>(gameJson)!,
+                "SkinGuess" => JsonConvert.DeserializeObject<SkinGuessGame>(gameJson)!,
+                "SkillGuess" => JsonConvert.DeserializeObject<SkillGuessGame>(gameJson)!,
+                _ => throw new ArgumentException("Invalid game type"),
+            };
         }
 
         private string SerializeGame(Game game)
@@ -98,11 +105,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return JsonConvert.SerializeObject(game);
         }
 
-        public async Task<Game> GetGameAsync(string gameId, bool readOnly = true)
+        public async Task<Game?> GetGameAsync(string gameId, bool readOnly = true)
         {
             //从数据库中获取查id
 
-            var gameInfo = await _dbContext.GameInfos.FindAsync(gameId);
+            var gameInfo = await _dbContext.GameInfos.Include(x=>x.PlayerList).FirstOrDefaultAsync(a=>a.Id==gameId);
 
             if (gameInfo == null)
             {
@@ -117,6 +124,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 {
                     return null;
                 }
+
+                return game;
             }
             else
             {
@@ -142,8 +151,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 }
 
             }
-
-            return null;
         }
 
         public async Task<List<Game>> GetGameByCreatorIdAsync(string creatorId)
@@ -265,12 +272,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 return false;
             }
 
-            GameInfo gameInfo;
+            GameInfo? gameInfo;
             if (game.Id == null)
             {
                 gameInfo = new GameInfo();
-                _dbContext.GameInfos.Add(gameInfo);
-                game.Id = gameInfo.Id;
             }
             else
             {
@@ -280,39 +285,56 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                     return false;
                 }
 
-                gameInfo = await _dbContext.GameInfos.FindAsync(game.Id);
+                gameInfo = await _dbContext.GameInfos.Include(x => x.PlayerList).FirstOrDefaultAsync(g=>g.Id==game.Id);
                 if (gameInfo == null)
                 {
                     return false;
                 }
-            }
-            
-            // 获取锁成功，检查是否存在数据冲突
-            var existingGame = await GetGameFromRedis(game.Id);
-            if (existingGame != null)
-            {
-                // 如果存在冲突，则返回 false
-                if (existingGame.Version != game.Version)
+
+                // 获取锁成功，检查是否存在数据冲突
+                var existingGame = await GetGameFromRedis(game.Id);
+                if (existingGame != null)
                 {
-                    // 数据冲突，不保存
-                    return false;
+                    // 如果存在冲突，则返回 false
+                    if (existingGame.Version != game.Version)
+                    {
+                        // 数据冲突，不保存
+                        return false;
+                    }
                 }
             }
+
+
+            // 保存游戏信息到数据库
+            foreach (var pPair in game.PlayerList)
+            {
+                var player = await _dbContext.Users.FindAsync(pPair.Key);
+                if (player != null)
+                {
+                    if (gameInfo.PlayerList.All(x => x.Id != player.Id))
+                    {
+                        gameInfo.PlayerList.Add(player);
+                    }
+                }
+
+            }
+            gameInfo.JoinCode = game.JoinCode;
+            gameInfo.CreatorId = game.CreatorId;
+            gameInfo.IsClosed = game.IsClosed;
+            gameInfo.GameType = game.GameType;
+            gameInfo.JoinCode = game.JoinCode;
+
+            if (game.Id == null)
+            {
+                gameInfo.Id = Guid.NewGuid().ToString();
+                await _dbContext.GameInfos.AddAsync(gameInfo);
+                game.Id = gameInfo.Id;
+            }
+            await _dbContext.SaveChangesAsync();
 
             // 保存游戏数据到Redis
             game.Version++;
             await SaveGameToRedis(game);
-
-            // 保存游戏信息到数据库
-            var players = await _dbContext.Users.Where(x => game.PlayerList.ContainsKey(x.Id)).ToListAsync();
-            gameInfo.JoinCode = game.JoinCode;
-            gameInfo.CreatorId = game.CreatorId;
-            gameInfo.IsClosed = game.IsClosed;
-            gameInfo.JoinCode = game.JoinCode;
-            gameInfo.PlayerList = players;
-
-            _dbContext.GameInfos.Update(gameInfo);
-            await _dbContext.SaveChangesAsync();
 
             if (game.RedLock != null)
             {

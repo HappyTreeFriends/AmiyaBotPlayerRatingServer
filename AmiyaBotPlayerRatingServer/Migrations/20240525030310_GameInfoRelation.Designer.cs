@@ -3,6 +3,7 @@ using System;
 using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiyaBotPlayerRatingServer.Migrations
 {
     [DbContext(typeof(PlayerRatingDatabaseContext))]
-    partial class PlayerRatingDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20240525030310_GameInfoRelation")]
+    partial class GameInfoRelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -180,10 +183,6 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("CreatorId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("GameType")
                         .IsRequired()
                         .HasColumnType("text");
 

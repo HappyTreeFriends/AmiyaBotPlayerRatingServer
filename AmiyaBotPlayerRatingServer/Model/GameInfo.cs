@@ -14,6 +14,8 @@ namespace AmiyaBotPlayerRatingServer.Model
     {
         [Key]
         public string Id { get; set; }
+
+        public string GameType { get; set; }
         
         public string CreatorId { get; set; }
         public ApplicationUser Creator { get; set; }
@@ -21,7 +23,7 @@ namespace AmiyaBotPlayerRatingServer.Model
         public string JoinCode{ get; set; }
         public bool IsClosed { get; set; }
 
-        public ICollection<ApplicationUser> PlayerList { get; set; }
+        public ICollection<ApplicationUser> PlayerList { get; set; } = new List<ApplicationUser>();
 
     }
 }

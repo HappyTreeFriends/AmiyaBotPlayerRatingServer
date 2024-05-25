@@ -29,11 +29,10 @@ namespace AmiyaBotPlayerRatingServer.Data
             switch (dbType)
             {
                 case "POSTGRESQL":
+                default:
                     conn =
                         $"Host={host};Port={port};Database={database};Username={username};Password={password};Maximum Pool Size=50";
                     break;
-                default:
-                    return "";
             }
 
             return conn;
@@ -45,9 +44,8 @@ namespace AmiyaBotPlayerRatingServer.Data
             switch (dbType)
             {
                 case "POSTGRESQL":
-                    return new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
                 default:
-                    return null;
+                    return new PostgreSqlStorage(PlayerRatingDatabaseContext.GetConnectionString(configuration));
             }
         }
 
@@ -59,10 +57,9 @@ namespace AmiyaBotPlayerRatingServer.Data
             switch (dbType)
             {
                 case "POSTGRESQL":
+                default:
                     options.UseNpgsql(GetConnectionString(Configuration));
                     break;
-                default:
-                    return;
             }
         }
 
@@ -92,7 +89,11 @@ namespace AmiyaBotPlayerRatingServer.Data
                 .WithOne(t => t.ParentRepetitiveTask) 
                 .HasForeignKey(t => t.ParentRepetitiveTaskId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
+            modelBuilder.Entity<GameInfo>()
+                .HasMany(g => g.PlayerList)
+                .WithMany();
+
             modelBuilder.UseOpenIddict();
         }
 

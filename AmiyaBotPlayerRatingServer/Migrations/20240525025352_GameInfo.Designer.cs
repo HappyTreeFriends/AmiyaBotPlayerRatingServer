@@ -3,6 +3,7 @@ using System;
 using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiyaBotPlayerRatingServer.Migrations
 {
     [DbContext(typeof(PlayerRatingDatabaseContext))]
-    partial class PlayerRatingDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20240525025352_GameInfo")]
+    partial class GameInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,6 +49,9 @@ namespace AmiyaBotPlayerRatingServer.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("GameInfoId")
+                        .HasColumnType("text");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -85,6 +91,8 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GameInfoId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -180,10 +188,6 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("CreatorId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("GameType")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -417,21 +421,6 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("SKLandCredentials");
-                });
-
-            modelBuilder.Entity("ApplicationUserGameInfo", b =>
-                {
-                    b.Property<string>("GameInfoId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PlayerListId")
-                        .HasColumnType("text");
-
-                    b.HasKey("GameInfoId", "PlayerListId");
-
-                    b.HasIndex("PlayerListId");
-
-                    b.ToTable("ApplicationUserGameInfo");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -774,6 +763,13 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.ToTable("OpenIddictTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.ApplicationUser", b =>
+                {
+                    b.HasOne("AmiyaBotPlayerRatingServer.Model.GameInfo", null)
+                        .WithMany("PlayerList")
+                        .HasForeignKey("GameInfoId");
+                });
+
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.GameInfo", b =>
                 {
                     b.HasOne("AmiyaBotPlayerRatingServer.Model.ApplicationUser", "Creator")
@@ -865,21 +861,6 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ApplicationUserGameInfo", b =>
-                {
-                    b.HasOne("AmiyaBotPlayerRatingServer.Model.GameInfo", null)
-                        .WithMany()
-                        .HasForeignKey("GameInfoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AmiyaBotPlayerRatingServer.Model.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("PlayerListId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -953,6 +934,11 @@ namespace AmiyaBotPlayerRatingServer.Migrations
                     b.Navigation("Application");
 
                     b.Navigation("Authorization");
+                });
+
+            modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.GameInfo", b =>
+                {
+                    b.Navigation("PlayerList");
                 });
 
             modelBuilder.Entity("AmiyaBotPlayerRatingServer.Model.MAARepetitiveTask", b =>

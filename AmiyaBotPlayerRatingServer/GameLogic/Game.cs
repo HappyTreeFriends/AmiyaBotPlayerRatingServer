@@ -8,7 +8,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 {
     public class Game:IDisposable,IAsyncDisposable
     {
-        public String Id { get; set; }
+        public String? Id { get; set; }
         public String JoinCode { get; set; }
         
         public String GameType { get; set; }
@@ -53,7 +53,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         [JsonIgnore]
         public bool IsLocked { get; set; }
         [JsonIgnore]
-        public IRedLock RedLock { get; set; }
+        public IRedLock? RedLock { get; set; }
 
         public void Dispose()
         {

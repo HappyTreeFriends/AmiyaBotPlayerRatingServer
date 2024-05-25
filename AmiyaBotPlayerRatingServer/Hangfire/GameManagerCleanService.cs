@@ -1,31 +1,48 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.GameLogic;
+using Microsoft.EntityFrameworkCore;
 
 namespace AmiyaBotPlayerRatingServer.Hangfire
 {
     public class GameManagerCleanService
     {
         private readonly GameManager _gameManager;
+        private readonly PlayerRatingDatabaseContext _dbContext;
         
-        public GameManagerCleanService(GameManager gameManager)
+        public GameManagerCleanService(GameManager gameManager,PlayerRatingDatabaseContext dbContext)
         {
             _gameManager = gameManager;
+            _dbContext = dbContext;
         }
 
         public async Task Clean()
         {
-            var completedTimeout = _gameManager.GameList.Where(x => x.IsClosed == false && x.IsCompleted && (
-                DateTime.Now - x.CompleteTime > new TimeSpan(0, 1, 0, 0)));
-
-            var startedTimeout = _gameManager.GameList.Where(x => x.IsStarted && (
-                DateTime.Now - x.StartTime > new TimeSpan(1, 0, 0, 0)));
-
-            var allTimeout = completedTimeout.Concat(startedTimeout).Distinct().ToList();
-
-            foreach (var game in allTimeout)
+            var gameInfos = await _dbContext.GameInfos.Where(g => g.IsClosed == false).ToListAsync();
+            foreach (var info in gameInfos)
             {
-                game.IsClosed = true;
-                game.CloseTime = DateTime.Now;
+                var game =await _gameManager.GetGameAsync(info.Id);
+
+                if (game == null)
+                {
+                    continue;
+                }
+
+                if (game.IsClosed)
+                {
+                    continue;
+                }
+
+                if ((game.IsCompleted && (DateTime.Now - game.CompleteTime > new TimeSpan(0, 1, 0, 0)))
+                    || (game.IsStarted && (DateTime.Now - game.StartTime > new TimeSpan(1, 0, 0, 0))))
+                {
+                    await using var depGame = await _gameManager.GetGameAsync(info.Id,false);
+                    if (depGame != null)
+                    {
+                        depGame.IsClosed = true;
+                        depGame.CloseTime = DateTime.Now;
+                        await _gameManager.SaveGameAsync(depGame);
+                    }
+                }
             }
         }
     }

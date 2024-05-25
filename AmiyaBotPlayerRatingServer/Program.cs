@@ -56,7 +56,7 @@ builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
 
 var redisConn = configuration["Redis:ConnectionString"];
 var connectionMultiplexer = ConnectionMultiplexer.Connect(redisConn);
-builder.Services.AddSingleton(connectionMultiplexer);
+builder.Services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
 
 builder.Services.AddSingleton((_)=> RedLockFactory.Create(new List<RedLockMultiplexer>
 {
