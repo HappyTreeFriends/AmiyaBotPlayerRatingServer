@@ -116,7 +116,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             // HTTP Access
             var kuttUrl = _configuration["Kutt:Url"];
             var httpClient = new HttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://"+ kuttUrl + "/api/v2/links");
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://"+kuttUrl+"/api/v2/links");
             request.Content = new StringContent(JsonConvert.SerializeObject(new
             {
                 target = shortenUrl,

@@ -105,6 +105,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return JsonConvert.SerializeObject(game);
         }
 
+        private string GenerateLockName(string gameId)
+        {
+            return "AmiyaBot-Minigame-Game-Lock-" + gameId;
+        }
+
         public async Task<Game?> GetGameAsync(string gameId, bool readOnly = true)
         {
             //从数据库中获取查id
@@ -130,7 +135,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             else
             {
                 // 获取锁
-                var redisLock = await _redLockFactory.CreateLockAsync("AmiyaBot-Minigame-Game-Lock-", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                var redisLock = await _redLockFactory.CreateLockAsync(GenerateLockName(gameInfo.Id), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
 
                 if (redisLock.IsAcquired)
                 {
@@ -200,7 +205,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 else
                 {
                     // 获取锁
-                    var redisLock = await _redLockFactory.CreateLockAsync("AmiyaBot-Minigame-Game-Lock-", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                    var redisLock = await _redLockFactory.CreateLockAsync(GenerateLockName(info.Id), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
 
                     if (redisLock.IsAcquired)
                     {
@@ -225,11 +230,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         }
 
-        public async Task<Game> GetGameByJoinCodeAsync(string joinCode, bool readOnly = true)
+        public async Task<Game?> GetGameByJoinCodeAsync(string joinCode, bool readOnly = true)
         {
             //从数据库中获取查id
 
             var info = await _dbContext.GameInfos.Where(x => x.JoinCode == joinCode.ToString()).FirstOrDefaultAsync();
+
+            if (info == null)
+            {
+                return null;
+            }
 
             if (readOnly)
             {
@@ -243,7 +253,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             else
             {
                 // 获取锁
-                var redisLock = await _redLockFactory.CreateLockAsync("AmiyaBot-Minigame-Game-Lock-",
+                var redisLock = await _redLockFactory.CreateLockAsync(GenerateLockName(info.Id),
                     TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
 
                 if (redisLock.IsAcquired)

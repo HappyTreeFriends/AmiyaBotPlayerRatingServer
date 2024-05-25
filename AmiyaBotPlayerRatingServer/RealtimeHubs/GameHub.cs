@@ -324,7 +324,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task CloseGame(string gameId)
         {
-            var game = await ValidateGame(gameId,false);
+            await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
             var manager = await ValidateManager(game.GameType);
 
