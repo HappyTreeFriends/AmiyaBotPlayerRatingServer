@@ -361,10 +361,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             var ret = await manager.GetCloseGamePayload(game);
 
-            if (game.IsCompleted == false|| oldCompleteState==false)
+            if (game.IsCompleted && oldCompleteState==false)
             {
-                game.IsCompleted = true;
-                game.CompleteTime ??= DateTime.Now;
                 await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
                 {
                     Game = FormatGame(game),
@@ -407,11 +405,113 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [UsedImplicitly]
-        public async Task RallyPoint(string gameId,string rallyData)
+        public async Task RallyPointCreate(string gameId, string rallyData)
         {
-            //TODO: RallyPoint
+            await using var game = await ValidateGame(gameId,false);
+            var appUser = await ValidateUser();
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
+            var rallyName = rallyDataObj["Name"]?.ToString();
+
+            if (rallyName == null)
+            {
+                throw new DataException("Invalid Rally Point Name");
+            }
+
+            var rallyNode = game.RallyNodes.GetOrAdd(rallyName, new Game.RallyNode(rallyName));
+
+            await _gameManager.SaveGameAsync(game);
+
+            await Clients.Group(gameId).SendAsync("RallyPointCreated", JsonConvert.SerializeObject(new
+            {
+                Name = rallyName,
+                CreatePlayer = appUser.Id,
+                Players = rallyNode.PlayerIds,
+            }));
+        }
+
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
+        public async Task RallyPointStatus(string gameId, string rallyData)
+        {
+            await using var game = await ValidateGame(gameId,false);
+            var appUser = await ValidateUser();
+
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
+            var rallyName = rallyDataObj["Name"]?.ToString();
+
+            if (rallyName == null)
+            {
+                throw new DataException("Invalid Rally Point Name");
+            }
+
+            var rallyNode = game.RallyNodes.GetOrAdd(rallyName, new Game.RallyNode(rallyName));
+
+            await Clients.Caller.SendAsync("RallyPointStatus", JsonConvert.SerializeObject(new
+            {
+                Name = rallyName,
+                Players = rallyNode.PlayerIds,
+            }));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
+        public async Task RallyPointReached(string gameId,string rallyData)
+        {
+            await using var game = await ValidateGame(gameId,false);
+            var appUser = await ValidateUser();
+
+            if (!game.PlayerList.ContainsKey(appUser.Id))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
+            var rallyName = rallyDataObj["Name"]?.ToString();
+
+            if (rallyName == null)
+            {
+                throw new DataException("Invalid Rally Point Name");
+            }
+
+            var rallyNode = game.RallyNodes.GetOrAdd(rallyName, new Game.RallyNode(rallyName));
+
+            rallyNode.PlayerIds.Add(appUser.Id);
+
+            await _gameManager.SaveGameAsync(game);
+
+            if (rallyNode.PlayerIds.Count == game.PlayerList.Count)
+            {
+                await Clients.Group(gameId).SendAsync("RallyPointUpdated", JsonConvert.SerializeObject(new
+                {
+                    Name = rallyName,
+                    UpdatePlayer = appUser.Id,
+                    Players = rallyNode.PlayerIds,
+                }));
+            }
+
+            //如果所有玩家都到达了这个点，就触发事件
+            if (rallyNode.PlayerIds.Count == game.PlayerList.Count&& game.PlayerList.All(p=>rallyNode.PlayerIds.Contains(p.Key)) )
+            {
+                await Clients.Group(gameId).SendAsync("RallyPointReached", JsonConvert.SerializeObject(new
+                {
+                    Name = rallyName,
+                    Players = rallyNode.PlayerIds,
+                }));
+            }
+
+            game.RallyNodes.Remove(rallyName,out _);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]

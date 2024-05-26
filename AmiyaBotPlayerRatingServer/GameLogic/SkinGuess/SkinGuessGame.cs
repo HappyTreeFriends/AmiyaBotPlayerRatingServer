@@ -30,5 +30,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
         public List<Answer> AnswerList { get; set; }
 
         public ConcurrentDictionary<String, double> PlayerScore { get; set; } = new ConcurrentDictionary<string, double>();
+
+
+        public class PlayerMove
+        {
+            public string PlayerId { get; set; }
+            public String CharacterName { get; set; }
+            public bool IsOperator { get; set; }
+            public bool IsCorrect { get; set; }
+        }
+
+        public List<PlayerMove> PlayerMoveList { get; set; } = new List<PlayerMove>();
     }
 }

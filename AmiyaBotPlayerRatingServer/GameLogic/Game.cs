@@ -32,17 +32,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public class RallyNode
         {
             public string Name { get; }
-            public HashSet<int> PlayerIds { get; } = new HashSet<int>();
-            public bool IsCompleted { get; set; }
+            public HashSet<string> PlayerIds { get; } = new HashSet<string>();
 
             public RallyNode(string name)
             {
                 Name = name;
-            }
-
-            public void AddPlayer(int playerId)
-            {
-                PlayerIds.Add(playerId);
             }
         }
 

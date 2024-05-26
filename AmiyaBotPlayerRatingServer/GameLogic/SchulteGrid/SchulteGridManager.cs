@@ -178,8 +178,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 var playerScoreList = game.PlayerScore.ToList();
                 playerScoreList.Sort((a, b) => b.Value.CompareTo(a.Value));
 
-                var firstPlace = playerScoreList[0];
-                var secondPlace = playerScoreList.Count > 1 ? playerScoreList[1] : default;
+                var firstPlace = playerScoreList.Count > 0 ? playerScoreList[0] : default;
+            var secondPlace = playerScoreList.Count > 1 ? playerScoreList[1] : default;
                 var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
 
                 //统计每个玩家的正确和错误次数

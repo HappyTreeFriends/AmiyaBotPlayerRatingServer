@@ -4,16 +4,20 @@ using AmiyaBotPlayerRatingServer.Utility;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using static System.Net.WebRequestMethods;
+using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.Model;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 {
     public class SkillGuessManager : IGameManager
     {
         private readonly ArknightsMemoryCache _arknightsMemoryCache;
+        private readonly PlayerRatingDatabaseContext _dbContext;
 
-        public SkillGuessManager(ArknightsMemoryCache arknightsMemoryCache)
+        public SkillGuessManager(ArknightsMemoryCache arknightsMemoryCache,PlayerRatingDatabaseContext dbContext)
         {
             _arknightsMemoryCache = arknightsMemoryCache;
+            _dbContext = dbContext;
         }
 
         private static int RandomNumberGenerator() => new Random().Next(0, 100000);
@@ -98,7 +102,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
             return charDataJson.Values.Contains(name);
         }
-
+        
         public Task<Game> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = GenerateRealGame();
@@ -110,6 +114,72 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             return Task.FromResult<object>(new { });
         }
 
+
+        private void CreateStatistics(SkillGuessGame game)
+        {
+            //统计第一名第二名和第三名
+            var playerScoreList = game.PlayerScore.ToList();
+            playerScoreList.Sort((a, b) => b.Value.CompareTo(a.Value));
+
+            var firstPlace = playerScoreList.Count > 0 ? playerScoreList[0] : default;
+            var secondPlace = playerScoreList.Count > 1 ? playerScoreList[1] : default;
+            var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
+
+            //统计每个玩家的正确和错误次数
+            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator == true).GroupBy(p => p.PlayerId)
+                .Select(p => new
+                {
+                    PlayerId = p.Key,
+                    CorrectCount = p.Count(c => c.IsCorrect),
+                    WrongCount = p.Count(c => !c.IsCorrect)
+                }).ToList();
+
+            foreach (var pl in game.PlayerList)
+            {
+                var playerId = pl.Key;
+
+                var playerSt =
+                    _dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
+                if (playerSt == null)
+                {
+                    playerSt = new ApplicationUserMinigameStatistics()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        UserId = playerId,
+                        TotalGamesPlayed = 0,
+                        TotalGamesFirstPlace = 0,
+                        TotalGamesSecondPlace = 0,
+                        TotalGamesThirdPlace = 0,
+                        TotalAnswersCorrect = 0,
+                        TotalAnswersWrong = 0
+                    };
+                    _dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
+                }
+
+                playerSt.TotalGamesPlayed++;
+                playerSt.TotalAnswersCorrect +=
+                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.CorrectCount ?? 0;
+                playerSt.TotalAnswersWrong +=
+                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.WrongCount ?? 0;
+
+                if (firstPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesFirstPlace++;
+                }
+                else if (secondPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesSecondPlace++;
+                }
+                else if (thirdPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesThirdPlace++;
+                }
+
+                _dbContext.SaveChanges();
+            }
+        }
+
+
         public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SkillGuessGame;
@@ -119,6 +189,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
             if (!IsOperatorName(characterName))
             {
+                game.PlayerMoveList.Add(new SkillGuessGame.PlayerMove()
+                {
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    IsCorrect = false,
+                    IsOperator = false,
+                });
+
                 return Task.FromResult<object>(new
                 {
                     Result = "NotOperator",
@@ -131,6 +209,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             var answer = game.AnswerList[game.CurrentQuestionIndex];
             if (answer.CharacterName != characterName)
             {
+                game.PlayerMoveList.Add(new SkillGuessGame.PlayerMove()
+                {
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    IsCorrect = false,
+                    IsOperator = true,
+                });
+
                 return Task.FromResult<object>(new
                 {
                     Result = "Wrong",
@@ -142,7 +228,21 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
             if (answer.PlayerId != null)
             {
-                return Task.FromResult<object>(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
+                game.PlayerMoveList.Add(new SkillGuessGame.PlayerMove()
+                {
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    IsCorrect = false,
+                    IsOperator = true,
+                });
+                return Task.FromResult<object>(new
+                {
+                    Result = "Answered",
+                    PlayerId = playerId,
+                    CharacterName = characterName,
+                    Answer = answer,
+                    Completed = game.IsCompleted
+                });
             }
 
             answer.Completed = true;
@@ -159,12 +259,22 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 game.PlayerScore.TryAdd(playerId, 200);
             }
 
+            game.PlayerMoveList.Add(new SkillGuessGame.PlayerMove()
+            {
+                PlayerId = playerId,
+                CharacterName = characterName,
+                IsCorrect = true,
+                IsOperator = true,
+            });
+
             game.CurrentQuestionIndex++;
 
             if (game.CurrentQuestionIndex >= game.AnswerList.Count)
             {
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
+
+                CreateStatistics(game);
             }
 
             return Task.FromResult<object>(new
@@ -182,7 +292,21 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
         public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
-            return Task.FromResult<object>(new { GameId = game.Id, RemainingAnswers = game.AnswerList.Where(a => a.Completed == false) });
+
+
+            if (!game.IsCompleted)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
+
+                CreateStatistics(game);
+            }
+
+            return Task.FromResult<object>(new
+            {
+                GameId = game.Id,
+                RemainingAnswers = game.AnswerList.Where(a => a.Completed == false)
+            });
         }
 
         public Task<object> GetGamePayload(Game rawGame)
