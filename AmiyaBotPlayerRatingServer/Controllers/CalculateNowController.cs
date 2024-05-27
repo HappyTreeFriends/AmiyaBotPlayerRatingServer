@@ -16,8 +16,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             public long Count { get; set; } = 0;
             public double TotalLevel { get; set; } = 0;
             public double TotalSkillLevel { get; set; } = 0;
-            public Dictionary<int, (long Count, double Level)> EquipLevel { get; set; } = new Dictionary<int, (long, double)>();
-            public Dictionary<string, (long Count, double Level)> SpecializeLevel { get; set; } = new Dictionary<string, (long, double)>();
+            public Dictionary<int, (long Count, double Level)> EquipLevel { get; set; } = new();
+            public Dictionary<string, (long Count, double Level)> SpecializeLevel { get; set; } = new();
         }
         
         private readonly IConfiguration _configuration;

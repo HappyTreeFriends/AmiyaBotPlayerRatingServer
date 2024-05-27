@@ -2,19 +2,18 @@
 {
     public static class SchulteGridContinuousGameBuilder
     {
-        public static async Task<Tuple<char[,], Dictionary<string, List<(int, int)>>>> BuildPuzzleContinuousMode(int sizeX, int sizeY, List<string> words, List<string> blackList, int timeout)
+        public static async Task<Tuple<char[,]?, Dictionary<string, List<(int, int)>>?>> BuildPuzzleContinuousMode(int sizeX, int sizeY, List<string> words, List<string> blackList, int timeout)
         {
             var combinedWords = words.Concat(blackList).ToList();
             var validWords = combinedWords.Where(item => !combinedWords.Any(name => name != item && name.Contains(item))).ToList();
-            validWords = validWords.Where(item => !blackList.Any(name => item.Contains(name))).ToList();
+            validWords = validWords.Where(item => !blackList.Any(item.Contains)).ToList();
 
             int totalWordLength = validWords.Sum(w => w.Length);
             int totalCells = sizeX * sizeY;
 
             if (totalWordLength<totalCells)
-                return Tuple.Create<char[,], Dictionary<string, List<(int, int)>>>(null, null);
+                return Tuple.Create<char[,]?, Dictionary<string, List<(int, int)>>?>(null, null);
 
-            char[,] emptyPuzzle = new char[sizeY, sizeX];
             var corners = new List<(int, int)> { (0, 0), (0, sizeY - 1), (sizeX - 1, 0), (sizeX - 1, sizeY - 1) };
         
             for (int i = 0; i<timeout; i++)
@@ -23,32 +22,25 @@
                 var(success, filledPuzzles, answers) = await FillPuzzle(new char[sizeY, sizeX], validWords, x, y);
             
                 if (success && !IsUnwantedWordPresent(filledPuzzles, combinedWords, answers.Keys.ToList()))
-                    return Tuple.Create(filledPuzzles, answers);
+                    return Tuple.Create<char[,]?, Dictionary<string, List<(int, int)>>?>(filledPuzzles, answers);
             }
 
-            return Tuple.Create<char[,], Dictionary<string, List<(int, int)>>>(null, null);
+            return Tuple.Create<char[,]?, Dictionary<string, List<(int, int)>>?>(null, null);
         }
 
         class TrieNode
         {
-            public Dictionary<char, TrieNode> Children = new Dictionary<char, TrieNode>();
+            public readonly Dictionary<char, TrieNode> Children = new();
             public bool IsEndOfWord;
-
-            public TrieNode() { }
         }
 
         class Trie
         {
-            private TrieNode root;
-
-            public Trie()
-            {
-                root = new TrieNode();
-            }
+            private readonly TrieNode _root = new();
 
             public void Insert(string word)
             {
-                TrieNode node = root;
+                TrieNode node = _root;
                 foreach (var ch in word)
                 {
                     if (!node.Children.ContainsKey(ch))
@@ -62,7 +54,7 @@
 
             public bool SearchFrom(char[,] puzzle, int x, int y, bool[,] visited)
             {
-                return SearchFrom(puzzle, x, y, root, visited);
+                return SearchFrom(puzzle, x, y, _root, visited);
             }
 
             private bool SearchFrom(char[,] puzzle, int x, int y, TrieNode node, bool[,] visited)
@@ -136,8 +128,7 @@
             Dictionary<int, string> lengthToWord = new Dictionary<int, string>();
             foreach (var word in possibleWords)
             {
-                if (!lengthToWord.ContainsKey(word.Length))
-                    lengthToWord[word.Length] = word;
+                lengthToWord.TryAdd(word.Length, word);
             }
 
             possibleWords = lengthToWord.Values.ToList();
@@ -178,7 +169,7 @@
             return Tuple.Create(false, new char[0, 0], new Dictionary<string, List<(int, int)>>());
         }
 
-        public static void Shuffle<T>(IList<T> list)
+        private static void Shuffle<T>(IList<T> list)
         {
             Random rng = new Random();
             int n = list.Count;
@@ -235,7 +226,7 @@
                 if (!IsSingleConnected(tempPuzzle) || !ValidateConnectedGraph(tempPuzzle))
                     return Tuple.Create(false, new List<char[,]>(), new List<List<(int, int)>>(), 0);
 
-                return Tuple.Create(true, new List<char[,]> { tempPuzzle }, new List<List<(int, int)>> { new List<(int, int)> { (startX, startY) } }, 1);
+                return Tuple.Create(true, new List<char[,]> { tempPuzzle }, new List<List<(int, int)>> { new() { (startX, startY) } }, 1);
             }
 
             var directions = new List<(int, int)> { (0, 1), (0, -1), (1, 0), (-1, 0) };
@@ -250,7 +241,7 @@
 
             surroundingCells.Sort((a, b) => b.Item3.CompareTo(a.Item3));
             var random = new Random();
-            surroundingCells = surroundingCells.OrderBy(x => random.Next()).ToList();
+            surroundingCells = surroundingCells.OrderBy(_ => random.Next()).ToList();
 
             List<char[,]> validPuzzles = new List<char[,]>();
             List<List<(int, int)>> validPaths = new List<List<(int, int)>>();
@@ -293,7 +284,7 @@
                         if (surrounded > maxSurrounded)
                         {
                             maxSurrounded = surrounded;
-                            maxCoords = new List<(int, int)> { (x, y) };
+                            maxCoords = [(x, y)];
                         }
                         else if (surrounded == maxSurrounded)
                         {
@@ -302,7 +293,7 @@
                     }
                 }
             }
-            return maxCoords.OrderBy(coord => CountSurrounded(puzzle, coord.Item1, coord.Item2)).Reverse().ToList();
+            return maxCoords.OrderBy(coordinate => CountSurrounded(puzzle, coordinate.Item1, coordinate.Item2)).Reverse().ToList();
         }
 
         private static int CountSurrounded(char[,] puzzle, int x, int y)
@@ -368,7 +359,7 @@
                 var directions = new List<(int, int)> { (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1) };
                 List<int> walls = Enumerable.Repeat(0, 8).ToList();
 
-                int idx = 0;
+                int idx;
                 for (idx = 0; idx < directions.Count; idx++)
                 {
                     var (di, dj) = directions[idx];
@@ -491,6 +482,7 @@
             return true;
         }
 
+        // ReSharper disable once UnusedParameter.Local
         private static void PrintLog(string message)
         {
             // Console.WriteLine(message);

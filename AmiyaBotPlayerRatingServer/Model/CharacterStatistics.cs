@@ -53,11 +53,11 @@ public class CharacterStatistics
     /// <summary>
     /// 平均专精等级0-3
     /// </summary>
-    public List<double> AverageSpecializeLevel { get; set; } = new List<double>();
+    public List<double> AverageSpecializeLevel { get; set; } = new();
 
     /// <summary>
     /// 平均模组等级 0-3
     /// </summary>
-    public Dictionary<int, double> AverageEquipLevel { get; set; } = new Dictionary<int, double>();
+    public Dictionary<int, double> AverageEquipLevel { get; set; } = new();
 }
 

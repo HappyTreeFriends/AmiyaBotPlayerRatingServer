@@ -1,5 +1,10 @@
 ﻿using System.Collections.Concurrent;
-
+using JetBrains.Annotations;
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedMember.Global
+// ReSharper disable PropertyCanBeMadeInitOnly.Global
+#pragma warning disable CS8618
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 {
     public class SkinGuessGame:Game
@@ -22,14 +27,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             public DateTime AnswerTime { get; set; }
             public string? PlayerId { get; set; }
 
-            public int HintLevel { get; set; } = 0;
+            public int HintLevel { get; set; }
         }
 
-        public int CurrentQuestionIndex { get; set; } = 0;
+        public int CurrentQuestionIndex { get; set; }
 
         public List<Answer> AnswerList { get; set; }
 
-        public ConcurrentDictionary<String, double> PlayerScore { get; set; } = new ConcurrentDictionary<string, double>();
+        public ConcurrentDictionary<String, double> PlayerScore { get; set; } = new ();
 
 
         public class PlayerMove
@@ -40,6 +45,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             public bool IsCorrect { get; set; }
         }
 
-        public List<PlayerMove> PlayerMoveList { get; set; } = new List<PlayerMove>();
+        public List<PlayerMove> PlayerMoveList { get; set; } = new();
     }
 }

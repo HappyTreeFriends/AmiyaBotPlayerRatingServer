@@ -1,21 +1,14 @@
-﻿using AmiyaBotPlayerRatingServer.Data;
+﻿using System.Data;
+using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
 using Newtonsoft.Json.Linq;
 using static AmiyaBotPlayerRatingServer.GameLogic.IGameManager;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 {
-    public class SkinGuessManager : IGameManager
+    public class SkinGuessManager(ArknightsMemoryCache arknightsMemoryCache, PlayerRatingDatabaseContext dbContext)
+        : IGameManager
     {
-        private readonly ArknightsMemoryCache _arknightsMemoryCache;
-        private readonly PlayerRatingDatabaseContext _dbContext;
-
-        public SkinGuessManager(ArknightsMemoryCache arknightsMemoryCache,PlayerRatingDatabaseContext dbContext)
-        {
-            _arknightsMemoryCache = arknightsMemoryCache;
-            _dbContext = dbContext;
-        }
-
         private static int RandomNumberGenerator ()=> new Random().Next(0, 100000);
 
         private SkinGuessGame GenerateTestGame()
@@ -24,9 +17,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             //手动添加一些测试数据
             game.GameType = "SkinGuess";
-            game.AnswerList = new List<SkinGuessGame.Answer>()
-            {
-                new SkinGuessGame.Answer()
+            game.AnswerList =
+            [
+                new()
                 {
                     CharacterName = "雷蛇",
                     CharacterId = "char_107_liskam",
@@ -35,7 +28,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                     ImageUrl = "https://media.prts.wiki/3/3d/%E7%AB%8B%E7%BB%98_%E9%9B%B7%E8%9B%87_skin1.png",
                     RandomNumber = RandomNumberGenerator()
                 },
-                new SkinGuessGame.Answer()
+
+                new()
                 {
                     CharacterName = "霜叶",
                     CharacterId = "char_109_silent",
@@ -43,8 +37,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                     SkinId = "char_109_silent@nian#2",
                     ImageUrl = "https://media.prts.wiki/8/8c/立绘_霜叶_skin1.png",
                     RandomNumber = RandomNumberGenerator()
-                },
-            };
+                }
+
+            ];
 
             return game;
         }
@@ -57,8 +52,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             game.GameType = "SkinGuess";
             game.AnswerList= new List<SkinGuessGame.Answer>();
 
-            var charMaps = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
-            var skinUrls = _arknightsMemoryCache.GetJson("skinUrls.json") as JObject;
+            var charMaps = arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
+            var skinUrls = arknightsMemoryCache.GetJson("skinUrls.json") as JObject;
 
             if (charMaps == null || skinUrls == null)
             {
@@ -67,7 +62,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             }
             
             var operatorIdList = charMaps.Keys.ToList();
-            var max = operatorIdList.Count();
+            var max = operatorIdList.Count;
             var random = new Random();
 
             while(game.AnswerList.Count<16)
@@ -89,13 +84,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
                 //randomly select a skin except the first one
                 var randSkin = random.Next(1, skinList.Count);
-                var skinUrl = skinList[randSkin]?.ToString();
-
-                if (skinUrl == null)
-                {
-                    continue;
-                }
-
+                var skinUrl = skinList[randSkin].ToString();
+                
                 var answer = new SkinGuessGame.Answer()
                 {
                     CharacterName = charName,
@@ -113,7 +103,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         private bool IsOperatorName(string name)
         {
-            var charDataJson = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
+            var charDataJson = arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
             if (charDataJson == null)
             {
                 //ERROR
@@ -122,7 +112,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             return charDataJson.Values.Contains(name);
         }
-
+        
         public Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = GenerateRealGame();
@@ -145,7 +135,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
 
             //统计每个玩家的正确和错误次数
-            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator == true).GroupBy(p => p.PlayerId)
+            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator).GroupBy(p => p.PlayerId)
                 .Select(p => new
                 {
                     PlayerId = p.Key,
@@ -157,7 +147,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             {
                 var playerId = pl.Key;
                 var playerSt =
-                    _dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
+                    dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
                 if (playerSt == null)
                 {
                     playerSt = new ApplicationUserMinigameStatistics()
@@ -171,7 +161,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                         TotalAnswersCorrect = 0,
                         TotalAnswersWrong = 0
                     };
-                    _dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
+                    dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
                 }
 
                 playerSt.TotalGamesPlayed++;
@@ -193,7 +183,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                     playerSt.TotalGamesThirdPlace++;
                 }
 
-                _dbContext.SaveChanges();
+                dbContext.SaveChanges();
             }
         }
 
@@ -201,9 +191,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
         public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SkinGuessGame;
-
             var moveObj = JObject.Parse(move);
-            var characterName = moveObj["CharacterName"].ToString();
+
+            if (game ==null || moveObj == null || moveObj["CharacterName"] == null)
+            {
+                throw new DataException("Move Payload 不合法.");
+            }
+            var characterName = moveObj["CharacterName"]!.ToString();
 
             if (!IsOperatorName(characterName))
             {
@@ -300,7 +294,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
         public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkinGuessGame;
-
+            if (game == null)
+            {
+                throw new DataException("Game 类型不匹配.");
+            }
 
             if (!game.IsCompleted)
             {
@@ -318,26 +315,19 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             });
         }
 
-        public Task<object> GetGamePayload(Game game)
+        public Task<object> GetGamePayload(Game rawGame)
         {
-            var schulteGridGame = game as SkinGuessGame;
+            var game = rawGame as SkinGuessGame;
 
-            if (schulteGridGame.IsStarted)
+            if (game == null)
             {
-                if (DateTime.Now - schulteGridGame.StartTime > TimeSpan.FromMinutes(60 * 3))
-                {
-                    if (schulteGridGame.IsCompleted == false)
-                    {
-                        schulteGridGame.IsCompleted = true;
-                        schulteGridGame.CompleteTime = DateTime.Now;
-                    }
-                }
+                throw new DataException("Game 类型不匹配.");
             }
-
+            
             return Task.FromResult<object>(new
             {
-                AnswerList = schulteGridGame!.AnswerList,
-                schulteGridGame.CurrentQuestionIndex,
+                AnswerList = game.AnswerList,
+                CurrentQuestionIndex = game.CurrentQuestionIndex,
             });
         }
 
@@ -347,7 +337,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             if (schulteGridGame!.PlayerScore.ContainsKey(player))
             {
-                return Task.FromResult<double>(schulteGridGame.PlayerScore[player]);
+                return Task.FromResult(schulteGridGame.PlayerScore[player]);
             }
 
             return Task.FromResult<double>(0);
@@ -356,9 +346,15 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
         public Task<RequestHintOrGiveUpResult> GiveUp(Game rawGame, string appUserId)
         {
             var game = rawGame as SkinGuessGame;
+
+            if (game == null)
+            {
+                throw new DataException("Game 类型不匹配.");
+            }
+
             if (game.CreatorId != appUserId)
             {
-                return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+                return Task.FromResult(new RequestHintOrGiveUpResult()
                 {
                     Payload = new { Message = "只有房主可以放弃题目." },
                     GiveUpTriggered = false
@@ -377,7 +373,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 CreateStatistics(game);
             }
 
-            return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+            return Task.FromResult(new RequestHintOrGiveUpResult()
             {
                 Payload = new { Question = answer },
                 GiveUpTriggered = true
@@ -390,6 +386,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             //判断是否进行过提示
             var game = rawGame as SkinGuessGame;
 
+            if (game == null)
+            {
+                throw new DataException("Game 类型不匹配.");
+            }
+
             var answer = game.AnswerList[game.CurrentQuestionIndex];
 
             if (answer.HintLevel == 0)
@@ -397,7 +398,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 //第一次提示
                 answer.HintLevel++;
 
-                return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+                return Task.FromResult(new RequestHintOrGiveUpResult()
                 {
                     Payload =
                         new
@@ -414,7 +415,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             else
             {
                 //不允许再次提示
-                return Task.FromResult<RequestHintOrGiveUpResult>(new RequestHintOrGiveUpResult()
+                return Task.FromResult(new RequestHintOrGiveUpResult()
                 {
                     Payload = answer,
                     GiveUpTriggered = false,

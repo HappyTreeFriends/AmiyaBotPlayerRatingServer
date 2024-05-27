@@ -1,26 +1,28 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Data;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 {
-    public class SchulteGridGameManager : IGameManager
+    public class SchulteGridGameManager(ArknightsMemoryCache memoryCache, PlayerRatingDatabaseContext dbContext)
+        : IGameManager
     {
-        private readonly ArknightsMemoryCache _arknightsMemoryCache;
-        private readonly PlayerRatingDatabaseContext _dbContext;
-
-        public SchulteGridGameManager(ArknightsMemoryCache memoryCache,PlayerRatingDatabaseContext dbContext)
+        private bool IsOperatorName(string name)
         {
-            _arknightsMemoryCache = memoryCache;
-            _dbContext = dbContext;
+            var charDataJson = memoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String, String>>();
+            if (charDataJson == null)
+            {
+                //ERROR
+                return false;
+            }
+
+            return charDataJson.Values.Contains(name);
         }
-        
+
         public async Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
         {
-            var game = await SchulteGridGameData.BuildContinuousMode(_arknightsMemoryCache);
+            var game = await SchulteGridGameData.BuildContinuousMode(memoryCache);
             return game;
         }
 
@@ -32,9 +34,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SchulteGridGame;
-
             var moveObj = JObject.Parse(move);
-            var characterName = moveObj["CharacterName"].ToString();
+
+            if (game == null || moveObj == null || moveObj["CharacterName"] == null)
+            {
+                throw new DataException("Move Payload不合法");
+            }
+
+            var characterName = moveObj["CharacterName"]!.ToString();
 
             if (game.IsStarted == false)
             {
@@ -48,7 +55,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 });
             }
 
-            if (!SchulteGridGameData.IsOperator(characterName))
+            if (!IsOperatorName(characterName))
             {
                 game.PlayerMoveList.Add(new SchulteGridGame.PlayerMove()
                 {
@@ -133,7 +140,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             if (game.IsCompleted != true)
             {
-                if (game.AnswerList.All(a => a.Completed == true))
+                if (game.AnswerList.All(a => a.Completed))
                 {
                     game.IsCompleted = true;
                     game.CompleteTime = DateTime.Now;
@@ -154,6 +161,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SchulteGridGame;
+
+            if (game == null)
+            {
+                return Task.FromResult<object>(new { });
+            }
 
             if (!game.IsCompleted)
             {
@@ -183,7 +195,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                 var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
 
                 //统计每个玩家的正确和错误次数
-                var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator == true).GroupBy(p => p.PlayerId)
+                var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator).GroupBy(p => p.PlayerId)
                     .Select(p => new
                     {
                         PlayerId = p.Key,
@@ -196,7 +208,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                     var playerId = pl.Key;
 
                     var playerSt =
-                        _dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
+                        dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
                     if (playerSt == null)
                     {
                         playerSt = new ApplicationUserMinigameStatistics()
@@ -210,7 +222,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                             TotalAnswersCorrect = 0,
                             TotalAnswersWrong = 0
                         };
-                        _dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
+                        dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
                     }
 
                     playerSt.TotalGamesPlayed++;
@@ -232,32 +244,25 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
                         playerSt.TotalGamesThirdPlace++;
                     }
 
-                    _dbContext.SaveChanges();
+                    dbContext.SaveChanges();
                 }
         }
 
-        public async Task<object> GetGamePayload(Game game)
+        public async Task<object> GetGamePayload(Game rawGame)
         {
             await Task.CompletedTask;
 
-            var schulteGridGame = game as SchulteGridGame;
+            var game = rawGame as SchulteGridGame;
 
-            if (schulteGridGame.IsStarted)
+            if (game == null)
             {
-                if (DateTime.Now - schulteGridGame.StartTime > TimeSpan.FromMinutes(60*3))
-                {
-                    if (schulteGridGame.IsCompleted == false)
-                    {
-                        schulteGridGame.IsCompleted = true;
-                        schulteGridGame.CompleteTime = DateTime.Now;
-                    }
-                }
+                return Task.FromResult<object>(new { });
             }
 
             return new
             {
-                AnswerList = schulteGridGame!.AnswerList.Where(a=>a.Completed==true),
-                Grid = schulteGridGame.Grid,
+                AnswerList = game.AnswerList.Where(a=>a.Completed),
+                Grid = game.Grid,
             };
         }
 

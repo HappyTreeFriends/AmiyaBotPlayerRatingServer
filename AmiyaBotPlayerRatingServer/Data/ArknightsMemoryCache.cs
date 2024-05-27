@@ -1,4 +1,4 @@
-﻿using Hangfire.Common;
+﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -8,12 +8,13 @@ namespace AmiyaBotPlayerRatingServer.Data
     public class ArknightsMemoryCache
     {
         private readonly IMemoryCache _cache;
-        private readonly Timer _timer;
 
         public ArknightsMemoryCache(IMemoryCache memoryCache)
         {
             _cache = memoryCache;
-            _timer = new Timer(UpdateCache, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+
+            //不可以用Hangfire，因为每个服务器都会有一个实例
+            _ = new Timer(UpdateCache, null, TimeSpan.Zero, TimeSpan.FromHours(1));
             UpdateCache(null);
         }
 
@@ -24,50 +25,73 @@ namespace AmiyaBotPlayerRatingServer.Data
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skin_table.json"), "skin_table.json");
             LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skinUrls.json"), "skinUrls.json");
 
+            GenerateCustomFiles();
+
+            SchulteGridGameData.LoadCharacterMap(this);
+        }
+
+        private void GenerateCustomFiles()
+        {
             try
             {
                 //进行一点点逻辑处理
                 var characterTable = JsonConvert.DeserializeObject<JToken>(GetText("character_table.json")!) as JObject;
-                var character_names = new JObject();
 
-                var newCharaTable = new JObject();
-
-                foreach (var chara in characterTable)
+                if (characterTable == null)
                 {
-                    var obtain = chara.Value["itemObtainApproach"]?.ToString();
+                    return;
+                }
+
+                var characterNames = new JObject();
+
+                var newCharacterTable = new JObject();
+
+                foreach (var character in characterTable)
+                {
+                    if (character.Value == null)
+                    {
+                        continue;
+                    }
+
+                    var obtain = character.Value["itemObtainApproach"]?.ToString();
                     if (obtain != "凭证交易所" && obtain != "招募寻访" &&
                         obtain != "活动获得" && obtain != "主线剧情" &&
                         obtain != "信用交易所")
                     {
                         continue;
                     }
-                    chara.Value["charId"] = chara.Key;
-                    character_names[chara.Key] = chara.Value["name"];
-                    newCharaTable[chara.Key] = chara.Value;
+                    character.Value["charId"] = character.Key;
+                    characterNames[character.Key] = character.Value["name"];
+                    newCharacterTable[character.Key] = character.Value;
                 }
 
-                LoadJson(character_names, "character_names.json");
+                LoadJson(characterNames, "character_names.json");
 
-                characterTable = newCharaTable;
+                characterTable = newCharacterTable;
 
                 var skillTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
                 var skillDict = new Dictionary<String, JToken>();
                 foreach (var skillObj in skillTable!)
                 {
                     var key = skillObj.Key;
-                    var value = skillObj.Value;
+                    var value = skillObj.Value!;
                     skillDict.Add(key, value);
                 }
 
-                foreach (var charaObj in characterTable!)
+                foreach (var character in characterTable)
                 {
-                    var value = charaObj.Value;
-                    var skills = value["skills"] as JArray;
+                    var value = character.Value;
+                    var skills = value!["skills"] as JArray;
+                    if(skills == null) continue;
                     foreach (var skill in skills)
                     {
                         var skillId = skill["skillId"]?.ToString();
+                        if (skillId == null)
+                        {
+                            continue;
+                        }
                         var skillData = skillDict.GetValueOrDefault(skillId);
-                        if (skillData!=null)
+                        if (skillData != null)
                         {
                             skill["skillData"] = skillData;
                         }
@@ -77,33 +101,29 @@ namespace AmiyaBotPlayerRatingServer.Data
                 var skinTable = JsonConvert.DeserializeObject<JToken>(GetText("skin_table.json")!) as JObject;
                 foreach (var skinObj in (skinTable!["charSkins"] as JObject)!)
                 {
-                    var key = skinObj.Key;
                     var value = skinObj.Value!;
-                    //value!["skinId"] = key;
+                    //value!["skinId"] = key; 该对象已有skinId
                     var charId = value["charId"]?.ToString()!;
-
-                    var chara = characterTable[charId];
-                    if (chara!=null)
+                    
+                    var character = characterTable[charId];
+                    if (character != null)
                     {
-                        var skin = chara["skins"] as JArray;
+                        var skin = character["skins"] as JArray;
                         if (skin == null)
                         {
                             skin = new JArray();
-                            chara["skins"] = skin;
+                            character["skins"] = skin;
                         }
                         skin.Add(value);
                     }
                 }
-
-
-
-                LoadJson(characterTable,"character_table_full.json");
+                
+                LoadJson(characterTable, "character_table_full.json");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
             }
-
         }
 
         private void LoadFile(String filePath, String resKey)
@@ -124,6 +144,14 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
             _cache.Set("JToken:" + key, json);
             _cache.Set("Text:" + key, json.ToString());
+        }
+
+        public void LoadObject(Object obj, String key)
+        {
+            var jsonText = JsonConvert.SerializeObject(obj);
+            var jsonObj = JsonConvert.DeserializeObject(jsonText);
+            _cache.Set("JToken:" + key, jsonObj);
+            _cache.Set("Text:" + key, jsonText);
         }
 
         public JToken? GetJson(String key)

@@ -55,7 +55,8 @@ namespace AmiyaBotPlayerRatingServer.Utility
                 return Array.Empty<byte>();
             }
             using Aes aes = Aes.Create();
-            var key = new Rfc2898DeriveBytes(password, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, 1000);
+            var key = new Rfc2898DeriveBytes(password, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, 1000, 
+                HashAlgorithmName.SHA1);
             aes.Key = key.GetBytes(aes.KeySize / 8);
             aes.IV = key.GetBytes(aes.BlockSize / 8);
 
@@ -74,7 +75,8 @@ namespace AmiyaBotPlayerRatingServer.Utility
             }
 
             using Aes aes = Aes.Create();
-            var key = new Rfc2898DeriveBytes(password, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, 1000);
+            var key = new Rfc2898DeriveBytes(password, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, 1000, 
+                HashAlgorithmName.SHA1);
             aes.Key = key.GetBytes(aes.KeySize / 8);
             aes.IV = key.GetBytes(aes.BlockSize / 8);
 

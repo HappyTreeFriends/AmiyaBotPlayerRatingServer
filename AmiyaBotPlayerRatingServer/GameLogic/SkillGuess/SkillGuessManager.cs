@@ -1,49 +1,35 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
-using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 using AmiyaBotPlayerRatingServer.Utility;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using static System.Net.WebRequestMethods;
-using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using AmiyaBotPlayerRatingServer.Model;
+using System.Data;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 {
-    public class SkillGuessManager : IGameManager
+    public class SkillGuessManager(ArknightsMemoryCache arknightsMemoryCache, PlayerRatingDatabaseContext dbContext)
+        : IGameManager
     {
-        private readonly ArknightsMemoryCache _arknightsMemoryCache;
-        private readonly PlayerRatingDatabaseContext _dbContext;
-
-        public SkillGuessManager(ArknightsMemoryCache arknightsMemoryCache,PlayerRatingDatabaseContext dbContext)
-        {
-            _arknightsMemoryCache = arknightsMemoryCache;
-            _dbContext = dbContext;
-        }
-
-        private static int RandomNumberGenerator() => new Random().Next(0, 100000);
-
-        
-        private SkillGuessGame GenerateRealGame()
+        private SkillGuessGame? GenerateRealGame()
         {
             var game = new SkillGuessGame();
             
             game.GameType = "SkillGuess";
             game.AnswerList = new List<SkillGuessGame.Answer>();
 
-            var charMaps = _arknightsMemoryCache.GetJson("character_table_full.json");
+            var charMaps = arknightsMemoryCache.GetJson("character_table_full.json");
             var charSkillMap = charMaps?.JMESPathQuery("map(&{\"charId\":@.charId, \"name\":@.name, \"skills\":map(&{\"skillId\":@.skillId,\"skillName\":@.skillData.levels[0].name},to_array(@.skills))},values(@))");
             
-            if (charSkillMap == null)
+            if (charMaps==null||charSkillMap == null)
             {
                 //ERROR
                 return null;
             }
 
             //获取一个全部技能列表，用来排除重复技能名称
-            var allSkills = charSkillMap.SelectMany(x => x["skills"].Select(y => y["skillName"].ToString())).ToList();
+            var allSkills = charSkillMap.SelectMany(x => x["skills"]!.Select(y => y["skillName"]!.ToString())).ToList();
 
             var operators = charMaps.ToList();
-            var max = operators.Count();
+            var max = operators.Count;
             var random = new Random();
 
             while (game.AnswerList.Count < 16)
@@ -58,7 +44,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 }
 
                 var charName = operatorData["name"]?.ToString();
-                var skillList = operatorData["skills"].ToList();
+                var skillList = operatorData["skills"]?.ToList();
 
                 if (skillList == null || skillList.Count <= 1)
                 {
@@ -75,14 +61,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 }
 
                 var skillUrl = "https://web.hycdn.cn/arknights/game/assets/char_skill/" +
-                               selectedSkill["skillId"]?.ToString() + ".png";
+                               selectedSkill["skillId"] + ".png";
 
                 var answer = new SkillGuessGame.Answer()
                 {
-                    CharacterName = charName,
+                    CharacterName = charName!,
                     CharacterId = charId,
-                    SkillName = selectedSkill["skillData"]["levels"][0]["name"]?.ToString(),
-                    SkillId = selectedSkill["skillId"]?.ToString(),
+                    SkillName = selectedSkill["skillData"]?["levels"]?[0]?["name"]?.ToString()!,
+                    SkillId = selectedSkill["skillId"]?.ToString()!,
                     ImageUrl = skillUrl,
                 };
                 game.AnswerList.Add(answer);
@@ -93,7 +79,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         private bool IsOperatorName(string name)
         {
-            var charDataJson = _arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String, String>>();
+            var charDataJson = arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String, String>>();
             if (charDataJson == null)
             {
                 //ERROR
@@ -103,10 +89,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             return charDataJson.Values.Contains(name);
         }
         
-        public Task<Game> CreateNewGame(Dictionary<String, JToken> param)
+        public Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = GenerateRealGame();
-            return Task.FromResult<Game>(game);
+            return Task.FromResult<Game?>(game);
         }
 
         public Task<object> GetGameStartPayload(Game game)
@@ -126,7 +112,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
 
             //统计每个玩家的正确和错误次数
-            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator == true).GroupBy(p => p.PlayerId)
+            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator).GroupBy(p => p.PlayerId)
                 .Select(p => new
                 {
                     PlayerId = p.Key,
@@ -139,7 +125,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                 var playerId = pl.Key;
 
                 var playerSt =
-                    _dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
+                    dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
                 if (playerSt == null)
                 {
                     playerSt = new ApplicationUserMinigameStatistics()
@@ -153,7 +139,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                         TotalAnswersCorrect = 0,
                         TotalAnswersWrong = 0
                     };
-                    _dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
+                    dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
                 }
 
                 playerSt.TotalGamesPlayed++;
@@ -175,7 +161,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
                     playerSt.TotalGamesThirdPlace++;
                 }
 
-                _dbContext.SaveChanges();
+                dbContext.SaveChanges();
             }
         }
 
@@ -183,9 +169,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
         public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
             var game = rawGame as SkillGuessGame;
-
             var moveObj = JObject.Parse(move);
-            var characterName = moveObj["CharacterName"].ToString();
+
+            if (game == null || moveObj == null || moveObj["CharacterName"] == null)
+            {
+                throw new DataException("Move Payload不合法");
+            }
+
+            var characterName = moveObj["CharacterName"]!.ToString();
 
             if (!IsOperatorName(characterName))
             {
@@ -293,6 +284,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
         {
             var game = rawGame as SkillGuessGame;
 
+            if (game == null)
+            {
+                return Task.FromResult(new object());
+            }
 
             if (!game.IsCompleted)
             {
@@ -312,7 +307,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
         public Task<object> GetGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
-
+            if (game == null)
+            {
+                return Task.FromResult(new object());
+            }
             if (game.IsStarted)
             {
                 if (DateTime.Now - game.StartTime > TimeSpan.FromMinutes(60 * 3))
@@ -327,7 +325,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
             return Task.FromResult<object>(new
             {
-                AnswerList = game!.AnswerList,
+                AnswerList = game.AnswerList,
                 game.CurrentQuestionIndex,
             });
         }
@@ -338,7 +336,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
             if (game!.PlayerScore.ContainsKey(player))
             {
-                return Task.FromResult<double>(game.PlayerScore[player]);
+                return Task.FromResult(game.PlayerScore[player]);
             }
 
             return Task.FromResult<double>(0);

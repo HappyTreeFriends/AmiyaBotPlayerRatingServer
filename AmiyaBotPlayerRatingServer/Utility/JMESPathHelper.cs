@@ -15,7 +15,7 @@ namespace AmiyaBotPlayerRatingServer.Utility
                 var result = jmes.Transform(jsonData, jmesPath);
                 return JToken.Parse(result);
             }
-            catch(Exception exp)
+            catch(Exception)
             {
                 return null;
             }

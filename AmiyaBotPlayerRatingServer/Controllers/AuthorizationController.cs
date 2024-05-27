@@ -31,47 +31,37 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         {
             var request = HttpContext.GetOpenIddictServerRequest();
             
-            var allowToAuthorize = true;
-            
-            if (allowToAuthorize)
+            // 创建或获取用户的身份标识（ClaimsIdentity）
+            var identity = new ClaimsIdentity(
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                Claims.Name, Claims.Role);
+
+            //这里的User是授权者,也就是普通用户
+            //而开发者需要通过ClientId来确认
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var claim = new Claim(Claims.Subject, userId);
+            claim.SetDestinations(Destinations.AccessToken, Destinations.IdentityToken);
+            identity.AddClaim(claim);
+
+            var requestedCred = request?.GetParameter("cred").ToString();
+            if (requestedCred != null)
             {
-                // 创建或获取用户的身份标识（ClaimsIdentity）
-                var identity = new ClaimsIdentity(
-                    OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                    Claims.Name, Claims.Role);
-
-                //这里的User是授权者,也就是普通用户
-                //而开发者需要通过ClientId来确认
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-                var claim = new Claim(Claims.Subject, userId);
-                claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
-                identity.AddClaim(claim);
-
-                var requestedCred = request?.GetParameter("cred").ToString();
-                if (requestedCred != null)
+                //确认这个cred属于这个用户
+                var credentialDetails = await _dbContext.SKLandCredentials
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == requestedCred);
+                if (credentialDetails?.UserId == userId)
                 {
-                    //确认这个cred属于这个用户
-                    var credentialDetails = await _dbContext.SKLandCredentials
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(c => c.Id == requestedCred);
-                    if (credentialDetails?.UserId == userId)
-                    {
-                        //允许
-                        var credClaim = new Claim("SKLandCredentialId", requestedCred);
-                        credClaim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
-                        identity.AddClaim(credClaim);
-                    }
+                    //允许
+                    var credClaim = new Claim("SKLandCredentialId", requestedCred);
+                    credClaim.SetDestinations(Destinations.AccessToken);
+                    identity.AddClaim(credClaim);
                 }
+            }
 
-                var principal = new ClaimsPrincipal(identity);
-                
-                return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            }
-            else
-            {
-                // 用户拒绝授权，您应该重定向到一个错误页面或返回到第三方应用
-                return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            }
+            var principal = new ClaimsPrincipal(identity);
+            
+            return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         [AllowAnonymous]
@@ -79,6 +69,11 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         public async Task<IActionResult> Token()
         {
             var request = HttpContext.GetOpenIddictServerRequest();
+            if (request == null)
+            {
+                return BadRequest();
+            }
+
             if (request.IsAuthorizationCodeGrantType())
             {
                 var identity = new ClaimsIdentity(
@@ -88,7 +83,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
                 // Get the principal associated with the authorization code
                 var info = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-                var userPrincipal = info?.Principal;
+                var userPrincipal = info.Principal;
 
                 if (userPrincipal == null)
                 {
@@ -108,13 +103,13 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
                 // 这里添加相应的声明。
                 identity.AddClaim(Claims.Subject, userId,
-                    OpenIddictConstants.Destinations.AccessToken);
+                    Destinations.AccessToken);
 
                 var credClaimValue = userPrincipal.FindFirst("SKLandCredentialId")?.Value;
                 if (!string.IsNullOrEmpty(credClaimValue))
                 {
                     var credClaim = new Claim("SKLandCredentialId", credClaimValue);
-                    credClaim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
+                    credClaim.SetDestinations(Destinations.AccessToken);
                     identity.AddClaim(credClaim);
                 }
 
@@ -125,9 +120,10 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             }
             else if (request.IsClientCredentialsGrantType())
             {
-
-                // Note: the client credentials are automatically validated by OpenIddict:
-                // if client_id or client_secret are invalid, this action won't be invoked.
+                if (request.ClientId == null)
+                {
+                    return BadRequest();
+                }
 
                 var application = await _applicationManager.FindByClientIdAsync(request.ClientId) ??
                                   throw new InvalidOperationException("The application cannot be found.");
@@ -145,7 +141,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
                 {
                     // Allow the "name" claim to be stored in both the access and identity tokens
                     // when the "profile" scope was granted (by calling principal.SetScopes(...)).
-                    Claims.Name when claim.Subject.HasScope(Scopes.Profile)
+                    Claims.Name when claim.Subject?.HasScope(Scopes.Profile)??false
                         => new[] { Destinations.AccessToken, Destinations.IdentityToken },
 
                     // Otherwise, only store the claim in the access tokens.

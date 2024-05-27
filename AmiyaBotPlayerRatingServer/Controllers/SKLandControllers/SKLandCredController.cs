@@ -14,22 +14,20 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SKLandCredentialController : ControllerBase
+    public class SKLandCredentialController(
+        PlayerRatingDatabaseContext context,
+        IBackgroundJobClient backgroundJobClient)
+        : ControllerBase
     {
-        private readonly PlayerRatingDatabaseContext _context;
-        private readonly IBackgroundJobClient _backgroundJobClient;
-
-        public SKLandCredentialController(PlayerRatingDatabaseContext context, IBackgroundJobClient backgroundJobClient)
-        {
-            _context = context;
-            _backgroundJobClient = backgroundJobClient;
-        }
-
+#pragma warning disable CS8618
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
         public class SKLandCredentialModel
         {
             public string Credential { get; set; }
             // 可能还有其他字段，比如昵称、头像URL等
         }
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
+#pragma warning restore CS8618
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("Create")]
@@ -44,7 +42,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             }
 
             // 验证Credential是否已经存在
-            var existingCredential = await _context.SKLandCredentials
+            var existingCredential = await context.SKLandCredentials
                 .FirstOrDefaultAsync(c => c.Credential == model.Credential && c.UserId == userId);
 
             if (existingCredential != null)
@@ -63,12 +61,12 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
                 AvatarUrl = ""
             };
 
-            _context.SKLandCredentials.Add(newCredential);
+            context.SKLandCredentials.Add(newCredential);
 
             // 保存更改            
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
-            _backgroundJobClient.Enqueue<CollectPlayerInformationService>(service => service.Collect(newCredential.Id));
+            backgroundJobClient.Enqueue<CollectPlayerInformationService>(service => service.Collect(newCredential.Id));
 
             return Ok(new { newCredential.Id, Message = "Credential successfully created." });
         }
@@ -87,7 +85,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             }
 
             // 从数据库中找到对应的Credential
-            var credentialToUpdate = await _context.SKLandCredentials.FindAsync(new Guid(credentialId));
+            var credentialToUpdate = await context.SKLandCredentials.FindAsync(new Guid(credentialId));
 
             if (credentialToUpdate == null)
             {
@@ -98,7 +96,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             credentialToUpdate.Credential = model.Credential;
             // 如果有其他字段（比如昵称、头像等），也应在这里进行更新
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return Ok(new { Message = "Credential successfully updated." });
         }
@@ -116,13 +114,13 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
                 return Unauthorized();
             }
 
-            if (!Guid.TryParse(credentialId, out var guidCredentialId))
+            if (!Guid.TryParse(credentialId, out _))
             {
                 return BadRequest("Invalid credential ID format.");
             }
 
             // 从数据库中找到对应的Credential
-            var credentialToDelete = await _context.SKLandCredentials
+            var credentialToDelete = await context.SKLandCredentials
                 .Where(c => c.Id == credentialId && c.UserId == userId)
                 .FirstOrDefaultAsync();
 
@@ -132,9 +130,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             }
 
             // 删除该Credential
-            _context.SKLandCredentials.Remove(credentialToDelete);
+            context.SKLandCredentials.Remove(credentialToDelete);
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return Ok(new { Message = "Credential successfully deleted." });
         }
@@ -154,7 +152,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             // 从数据库获取该用户的所有Credentials\
             try
             {
-                var credentials = await _context.SKLandCredentials
+                var credentials = await context.SKLandCredentials
                     .Where(c => c.UserId == userId)
                     .Select(c => new
                     {
@@ -170,7 +168,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
 
                 return Ok(credentials);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // 记录异常或执行其他错误处理逻辑
                 return StatusCode(500, "An error occurred while retrieving the credentials.");
@@ -192,7 +190,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             }
 
             // 从数据库中找到对应的Credential
-            var credentialDetails = await _context.SKLandCredentials
+            var credentialDetails = await context.SKLandCredentials
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == credentialId);
 

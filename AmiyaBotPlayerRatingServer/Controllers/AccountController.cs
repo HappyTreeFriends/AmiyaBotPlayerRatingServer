@@ -1,12 +1,12 @@
-﻿using System.Data;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
 using AmiyaBotPlayerRatingServer.Utility;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -22,33 +22,55 @@ namespace AmiyaBotPlayerRatingServer.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AccountController : ControllerBase
+public class AccountController(
+    IConfiguration configuration,
+    UserManager<ApplicationUser> userManager,
+    RoleManager<IdentityRole> roleManager,
+    IOpenIddictApplicationManager oauthManager,
+    PlayerRatingDatabaseContext dbContext)
+    : ControllerBase
 {
-
-    private readonly IConfiguration _configuration;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly IOpenIddictApplicationManager _oauthManager;
-    private readonly PlayerRatingDatabaseContext _dbContext;
-
-    public AccountController(IConfiguration configuration,
-        UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, 
-        IOpenIddictApplicationManager oauthManager, PlayerRatingDatabaseContext dbContext)
+#pragma warning disable CS8618
+    // ReSharper disable UnusedAutoPropertyAccessor.Global
+    public class ChangeRoleRequest
     {
-        _configuration = configuration;
-        _userManager = userManager;
-        _roleManager = roleManager;
-        _oauthManager = oauthManager;
-        _dbContext = dbContext;
+        public string UserId { get; set; }
+        public string NewRole { get; set; }
+        public string OldRole { get; set; }
     }
-
     public class RegisterModel
     {
-        public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
-        public string Nickname { get; set; } = "";
-        public string ClaimedRole { get; set; } = "";
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string Nickname { get; set; }
+        public string ClaimedRole { get; set; }
     }
+    public class LoginModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+    public class ChangePasswordModel
+    {
+        public string CurrentPassword { get; set; }
+        public string NewPassword { get; set; }
+    }
+    public class ChangeUserInfoModel
+    {
+        public string Nickname { get; set; }
+        public string Avatar { get; set; }
+        public string AvatarType { get; set; }
+    }
+    public class CreateClientModel
+    {
+        public string FriendlyName { get; set; }
+        public string Description { get; set; }
+        public string IconBase64 { get; set; }
+        public string RedirectUri { get; set; }
+    }
+    // ReSharper restore UnusedAutoPropertyAccessor.Global
+#pragma warning restore CS8618
+
 
     private static bool IsPasswordComplex(string password, int x)
     {
@@ -71,7 +93,7 @@ public class AccountController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
     {
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
 
         if (!IsPasswordComplex(model.Password, 2))
         {
@@ -79,7 +101,7 @@ public class AccountController : ControllerBase
         }
 
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email, Nickname = model.Nickname };
-        var result = await _userManager.CreateAsync(user, model.Password);
+        var result = await userManager.CreateAsync(user, model.Password);
 
         if (!result.Succeeded)
         {
@@ -88,7 +110,7 @@ public class AccountController : ControllerBase
         }
 
         var role = model.ClaimedRole == "开发者账户" ? "开发者账户" : "普通账户";
-        var addToRoleResult = await _userManager.AddToRoleAsync(user, role);
+        var addToRoleResult = await userManager.AddToRoleAsync(user, role);
 
         if (!addToRoleResult.Succeeded)
         {
@@ -104,7 +126,7 @@ public class AccountController : ControllerBase
     [HttpPost("quickRegister")]
     public async Task<IActionResult> QuickRegister([FromBody] RegisterModel model)
     {
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
 
         if (!String.IsNullOrWhiteSpace(model.Password))
         {
@@ -125,7 +147,7 @@ public class AccountController : ControllerBase
         }
 
         var user = new ApplicationUser { UserName = model.Email, Email = model.Email, Nickname = model.Nickname };
-        var result = await _userManager.CreateAsync(user, model.Password);
+        var result = await userManager.CreateAsync(user, model.Password);
 
         if (!result.Succeeded)
         {
@@ -134,7 +156,7 @@ public class AccountController : ControllerBase
         }
 
         var role = model.ClaimedRole == "开发者账户" ? "开发者账户" : "普通账户";
-        var addToRoleResult = await _userManager.AddToRoleAsync(user, role);
+        var addToRoleResult = await userManager.AddToRoleAsync(user, role);
 
         if (!addToRoleResult.Succeeded)
         {
@@ -147,14 +169,14 @@ public class AccountController : ControllerBase
         // 然后立即登录
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, user.Id.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+            new(ClaimTypes.Name, user.Id.ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
         
         claims.Add(new Claim(ClaimTypes.Role, role));
         
 
-        var key = Encoding.ASCII.GetBytes(_configuration["JWT:Secret"]!);
+        var key = Encoding.ASCII.GetBytes(configuration["JWT:Secret"]!);
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
@@ -178,35 +200,29 @@ public class AccountController : ControllerBase
 
         return Ok(new { Token = jwtToken, Email=user.Email });
     }
-
-    public class LoginModel
-    {
-        public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
-    }
-
+    
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginModel model)
     {
-        var user = await _userManager.FindByEmailAsync(model.Email);
+        var user = await userManager.FindByEmailAsync(model.Email);
         if (user == null)
         {
             return BadRequest(new { message = "用户名或密码错误" });
         }
 
-        var result = await _userManager.CheckPasswordAsync(user, model.Password);
+        var result = await userManager.CheckPasswordAsync(user, model.Password);
         if (!result)
         {
             return BadRequest(new { message = "用户名或密码错误" });
         }
 
-        var userRoles = await _userManager.GetRolesAsync(user);  // 获取用户角色
+        var userRoles = await userManager.GetRolesAsync(user);  // 获取用户角色
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, user.Id.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+            new(ClaimTypes.Name, user.Id.ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
 
         foreach (var role in userRoles)
@@ -214,7 +230,7 @@ public class AccountController : ControllerBase
             claims.Add(new Claim(ClaimTypes.Role, role));  // 将角色添加为声明
         }
 
-        var key = Encoding.ASCII.GetBytes(_configuration["JWT:Secret"]!);
+        var key = Encoding.ASCII.GetBytes(configuration["JWT:Secret"]!);
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
@@ -238,13 +254,7 @@ public class AccountController : ControllerBase
 
         return Ok(new { Token = jwtToken });
     }
-
-    public class ChangePasswordModel
-    {
-        public string CurrentPassword { get; set; }
-        public string NewPassword { get; set; }
-    }
-
+    
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
@@ -258,21 +268,21 @@ public class AccountController : ControllerBase
         }
 
         // Find the user
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(userId);
         if (user == null)
         {
             return NotFound();
         }
 
         // Validate the current password
-        var checkPassword = await _userManager.CheckPasswordAsync(user, model.CurrentPassword);
+        var checkPassword = await userManager.CheckPasswordAsync(user, model.CurrentPassword);
         if (!checkPassword)
         {
             return BadRequest(new { message = "当前密码不正确" });
         }
 
         // Change the password
-        var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+        var changePasswordResult = await userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
 
         if (!changePasswordResult.Succeeded)
         {
@@ -281,29 +291,20 @@ public class AccountController : ControllerBase
 
         return Ok(new { message = "密码已成功更改" });
     }
-
-
-
-    public class ChangeRoleRequest
-    {
-        public string? UserId { get; set; }
-        public string? NewRole { get; set; }
-        public string? OldRole { get; set; }
-    }
-
+    
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Authorize(Roles = "管理员账户")]
     [HttpPost("change-role")]
     public async Task<IActionResult> ChangeUserRole([FromBody] ChangeRoleRequest model)
     {
-        var user = await _userManager.FindByIdAsync(model.UserId);
+        var user = await userManager.FindByIdAsync(model.UserId);
         if (user == null)
         {
             return NotFound("用户不存在");
         }
 
         // 检查新角色是否存在
-        if (!await _roleManager.RoleExistsAsync(model.NewRole))
+        if (!await roleManager.RoleExistsAsync(model.NewRole))
         {
             return BadRequest("指定的新角色不存在");
         }
@@ -311,14 +312,14 @@ public class AccountController : ControllerBase
         if (model.OldRole != null)
         {
             // 如果提供了旧角色，并且用户属于这个角色，则从旧角色中移除
-            if (await _userManager.IsInRoleAsync(user, model.OldRole))
+            if (await userManager.IsInRoleAsync(user, model.OldRole))
             {
-                await _userManager.RemoveFromRoleAsync(user, model.OldRole);
+                await userManager.RemoveFromRoleAsync(user, model.OldRole);
             }
         }
 
         // 将用户添加到新角色
-        var addToRoleResult = await _userManager.AddToRoleAsync(user, model.NewRole);
+        var addToRoleResult = await userManager.AddToRoleAsync(user, model.NewRole);
 
         if (addToRoleResult.Succeeded)
         {
@@ -327,14 +328,7 @@ public class AccountController : ControllerBase
 
         return BadRequest("无法更改用户角色");
     }
-
-    public class ChangeUserInfoModel
-    {
-        public string? Nickname { get; set; }
-        public string? Avatar { get; set; }
-        public string? AvatarType { get; set; }
-    }
-
+    
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [HttpPost("change-user-info")]
     public async Task<IActionResult> ChangeUserInfo([FromBody] ChangeUserInfoModel model)
@@ -346,7 +340,7 @@ public class AccountController : ControllerBase
             return Unauthorized();
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(userId);
         if (user == null)
         {
             return NotFound();
@@ -367,20 +361,11 @@ public class AccountController : ControllerBase
             user.AvatarType = model.AvatarType;
         }
 
-        await _userManager.UpdateAsync(user);
+        await userManager.UpdateAsync(user);
 
         return Ok(new { message = "用户信息已更新" });
     }
-
-    public class CreateClientModel
-    {
-        public string FriendlyName { get; set; }
-        public string Description { get; set; }
-        public string IconBase64 { get; set; }
-        public string RedirectUri { get; set; }
-    }
-
-
+    
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Authorize(Roles = "管理员账户,开发者账户")]
     [HttpPost("create-client")]
@@ -406,10 +391,15 @@ public class AccountController : ControllerBase
             RedirectUris = { new Uri(model.RedirectUri) }
         };
 
-        await _oauthManager.CreateAsync(descriptor);
+        await oauthManager.CreateAsync(descriptor);
 
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _dbContext.ClientInfos.Add(new ClientInfo
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        dbContext.ClientInfos.Add(new ClientInfo
         {
             ClientId = descriptor.ClientId,
             FriendlyName = model.FriendlyName,
@@ -419,7 +409,7 @@ public class AccountController : ControllerBase
             UserId = userId
         });
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         return Ok(new
         {
@@ -436,7 +426,7 @@ public class AccountController : ControllerBase
     public async Task<IActionResult> ListClients()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var clients = await _dbContext.ClientInfos.Where(c => c.UserId == userId).ToListAsync();
+        var clients = await dbContext.ClientInfos.Where(c => c.UserId == userId).ToListAsync();
         return Ok(clients.Select(client=>new
         {
             ClientId = client.ClientId,
@@ -451,22 +441,22 @@ public class AccountController : ControllerBase
     [HttpGet("get-client/{clientId}")]
     public async Task<IActionResult> GetClient(string clientId)
     {
-        var client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId);
+        var client = await dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId);
         if (client == null)
         {
             return NotFound();
         }
 
-        var application = await _oauthManager.FindByClientIdAsync(clientId);
+        var application = await oauthManager.FindByClientIdAsync(clientId);
         if (application == null)
         {
             return NotFound();
         }
 
-        var redirectUris = await _oauthManager.GetRedirectUrisAsync(application);
+        var redirectUris = await oauthManager.GetRedirectUrisAsync(application);
 
         var scopes =
-            (await _oauthManager.GetPermissionsAsync(application)).Where(p =>
+            (await oauthManager.GetPermissionsAsync(application)).Where(p =>
                 p.StartsWith(OpenIddictConstants.Permissions.Prefixes.Scope));
 
         return Ok(new
@@ -495,12 +485,12 @@ public class AccountController : ControllerBase
         if (isAdmin)
         {
             // 管理员可以删除任何客户端
-            client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId);
+            client = await dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId);
         }
         else
         {
             // 开发者只能删除自己的客户端
-            client = await _dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId && c.UserId == userId);
+            client = await dbContext.ClientInfos.FirstOrDefaultAsync(c => c.ClientId == clientId && c.UserId == userId);
         }
 
 
@@ -510,14 +500,14 @@ public class AccountController : ControllerBase
         }
 
         // 删除 OAuth2 客户端
-        var openIddictApplication = await _oauthManager.FindByClientIdAsync(clientId);
+        var openIddictApplication = await oauthManager.FindByClientIdAsync(clientId);
         if (openIddictApplication != null)
         {
-            await _oauthManager.DeleteAsync(openIddictApplication);
+            await oauthManager.DeleteAsync(openIddictApplication);
         }
 
-        _dbContext.ClientInfos.Remove(client);
-        await _dbContext.SaveChangesAsync();
+        dbContext.ClientInfos.Remove(client);
+        await dbContext.SaveChangesAsync();
 
         return Ok(new { message = "应用已成功删除" });
     }
@@ -534,13 +524,13 @@ public class AccountController : ControllerBase
             return Unauthorized();
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(userId);
         if (user == null)
         {
             return NotFound();
         }
 
-        var userRoles = await _userManager.GetRolesAsync(user);
+        var userRoles = await userManager.GetRolesAsync(user);
         return Ok(new
         {
             Id = user.Id,

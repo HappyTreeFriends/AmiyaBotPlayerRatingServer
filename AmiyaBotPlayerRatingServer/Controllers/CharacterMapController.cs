@@ -14,7 +14,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
     {
         private readonly PlayerRatingDatabaseContext _dbContext;
 
-        private static Dictionary<String,String> _operatorIdsCache = new Dictionary<string, string>();
+        private static Dictionary<String,String> _operatorIdsCache = new();
         private static DateTime _operatorIdsCacheLastUpdate = DateTime.MinValue;
 
         public CharacterMapController(PlayerRatingDatabaseContext dbContext)

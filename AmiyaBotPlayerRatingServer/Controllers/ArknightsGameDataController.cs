@@ -3,30 +3,23 @@ using DevLab.JmesPath;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
-using OpenIddict.Server.AspNetCore;
-using OpenIddict.Validation.AspNetCore;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace AmiyaBotPlayerRatingServer.Controllers
 {
     [ApiController]
     [Route("api/arknights")]
     [Produces("application/json")]
-    public class ArknightsGameDataController : ControllerBase
+    public class ArknightsGameDataController(ArknightsMemoryCache memeCache) : ControllerBase
     {
-        private readonly ArknightsMemoryCache _memeCache;
-
-        public ArknightsGameDataController(ArknightsMemoryCache memeCache)
-        {
-            _memeCache = memeCache;
-        }
-
+#pragma warning disable CS8618
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
         public class JsonPathQueryModel
         {
             public string File { get; set; }
             public string Query { get; set; }
         }
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
+#pragma warning restore CS8618
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("json-path")]
@@ -34,7 +27,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         {
             try
             {
-                var jsonData = _memeCache.GetJson(model.File);
+                var jsonData = memeCache.GetJson(model.File);
                 if (jsonData != null)
                 {
                     var result = jsonData.SelectToken(model.Query);
@@ -56,7 +49,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         {
             try
             {
-                var jsonData = _memeCache.GetText(model.File);
+                var jsonData = memeCache.GetText(model.File);
                 if (jsonData != null)
                 {
                     JmesPath jmes = new JmesPath();
@@ -72,29 +65,5 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             }
         }
 
-
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
-        [HttpPost("operator-avatar")]
-        public IActionResult GetArknightsAvatar()
-        {
-            //首先获取所有干员
-
-            var operators = _memeCache.GetJson("character_table.json") as JObject;
-            if (operators == null)
-            {
-                return NotFound("character_table.json not found");
-            }
-
-            var skins = _memeCache.GetJson("skin_table.json") as JObject;
-
-            foreach(var opProp in operators.Properties())
-            {
-                var opId = opProp.Name;
-                var opName = opProp.Value["name"]?.Value<string>();
-                var opAvatar = opProp.Value["avatar"]?.Value<string>();
-            }
-
-            return Ok();
-        }
     }
 }

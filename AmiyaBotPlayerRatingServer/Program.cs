@@ -270,10 +270,7 @@ if (!app.Environment.IsDevelopment())
     });
 }
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-    endpoints.MapHub<GameHub>("/gamehub");
-});
+app.MapControllers();
+app.MapHub<GameHub>("/gamehub");
 
 app.Run();

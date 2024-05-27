@@ -64,7 +64,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         
         private async Task<Object> FormatPlayerList(Game game)
         {
-            var manager = _gameManager.CreateGameManager(game.GameType)!;
+            var manager = _gameManager.CreateGameManager(game.GameType);
             return await Task.WhenAll(game.PlayerList.Select(async x =>
             {
                 var user = await _dbContext.Users.FindAsync(x.Key);
@@ -110,6 +110,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+            if (userId == null)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
             var myGames = await _gameManager.GetGameByCreatorIdAsync(userId);
 
             await Clients.Caller.SendAsync("MyConnectionInfo", JsonConvert.SerializeObject(new
@@ -140,7 +145,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var manager = await ValidateManager(game.GameType);
             var appUser = await ValidateUser();
 
-            if (!game.PlayerList.ContainsKey(appUser.Id))
+            if (game==null||!game.PlayerList.ContainsKey(appUser.Id))
             {
                 throw new UnauthorizedAccessException();
             }
@@ -148,7 +153,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             game.PlayerList[appUser.Id] = Context.ConnectionId;
             await _gameManager.SaveGameAsync(game);
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
+            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id!);
             await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
             {
                 GameId = game.Id,
@@ -180,6 +185,10 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
 
             var paramObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(param);
+            if (paramObj == null)
+            {
+                throw new DataException("Invalid Game Param");
+            }
 
             await using var game = await gameManager.CreateNewGame(paramObj);
 
@@ -192,7 +201,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 return;
             }
 
-            game.IsPrivate = paramObj["IsPrivate"]?.ToObject<bool>() ?? false;
+            game.IsPrivate = paramObj["IsPrivate"].ToObject<bool>();
             game.CreatorId= appUser.Id;
             game.CreatorConnectionId = Context.ConnectionId;
             game.CreateTime = DateTime.Now;
@@ -202,8 +211,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
             
-            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
-            await Clients.Group(game.Id).SendAsync("GameCreated", JsonConvert.SerializeObject(new
+            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id!);
+            await Clients.Group(game.Id!).SendAsync("GameCreated", JsonConvert.SerializeObject(new
             {
                 CreatorId = appUser.Id,
                 CreatorConnectionId = Context.ConnectionId,
@@ -234,7 +243,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 return;
             }
 
-            var manager = await ValidateManager(game.GameType);
+            //var manager = await ValidateManager(game.GameType);
 
             //看一下是不是已经在游戏里了
             if (game.PlayerList.ContainsKey(appUser.Id))
@@ -255,8 +264,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
-            await Clients.Group(game.Id).SendAsync("PlayerJoined", JsonConvert.SerializeObject(new
+            await Groups.AddToGroupAsync(Context.ConnectionId, game.Id!);
+            await Clients.Group(game.Id!).SendAsync("PlayerJoined", JsonConvert.SerializeObject(new
             {
                 UserId = appUser.Id,
                 UserSignalRId = Context.ConnectionId,
@@ -416,7 +425,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
-            var rallyName = rallyDataObj["Name"]?.ToString();
+            if (rallyDataObj == null)
+            {
+                throw new DataException("Invalid Rally Point Payload");
+            }
+
+            var rallyName = rallyDataObj["Name"].ToString();
 
             if (rallyName == null)
             {
@@ -449,7 +463,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
-            var rallyName = rallyDataObj["Name"]?.ToString();
+            if (rallyDataObj == null)
+            {
+                throw new DataException("Invalid Rally Point Payload");
+            }
+
+            var rallyName = rallyDataObj["Name"].ToString();
 
             if (rallyName == null)
             {
@@ -478,7 +497,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
-            var rallyName = rallyDataObj["Name"]?.ToString();
+            if (rallyDataObj == null)
+            {
+                throw new DataException("Invalid Rally Point Payload");
+            }
+
+            var rallyName = rallyDataObj["Name"].ToString();
 
             if (rallyName == null)
             {
@@ -547,7 +571,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await Clients.Group(gameId).SendAsync("ReceiveMove", response);
 
-            if (game.IsCompleted == true && oldCompleteState == false)
+            if (game.IsCompleted && oldCompleteState == false)
             {
                 await Clients.Group(gameId).SendAsync("GameCompleted", response);
             }
@@ -599,7 +623,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
 
-            if (game.IsCompleted == true && oldCompleteState == false)
+            if (game.IsCompleted && oldCompleteState == false)
             {
                 await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
                 {
@@ -647,7 +671,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 }));
             }
 
-            if (game.IsCompleted == true && oldCompleteState == false)
+            if (game.IsCompleted && oldCompleteState == false)
             {
                 var response = JsonConvert.SerializeObject(new
                 {
@@ -666,7 +690,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [UsedImplicitly]
         public async Task GetNotification()
         {
-            foreach (var notification in _gameManager.Notifications)
+            var validNodes = _dbContext.SystemNotifications.Where(n => n.ExpiredAt >= DateTime.Now);
+            foreach (var notification in validNodes)
             {
                 if (notification.ExpiredAt > DateTime.Now)
                 {

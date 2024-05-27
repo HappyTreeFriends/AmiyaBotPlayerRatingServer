@@ -1,8 +1,10 @@
 ﻿using System.Collections.Concurrent;
-using AmiyaBotPlayerRatingServer.Model;
 using Newtonsoft.Json;
 using RedLockNet;
-using RedLockNet.SERedis;
+
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable UnusedMember.Global
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
@@ -27,20 +29,15 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public bool IsClosed { get; set; }
         public DateTime? CloseTime { get; set; }
 
-        public ConcurrentDictionary<String, String> PlayerList { get; set; } = new ConcurrentDictionary<String,String>();
+        public ConcurrentDictionary<String, String> PlayerList { get; set; } = new();
 
-        public class RallyNode
+        public class RallyNode(string name)
         {
-            public string Name { get; }
-            public HashSet<string> PlayerIds { get; } = new HashSet<string>();
-
-            public RallyNode(string name)
-            {
-                Name = name;
-            }
+            public string Name { get; set; } = name;
+            public HashSet<string> PlayerIds { get; set; } = new();
         }
 
-        public ConcurrentDictionary<string, RallyNode> RallyNodes { get; } = new ConcurrentDictionary<string, RallyNode>();
+        public ConcurrentDictionary<string, RallyNode> RallyNodes { get; } = new();
 
         public int Version { get; set; }
 

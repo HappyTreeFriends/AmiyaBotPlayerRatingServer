@@ -10,6 +10,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json")]
+    [Obsolete("该功能已经无法使用")]
     public class CharacterStatisticsController : ControllerBase
     {
         private readonly PlayerRatingDatabaseContext _dbContext;
@@ -28,7 +29,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         public (int evolvePhase, int level) ReverseCalculateLevel(double calculatedLevel, string charId)
         {
             var charData = _characterMap[charId];
-            var rarity = charData["rarity"].ToObject<int>();
+            var rarity = charData?["rarity"]?.ToObject<int>();
             int baseIncrease = 0;
             int evolveIncrease = 0;
 
@@ -84,14 +85,14 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             // 先获取统计数据
             var stats = statsList
                 .Select(s => {
-                    var (AverageEvolvePhase, AverageLevel) = ReverseCalculateLevel(s.AverageLevel, s.CharacterId);
+                    var (averageEvolvePhase, averageLevel) = ReverseCalculateLevel(s.AverageLevel, s.CharacterId);
                     return new
                     {
                         // Removed s.Id
                         s.SampleCount,
                         s.CharacterId,
-                        AverageEvolvePhase,
-                        AverageLevel,
+                        AverageEvolvePhase = averageEvolvePhase,
+                        AverageLevel = averageLevel,
                         AverageCalculatedLevel = s.AverageLevel,
                         AverageSkillLevel = Math.Round(s.AverageSkillLevel, 2),
                         AverageSpecializeLevel = s.AverageSpecializeLevel.Select(x => Math.Round(x, 2)).ToList(),

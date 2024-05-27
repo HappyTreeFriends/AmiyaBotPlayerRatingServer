@@ -1,6 +1,4 @@
-﻿using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
+﻿using System.Security.Claims;
 using AmiyaBotPlayerRatingServer.Controllers.Policy;
 using AmiyaBotPlayerRatingServer.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json;
 using OpenIddict.Validation.AspNetCore;
-using static AmiyaBotPlayerRatingServer.Controllers.SKLandControllers.SKLandCredentialController;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
@@ -18,14 +15,17 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class SKLandBoxController : ControllerBase
+    public class SKLandBoxController(PlayerRatingDatabaseContext context) : ControllerBase
     {
-        private readonly PlayerRatingDatabaseContext _context;
-
-        public SKLandBoxController(PlayerRatingDatabaseContext context)
+#pragma warning disable CS8618
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
+        public class SKLandGetBoxModel
         {
-            _context = context;
+            public string PartList { get; set; }
         }
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
+#pragma warning restore CS8618
+
 
         [HttpGet("GetBoxByCredential/{credentialId}")]
         [Authorize(Policy = CredentialOwnerPolicy.Name)]
@@ -40,7 +40,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             }
 
             // 从数据库中找到对应的CharacterBox
-            var characterBox = await _context.SKLandCharacterBoxes
+            var characterBox = await context.SKLandCharacterBoxes
                 .Include(box => box.Credential)  // Include the related SKLandCredential
                 .AsNoTracking()
                 .FirstOrDefaultAsync(box => box.CredentialId == credentialId);
@@ -57,12 +57,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
                 characterBox.CharacterBoxJson
             });
         }
-
-        public class SKLandGetBoxModel
-        {
-            public string PartList { get; set; }
-        }
-
+        
         [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
         [HttpPost("GetBox")]
         public async Task<IActionResult> GetBox([FromBody] SKLandGetBoxModel model)
@@ -83,7 +78,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
             }
 
             // 从数据库中找到对应的CharacterBox
-            var characterBox = await _context.SKLandCharacterBoxes
+            var characterBox = await context.SKLandCharacterBoxes
                 .Where(b => b.CredentialId == credClaimValue).OrderByDescending(b => b.RefreshedAt)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
@@ -105,11 +100,11 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
                 {
                     //不允许直接访问Status块
                     var tempStatusBlock = new Dictionary<string, object>();
-                    var statusData = infoData?["status"];
+                    var statusData = infoData["status"];
 
                     //加密Name
                     string pattern = @"^(.*)#(\d*)$";
-                    var playerName = statusData["name"]?.ToString() ?? "海猫络合物#0000";
+                    var playerName = statusData?["name"]?.ToString() ?? "海猫络合物#0000";
                     string result = Regex.Replace(playerName, pattern, m =>
                     {
                         string preHash = m.Groups[1].Value;
@@ -123,18 +118,18 @@ namespace AmiyaBotPlayerRatingServer.Controllers.SKLandControllers
                     tempStatusBlock.Add("name", result);
                     tempStatusBlock.Add("nameEncrypted", true);
 
-                    tempStatusBlock.Add("level", statusData["level"]);
-                    tempStatusBlock.Add("avatar", statusData["avatar"]);
-                    tempStatusBlock.Add("mainStageProgress", statusData["mainStageProgress"]);
-                    tempStatusBlock.Add("secretary", statusData["secretary"]);
+                    tempStatusBlock.Add("level", statusData?["level"]!);
+                    tempStatusBlock.Add("avatar", statusData?["avatar"]!);
+                    tempStatusBlock.Add("mainStageProgress", statusData?["mainStageProgress"]!);
+                    tempStatusBlock.Add("secretary", statusData?["secretary"]!);
 
                     retObject["status"] = tempStatusBlock;
                 }
                 else
                 {
-                    if (infoData.ContainsKey(boxPart))
+                    if (infoData.TryGetValue(boxPart, out var value))
                     {
-                        retObject[boxPart] = infoData[boxPart];
+                        retObject[boxPart] = value;
                     }
                 }
             }

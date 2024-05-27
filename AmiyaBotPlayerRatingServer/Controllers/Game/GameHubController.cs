@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.GameLogic;
-using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,43 +11,42 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
 {
     [ApiController]
     [Route("api/gameHub")]
-    public class GameHubController : ControllerBase
+    public class GameHubController(
+        PlayerRatingDatabaseContext dbContext,
+        IConfiguration configuration,
+        GameManager gameManager)
+        : ControllerBase
     {
-
-        private readonly PlayerRatingDatabaseContext _dbContext;
-        private readonly IConfiguration _configuration;
-        private readonly GameManager _gameManager;
-
-
-        public GameHubController(PlayerRatingDatabaseContext dbContext,IConfiguration configuration,GameManager gameManager)
-        {
-            _dbContext = dbContext;
-            _configuration = configuration;
-            _gameManager = gameManager;
-        }
-
+#pragma warning disable CS8618
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
         public class SendNotificationModel
         {
             public string Message { get; set; }
             public DateTime ExpiredAt { get; set; }
         }
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
+#pragma warning restore CS8618
 
         [Authorize(Roles = "管理员账户")]
         [HttpPost("sendNotificationToAll")]
-        public Task SendNotificationToAll([FromBody] SendNotificationModel model)
+        public async Task<IActionResult> SendNotificationToAll([FromBody] SendNotificationModel model)
         {
-            _gameManager.Notifications.Add(new SystemNotification
+            var not = new SystemNotification
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Message = model.Message,
                 ExpiredAt = model.ExpiredAt
-            });
-            return Task.CompletedTask;
+            };
+
+            dbContext.SystemNotifications.Add(not);
+            await dbContext.SaveChangesAsync();
+
+            return Ok();
         }
 
         private object GetGameReturnObj(GameLogic.Game game)
         {
-            var creator = _dbContext.Users.Find(game.CreatorId);
+            var creator = dbContext.Users.Find(game.CreatorId);
 
             return new
             {
@@ -74,7 +73,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpGet("{gameId}")]
         public async Task<IActionResult> GetGame(String gameId)
         {
-            var game = await _gameManager.GetGameAsync(gameId);
+            var game = await gameManager.GetGameAsync(gameId);
             if (game == null)
             {
                 return NotFound();
@@ -87,12 +86,14 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpGet]
         public async Task<IActionResult> ListGame()
         {
-            var allGameInfos = _dbContext.GameInfos.Where(g=>g.IsClosed==false).ToList();
+            var allGameInfos = dbContext.GameInfos.Where(g=>g.IsClosed==false).ToList();
             var allGames = new List<GameLogic.Game>();
             foreach (var gameInfo in allGameInfos)
             {
-                var game = await _gameManager.GetGameAsync(gameInfo.Id);
-                if (!game.IsPrivate&&!game.IsCompleted)
+                var game = await gameManager.GetGameAsync(gameInfo.Id);
+                if(game==null) continue;
+
+                if (game is { IsPrivate: false, IsCompleted: false })
                 {
                     allGames.Add(game);
                 }
@@ -105,7 +106,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpGet("{gameId}/url")]
         public async Task<IActionResult> GenerateShortenUrl(string gameId)
         {
-            var game = await _gameManager.GetGameAsync(gameId);
+            var game = await gameManager.GetGameAsync(gameId);
             if (game == null)
             {
                 return NotFound();
@@ -114,7 +115,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             var shortenUrl = "https://game.anonymous-test.top/#/regular-home/room-waiting/" + game.Id;
 
             // HTTP Access
-            var kuttUrl = _configuration["Kutt:Url"];
+            var kuttUrl = configuration["Kutt:Url"];
             var httpClient = new HttpClient();
             var request = new HttpRequestMessage(HttpMethod.Post, "https://"+kuttUrl+"/api/v2/links");
             request.Content = new StringContent(JsonConvert.SerializeObject(new
@@ -123,17 +124,17 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
                 expire_in = "1 days",
                 reuse = true
             }), Encoding.UTF8, "application/json");
-            request.Headers.Add("X-API-KEY", _configuration["Kutt:ApiKey"]);
+            request.Headers.Add("X-API-KEY", configuration["Kutt:ApiKey"]);
 
             var response = await httpClient.SendAsync(request);
             var responseContent = await response.Content.ReadAsStringAsync();
             var responseJson = JsonConvert.DeserializeObject<dynamic>(responseContent);
 
-            //{ "id":"a0d9d575-a405-4ee5-a3ee-9998ee6adda7","address":"YCPD0E","description":null,"banned":false,"password":false,"expire_in":"2024-05-26T04:46:21.375Z","target":"https://game.anonymous-test.top/#/regular-home/room-waiting/7e9b9930-8934-40c7-ba7c-7de805c8f571","visit_count":0,"created_at":"2024-05-25T04:46:22.280Z","updated_at":"2024-05-25T04:46:22.280Z","link":"https://kutt.anonymous-test.top/YCPD0E"}
+            //{ "id":"a0d9d575-a405-4ee5-a3ee-9998ee6adda7","address":"ShortCode","description":null,"banned":false,"password":false,"expire_in":"2024-05-26T04:46:21.375Z","target":"https://game.anonymous-test.top/#/regular-home/room-waiting/7e9b9930-8934-40c7-ba7c-7de805c8f571","visit_count":0,"created_at":"2024-05-25T04:46:22.280Z","updated_at":"2024-05-25T04:46:22.280Z","link":"https://kutt.anonymous-test.top/YCPD0E"}
 
-            var links = (responseJson.link)?.ToString();
+            var links = responseJson?.link?.ToString();
 
-            links = links.Replace("kutt.anonymous-test.top", "amiya.cn");
+            links = links?.Replace("kutt.anonymous-test.top", "amiya.cn");
 
             return Ok(new
             {
@@ -145,13 +146,13 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         [HttpGet("player/{userId}/statistics")]
         public async Task<IActionResult> GetPlayerStatistics(string userId)
         {
-            var user = await _dbContext.Users.FindAsync(userId);
+            var user = await dbContext.Users.FindAsync(userId);
             if (user == null)
             {
                 return NotFound();
             }
             
-            var stat = _dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(s => s.UserId == userId);
+            var stat = dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(s => s.UserId == userId);
             if (stat == null)
             {
                 return Ok(new

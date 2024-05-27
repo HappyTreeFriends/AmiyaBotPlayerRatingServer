@@ -28,49 +28,43 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Policy
 
         }
 
-        public class CredentialOwnerHandler : AuthorizationHandler<CredentialOwnerRequirement>
+        public class CredentialOwnerHandler(
+            PlayerRatingDatabaseContext context,
+            IHttpContextAccessor httpContextAccessor)
+            : AuthorizationHandler<CredentialOwnerRequirement>
         {
-            private readonly PlayerRatingDatabaseContext _context;
-            private readonly IHttpContextAccessor _httpContextAccessor;
-
-            public CredentialOwnerHandler(PlayerRatingDatabaseContext context, IHttpContextAccessor httpContextAccessor)
-            {
-                _context = context;
-                _httpContextAccessor = httpContextAccessor;
-            }
-
-            protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, CredentialOwnerRequirement requirement)
+            protected override async Task HandleRequirementAsync(AuthorizationHandlerContext authContext, CredentialOwnerRequirement requirement)
             {
                 // 从context获取当前用户ID
-                var currentUserId = context.User.FindFirst(ClaimTypes.Name)?.Value;
+                var currentUserId = authContext.User.FindFirst(ClaimTypes.Name)?.Value;
 
                 if (string.IsNullOrEmpty(currentUserId))
                 {
-                    context.Fail();
+                    authContext.Fail();
                     return;
                 }
 
                 // 从HttpContext获取目标Credential ID
-                var targetCredentialId = _httpContextAccessor.HttpContext?.Request.RouteValues["credentialId"] as string;
+                var targetCredentialId = httpContextAccessor.HttpContext?.Request.RouteValues["credentialId"] as string;
 
                 if (string.IsNullOrEmpty(targetCredentialId))
                 {
-                    context.Fail();
+                    authContext.Fail();
                     return;
                 }
 
                 // 查询数据库以确认currentUserId是targetCredentialId的拥有者
-                var targetCredential = await _context.Set<SKLandCredential>()
+                var targetCredential = await context.Set<SKLandCredential>()
                     .Where(c => c.Id == targetCredentialId && c.UserId == currentUserId)
                     .FirstOrDefaultAsync();
 
                 if (targetCredential != null)
                 {
-                    context.Succeed(requirement);
+                    authContext.Succeed(requirement);
                 }
                 else
                 {
-                    context.Fail();
+                    authContext.Fail();
                 }
             }
         }

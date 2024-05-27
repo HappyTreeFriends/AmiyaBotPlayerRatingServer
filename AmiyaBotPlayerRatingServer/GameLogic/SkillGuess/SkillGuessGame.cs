@@ -1,5 +1,9 @@
 ﻿using System.Collections.Concurrent;
-
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedMember.Global
+// ReSharper disable PropertyCanBeMadeInitOnly.Global
+#pragma warning disable CS8618
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 {
     public class SkillGuessGame:Game
@@ -23,7 +27,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         public List<Answer> AnswerList { get; set; }
 
-        public ConcurrentDictionary<String, double> PlayerScore { get; set; } = new ConcurrentDictionary<string, double>();
+        public ConcurrentDictionary<String, double> PlayerScore { get; set; } = new ();
 
 
         public class PlayerMove
@@ -34,6 +38,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
             public bool IsCorrect { get; set; }
         }
 
-        public List<PlayerMove> PlayerMoveList { get; set; } = new List<PlayerMove>();
+        public List<PlayerMove> PlayerMoveList { get; set; } = new ();
     }
 }

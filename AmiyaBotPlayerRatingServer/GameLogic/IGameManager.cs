@@ -1,6 +1,8 @@
-﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+﻿using System.Diagnostics.CodeAnalysis;
+using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 using AmiyaBotPlayerRatingServer.RealtimeHubs;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 using static AmiyaBotPlayerRatingServer.GameLogic.Game;
@@ -19,12 +21,15 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         public Task<double> GetScore(Game game, string player);
 
+#pragma warning disable CS8618
+        [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")]
         public class RequestHintOrGiveUpResult
         {
             public object Payload { get; set; }
             public bool HintTriggered { get; set; }
             public bool GiveUpTriggered { get; set; }
         }
+#pragma warning restore CS8618
 
         public Task<RequestHintOrGiveUpResult> GiveUp(Game game, string appUserId);
         public Task<RequestHintOrGiveUpResult> RequestHint(Game game, string appUserId);
