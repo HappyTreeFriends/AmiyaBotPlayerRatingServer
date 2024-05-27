@@ -690,7 +690,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         [UsedImplicitly]
         public async Task GetNotification()
         {
-            var validNodes = _dbContext.SystemNotifications.Where(n => n.ExpiredAt >= DateTime.Now);
+            var validNodes = _dbContext.SystemNotifications.Where(n => n.ExpiredAt >= DateTime.UtcNow);
             foreach (var notification in validNodes)
             {
                 if (notification.ExpiredAt > DateTime.Now)
