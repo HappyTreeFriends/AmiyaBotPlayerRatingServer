@@ -93,7 +93,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         public static async Task<SchulteGridGame?> BuildContinuousMode(ArknightsMemoryCache arknightsMemoryCache)
         {
-            var namesDict = arknightsMemoryCache.GetJson("schulte_grid_names_dict.json")!.ToObject<Dictionary<string, Dictionary<string, Object>>>();
+            var namesDict = arknightsMemoryCache.GetJson("schulte_grid_names_dict.json")!.ToObject<Dictionary<string, JToken>>();
 
             if (namesDict == null)
             {
@@ -102,9 +102,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
             var wordType = "skill";
             var namesDictObject = namesDict[wordType];
-            var wordsMap = ((Dictionary<string, string>)namesDictObject["data"]);
+            var wordsMap = namesDictObject["data"]!.ToObject<Dictionary<string, string>>();
             var words = wordsMap.Keys.ToList();
-            var blackList = (List<string>)namesDictObject["blackList"];
+            var blackList = namesDictObject["blackList"]!.ToObject<List<string>>();
             
             var (puzzle,answer) = await SchulteGridContinuousGameBuilder.BuildPuzzleContinuousMode(10, 10, words, blackList,3);
 
