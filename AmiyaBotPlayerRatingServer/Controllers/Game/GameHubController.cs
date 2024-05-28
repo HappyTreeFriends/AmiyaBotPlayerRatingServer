@@ -65,7 +65,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
                 game.IsClosed,
                 game.CloseTime,
                 game.IsPrivate,
-                game.PlayerList
+                game.PlayerList,
+                game.RoomSettings
             };
         }
 
