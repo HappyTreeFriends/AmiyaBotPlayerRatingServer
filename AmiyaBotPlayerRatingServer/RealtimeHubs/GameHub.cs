@@ -99,6 +99,8 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
                 game.IsClosed,
                 game.CloseTime,
+
+                game.RoomSettings
             };
         }
 
@@ -202,6 +204,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             game.IsPrivate = paramObj["IsPrivate"].ToObject<bool>();
+            game.RoomSettings = paramObj;
             game.CreatorId= appUser.Id;
             game.CreatorConnectionId = Context.ConnectionId;
             game.CreateTime = DateTime.Now;

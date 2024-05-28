@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RedLockNet;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
@@ -28,6 +29,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public DateTime? CompleteTime { get; set; }
         public bool IsClosed { get; set; }
         public DateTime? CloseTime { get; set; }
+
+        public Dictionary<String,JToken> RoomSettings { get; set; }
 
         public ConcurrentDictionary<String, String> PlayerList { get; set; } = new();
 
