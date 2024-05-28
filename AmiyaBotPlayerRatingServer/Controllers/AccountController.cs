@@ -40,10 +40,10 @@ public class AccountController(
     }
     public class RegisterModel
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string? Email { get; set; }
+        public string? Password { get; set; }
         public string Nickname { get; set; }
-        public string ClaimedRole { get; set; }
+        public string? ClaimedRole { get; set; }
     }
     public class LoginModel
     {
@@ -57,9 +57,9 @@ public class AccountController(
     }
     public class ChangeUserInfoModel
     {
-        public string Nickname { get; set; }
-        public string Avatar { get; set; }
-        public string AvatarType { get; set; }
+        public string? Nickname { get; set; }
+        public string? Avatar { get; set; }
+        public string? AvatarType { get; set; }
     }
     public class CreateClientModel
     {
