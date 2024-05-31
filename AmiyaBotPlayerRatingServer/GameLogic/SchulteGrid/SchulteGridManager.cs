@@ -258,10 +258,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             {
                 return Task.FromResult<object>(new { });
             }
-
+            
             return new
             {
                 AnswerList = game.AnswerList.Where(a=>a.Completed),
+                RemainingAnswers = game.IsCompleted ? game.AnswerList.Where(a => !a.Completed) : [],
                 Grid = game.Grid,
             };
         }
