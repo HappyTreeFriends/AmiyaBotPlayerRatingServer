@@ -208,13 +208,13 @@ public class AccountController(
         var user = await userManager.FindByEmailAsync(model.Email);
         if (user == null)
         {
-            return BadRequest(new { message = "用户名或密码错误" });
+            return BadRequest(new { message = "邮箱或密码错误" });
         }
 
         var result = await userManager.CheckPasswordAsync(user, model.Password);
         if (!result)
         {
-            return BadRequest(new { message = "用户名或密码错误" });
+            return BadRequest(new { message = "邮箱或密码错误" });
         }
 
         var userRoles = await userManager.GetRolesAsync(user);  // 获取用户角色
