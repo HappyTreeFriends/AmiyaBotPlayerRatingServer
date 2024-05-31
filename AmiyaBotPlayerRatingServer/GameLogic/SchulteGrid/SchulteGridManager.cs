@@ -1,6 +1,8 @@
 ﻿using System.Data;
+using System.Text.RegularExpressions;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
+using AmiyaBotPlayerRatingServer.Utility;
 using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
@@ -23,6 +25,22 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         public async Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = await SchulteGridGameData.BuildContinuousMode(memoryCache);
+
+            var charMaps = memoryCache.GetJson("character_table_full.json");
+            var charSkillMap = charMaps?.JMESPathQuery("map(&{\"charId\":@.charId, \"name\":@.name, \"skills\":map(&{\"skillId\":@.skillId,\"skillName\":@.skillData.levels[0].name},to_array(@.skills))},values(@))");
+
+            foreach (var gridAnswer in game.AnswerList)
+            {
+                var charaName = gridAnswer.CharacterName;
+                var charaId = charSkillMap?.FirstOrDefault(x => x["name"]?.ToString() == charaName)?["charId"]
+                    ?.ToString();
+                var skillName = gridAnswer.SkillName;
+                var skillId = charSkillMap?.FirstOrDefault(x => x["name"]?.ToString() == charaName)?["skills"]?
+                    .FirstOrDefault(x => Regex.Replace(x["skillName"]?.ToString()??"", @"[^\w]", "") == skillName)?["skillId"]?.ToString();
+                gridAnswer.CharacterId = charaId!;
+                gridAnswer.SkillId = skillId!;
+            }
+
             return game;
         }
 

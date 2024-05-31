@@ -68,7 +68,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 LoadJson(characterNames, "character_names.json");
 
                 characterTable = newCharacterTable;
-
+                
                 var skillTable = JsonConvert.DeserializeObject<JToken>(GetText("skill_table.json")!) as JObject;
                 var skillDict = new Dictionary<String, JToken>();
                 foreach (var skillObj in skillTable!)
