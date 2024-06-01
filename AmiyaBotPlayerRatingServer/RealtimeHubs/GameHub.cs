@@ -349,6 +349,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 },
                 Game = FormatGame(game),
             }));
+
+            //如果房主离开了，就关闭房间
+            if (game.CreatorId == appUser.Id)
+            {
+                await CloseGame(gameId);
+            }
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
