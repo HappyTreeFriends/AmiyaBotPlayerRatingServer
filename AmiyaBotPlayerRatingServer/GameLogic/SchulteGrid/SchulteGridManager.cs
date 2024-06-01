@@ -26,6 +26,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         {
             var game = await SchulteGridGameData.BuildContinuousMode(memoryCache);
 
+            if(game == null)
+            {
+                return null;
+            }
+
             var charMaps = memoryCache.GetJson("character_table_full.json");
             var charSkillMap = charMaps?.JMESPathQuery("map(&{\"charId\":@.charId, \"name\":@.name, \"skills\":map(&{\"skillId\":@.skillId,\"skillName\":@.skillData.levels[0].name},to_array(@.skills))},values(@))");
 

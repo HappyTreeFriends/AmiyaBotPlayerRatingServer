@@ -281,7 +281,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
         }
 
 
-        public Task<object> GetGameCompletePayload(Game rawGame)
+        public Task<object> GetCompleteGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
 
