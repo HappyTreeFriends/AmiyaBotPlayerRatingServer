@@ -392,6 +392,36 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             await Clients.Group(gameId).SendAsync("GameClosed", JsonConvert.SerializeObject(ret));
         }
 
+        //放弃整个游戏
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
+        public async Task CompleteGame(string gameId)
+        {
+            await using var game = await ValidateGame(gameId, false);
+            var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
+
+            if (game.CreatorId != appUser.Id)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            if (game.IsClosed == true)
+            {
+                return;
+            }
+
+            var ret = await manager.GetCompleteGamePayload(game);
+
+            await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
+            {
+                Game = FormatGame(game),
+                Payload = ret,
+            }));
+
+            await _gameManager.SaveGameAsync(game);
+        }
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [UsedImplicitly]
         public async Task StartGame(string gameId)
@@ -694,6 +724,9 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
         }
+
+        
+
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [UsedImplicitly]

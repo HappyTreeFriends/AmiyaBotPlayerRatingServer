@@ -33,5 +33,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         public Task<RequestHintOrGiveUpResult> GiveUp(Game game, string appUserId);
         public Task<RequestHintOrGiveUpResult> RequestHint(Game game, string appUserId);
+        public Task<object> GetCompleteGamePayload(Game game);
     }
 }

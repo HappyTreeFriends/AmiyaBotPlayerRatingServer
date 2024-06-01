@@ -176,6 +176,33 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         }
 
+        public Task<object> GetCompleteGamePayload(Game rawGame)
+        {
+            var game = rawGame as SchulteGridGame;
+
+            if (game == null)
+            {
+                return Task.FromResult<object>(new { });
+            }
+
+            if (!game.IsCompleted)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
+                CreateStatistics(game);
+            }
+            
+            return Task.FromResult<object>(new
+            {
+                GameId = game.Id,
+                RemainingAnswers = game.AnswerList.Where(a => a.Completed == false),
+                IsCompleted = game.IsCompleted,
+                CompleteTime = game.CompleteTime,
+                IsClosed = true,
+                CloseTime = game.CloseTime
+            });
+        }
+
         public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SchulteGridGame;
@@ -189,10 +216,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             {
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
+                CreateStatistics(game);
             }
-
-            CreateStatistics(game);
-
+            
             return Task.FromResult<object>(new { GameId= game.Id, 
                 RemainingAnswers = game.AnswerList.Where(a=>a.Completed==false),
                 IsCompleted = game.IsCompleted,

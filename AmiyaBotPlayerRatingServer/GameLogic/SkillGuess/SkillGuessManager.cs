@@ -280,6 +280,31 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkillGuess
 
         }
 
+
+        public Task<object> GetGameCompletePayload(Game rawGame)
+        {
+            var game = rawGame as SkillGuessGame;
+
+            if (game == null)
+            {
+                return Task.FromResult(new object());
+            }
+
+            if (!game.IsCompleted)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
+
+                CreateStatistics(game);
+            }
+
+            return Task.FromResult<object>(new
+            {
+                GameId = game.Id,
+                RemainingAnswers = game.AnswerList.Where(a => a.Completed == false)
+            });
+        }
+
         public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkillGuessGame;
