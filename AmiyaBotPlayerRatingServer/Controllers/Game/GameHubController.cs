@@ -5,6 +5,7 @@ using AmiyaBotPlayerRatingServer.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 namespace AmiyaBotPlayerRatingServer.Controllers.Game
@@ -178,6 +179,18 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             });
         }
 
+        public async Task<IActionResult> GetServerStatistics()
+        {
+            var totalPlaying =await dbContext.GameInfos.Where(c => c.IsClosed != true).CountAsync();
+            var totalGames = await dbContext.GameInfos.CountAsync();
+            var validPlayers = await dbContext.ApplicationUserMinigameStatistics.CountAsync();
 
+            return Ok(new
+            {
+                GamesPlaying = totalPlaying,
+                GamesTotal = totalGames,
+                PlayersTotal = validPlayers
+            });
+        }
     }
 }
