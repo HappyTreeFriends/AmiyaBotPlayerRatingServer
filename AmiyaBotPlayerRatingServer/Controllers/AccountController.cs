@@ -16,6 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
 using OpenIddict.Abstractions;
 using OpenIddict.Core;
+using SixLabors.ImageSharp.PixelFormats;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace AmiyaBotPlayerRatingServer.Controllers;
@@ -44,6 +45,12 @@ public class AccountController(
         public string Password { get; set; }
         public string Nickname { get; set; }
         public string? ClaimedRole { get; set; }
+    }
+    public class QuickRegisterModel
+    {
+        public string Nickname { get; set; }
+        public string? Avatar { get; set; }
+        public string? AvatarType { get; set; }
     }
     public class LoginModel
     {
@@ -124,30 +131,16 @@ public class AccountController(
 
     [AllowAnonymous]
     [HttpPost("quickRegister")]
-    public async Task<IActionResult> QuickRegister([FromBody] RegisterModel model)
+    public async Task<IActionResult> QuickRegister([FromBody] QuickRegisterModel model)
     {
         await using var transaction = await dbContext.Database.BeginTransactionAsync(); // 假设_context是你的数据库上下文
 
-        if (!String.IsNullOrWhiteSpace(model.Password))
-        {
-            if (!IsPasswordComplex(model.Password, 2))
-            {
-                return BadRequest(new { message = "密码不符合要求，至少需要包含大写字母、小写字母、数字和特殊符号（!@#$%^&*()-+）中的2种。" });
-            }
-        }
-        else
-        {
-            // 生成一个随机复杂密码
-            model.Password = CryptoHelper.GeneratePassword(16);
-        }
+        var password = CryptoHelper.GeneratePassword(16);
+        
+        var email = Guid.NewGuid().ToString("N") + "@amiyabot.com";
 
-        if (String.IsNullOrWhiteSpace(model.Email))
-        {
-            model.Email = Guid.NewGuid().ToString("N") + "@amiyabot.com";
-        }
-
-        var user = new ApplicationUser { UserName = model.Email, Email = model.Email, Nickname = model.Nickname };
-        var result = await userManager.CreateAsync(user, model.Password);
+        var user = new ApplicationUser { UserName = email, Email = email, Nickname = model.Nickname };
+        var result = await userManager.CreateAsync(user, password);
 
         if (!result.Succeeded)
         {
@@ -155,7 +148,7 @@ public class AccountController(
             return BadRequest(result.Errors);
         }
 
-        var role = model.ClaimedRole == "开发者账户" ? "开发者账户" : "普通账户";
+        var role = "普通账户";
         var addToRoleResult = await userManager.AddToRoleAsync(user, role);
 
         if (!addToRoleResult.Succeeded)
