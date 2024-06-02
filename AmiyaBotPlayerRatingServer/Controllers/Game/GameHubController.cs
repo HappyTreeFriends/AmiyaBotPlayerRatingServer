@@ -179,6 +179,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             });
         }
 
+        [AllowAnonymous]
+        [HttpGet("server-statistics")]
         public async Task<IActionResult> GetServerStatistics()
         {
             var totalPlaying =await dbContext.GameInfos.Where(c => c.IsClosed != true).CountAsync();
