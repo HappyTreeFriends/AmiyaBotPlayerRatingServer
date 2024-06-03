@@ -91,6 +91,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 try
                 {
                     InitializeAssets();
+                    UpdateCache();
                 }
                 catch (Exception ex)
                 {
@@ -99,9 +100,6 @@ namespace AmiyaBotPlayerRatingServer.Data
 
             });
 
-            //不可以用Hangfire，因为每个服务器都会有一个实例
-            _ = new Timer(UpdateCache, null, TimeSpan.Zero, TimeSpan.FromHours(1));
-            UpdateCache(null);
         }
 
         private void InitializeAssets()
@@ -183,7 +181,7 @@ namespace AmiyaBotPlayerRatingServer.Data
             ExtractGameData();
         }
 
-        private void UpdateCache(object? state)
+        private void UpdateCache()
         {
             //遍历gamedata/excel目录下的所有json文件
             Directory.GetFiles(Path.Combine(_directoryPath, "gamedata/excel")).ToList().ForEach(file =>
@@ -195,7 +193,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 }
             });
 
-            Directory.GetFiles(Path.Combine(_directoryPath, "gamedata/indexes")).ToList().ForEach(file =>
+            Directory.GetFiles(Path.Combine(_directoryPath, "indexes")).ToList().ForEach(file =>
             {
                 var fileName = Path.GetFileName(file);
                 if (fileName.EndsWith(".json"))
