@@ -69,5 +69,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
         {
             throw new NotImplementedException();
         }
+
+        public Task<object> GetCompleteGamePayload(Game game)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
