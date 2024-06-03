@@ -6,3 +6,5 @@
 /*.csproj.user
 *.sln.DotSettings.*
 appsettings.*.json
+
+/AmiyaBotPlayerRatingServer/Resources/amiya-bot-assets/*

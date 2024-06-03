@@ -66,6 +66,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             try
             {
                 memoryCache.UpdateAssets();
+                memoryCache.UpdateCache();
             }
             catch (Exception e)
             {
