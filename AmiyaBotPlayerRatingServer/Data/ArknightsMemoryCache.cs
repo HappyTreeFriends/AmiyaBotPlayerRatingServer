@@ -112,6 +112,7 @@ namespace AmiyaBotPlayerRatingServer.Data
 
             if (!Directory.Exists(_directoryPath))
             {
+                //因为目标文件夹是NFSMount,因此不会有需要创建的情况,但是还是留着.
                 Directory.CreateDirectory(_directoryPath);
                 CloneRepo();
                 ExtractGameData();
@@ -120,8 +121,7 @@ namespace AmiyaBotPlayerRatingServer.Data
             {
                 if (!IsGitRepo())
                 {
-                    Directory.Delete(_directoryPath, true);
-                    Directory.CreateDirectory(_directoryPath);
+                    CleanDirectory(_directoryPath);
                     CloneRepo();
                 }
                 else
@@ -141,12 +141,17 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         private void PullRepo()
         {
-            ExecuteShellCommand($"cd {_directoryPath} && git pull");
+            ExecuteShellCommand($"cd {_directoryPath} && git fetch origin && git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)");
         }
 
         private bool IsGitRepo()
         {
             return Directory.Exists(Path.Combine(_directoryPath, ".git"));
+        }
+
+        private void CleanDirectory(string directoryPath)
+        {
+            ExecuteShellCommand($"rm -rf {_directoryPath}/*");
         }
 
         private void ExtractGameData()
