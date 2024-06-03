@@ -258,6 +258,9 @@ using (var scope = app.Services.CreateScope())
         recurringJobManager.AddOrUpdate<GameManagerCleanService>(
             "GameManagerCleanService", service => service.Clean(), Cron.Hourly);
     }
+
+    //初始化明日方舟游戏数据
+    _ = scope.ServiceProvider.GetRequiredService<ArknightsMemoryCache>();
 }
 
 app.AddSystemRoleAsync();

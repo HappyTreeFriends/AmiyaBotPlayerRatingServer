@@ -130,6 +130,8 @@ namespace AmiyaBotPlayerRatingServer.Data
                 }
                 ExtractGameData();
             }
+
+            _logger.LogInformation("InitializeAssets Completed");
         }
 
         private void CloneRepo()

@@ -13,16 +13,6 @@ spec:
       labels:
         app: amiya-bot-player-rating-server
     spec:
-      # 不允许在位于阿里云的节点执行，不然io操作太卡了
-      affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: location
-                  operator: NotIn
-                  values:
-                  - aliyun
       containers:
         - command:
             - dotnet
@@ -55,11 +45,19 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /app/Resources/amiya-bot-assets
+              name: amiya-bot-assets
           resources:
             requests:
               cpu: 250m
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
+      volumes:
+        - name: amiya-bot-assets
+          nfs:
+            server: 192.168.31.25
+            path: /mnt/raid1-pool1/amiya-bot/RatingServer/Assets
       imagePullSecrets:
         - name: harbor.hsyhhssyy.net
