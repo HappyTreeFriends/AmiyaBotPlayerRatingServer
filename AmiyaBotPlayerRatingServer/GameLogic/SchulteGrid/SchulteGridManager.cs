@@ -1,6 +1,8 @@
 ﻿using System.Data;
+using System.Text.RegularExpressions;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
+using AmiyaBotPlayerRatingServer.Utility;
 using Newtonsoft.Json.Linq;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
@@ -23,6 +25,27 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
         public async Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
         {
             var game = await SchulteGridGameData.BuildContinuousMode(memoryCache);
+
+            if(game == null)
+            {
+                return null;
+            }
+
+            var charMaps = memoryCache.GetJson("character_table_full.json");
+            var charSkillMap = charMaps?.JMESPathQuery("map(&{\"charId\":@.charId, \"name\":@.name, \"skills\":map(&{\"skillId\":@.skillId,\"skillName\":@.skillData.levels[0].name},to_array(@.skills))},values(@))");
+
+            foreach (var gridAnswer in game.AnswerList)
+            {
+                var charaName = gridAnswer.CharacterName;
+                var charaId = charSkillMap?.FirstOrDefault(x => x["name"]?.ToString() == charaName)?["charId"]
+                    ?.ToString();
+                var skillName = gridAnswer.SkillName;
+                var skillId = charSkillMap?.FirstOrDefault(x => x["name"]?.ToString() == charaName)?["skills"]?
+                    .FirstOrDefault(x => Regex.Replace(x["skillName"]?.ToString()??"", @"[^\w]", "") == skillName)?["skillId"]?.ToString();
+                gridAnswer.CharacterId = charaId!;
+                gridAnswer.SkillId = skillId!;
+            }
+
             return game;
         }
 
@@ -158,6 +181,33 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         }
 
+        public Task<object> GetCompleteGamePayload(Game rawGame)
+        {
+            var game = rawGame as SchulteGridGame;
+
+            if (game == null)
+            {
+                return Task.FromResult<object>(new { });
+            }
+
+            if (!game.IsCompleted)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
+                CreateStatistics(game);
+            }
+            
+            return Task.FromResult<object>(new
+            {
+                GameId = game.Id,
+                RemainingAnswers = game.AnswerList.Where(a => a.Completed == false),
+                IsCompleted = game.IsCompleted,
+                CompleteTime = game.CompleteTime,
+                IsClosed = true,
+                CloseTime = game.CloseTime
+            });
+        }
+
         public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SchulteGridGame;
@@ -171,10 +221,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             {
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
+                CreateStatistics(game);
             }
-
-            CreateStatistics(game);
-
+            
             return Task.FromResult<object>(new { GameId= game.Id, 
                 RemainingAnswers = game.AnswerList.Where(a=>a.Completed==false),
                 IsCompleted = game.IsCompleted,
@@ -186,66 +235,72 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
 
         private void CreateStatistics(SchulteGridGame game)
         {
-                //统计第一名第二名和第三名
-                var playerScoreList = game.PlayerScore.ToList();
-                playerScoreList.Sort((a, b) => b.Value.CompareTo(a.Value));
+            //题目没有回答超过一半的游戏不计入统计
+            if (game.AnswerList.Count(a => a.Completed) < game.AnswerList.Count / 2)
+            {
+                return;
+            }
 
-                var firstPlace = playerScoreList.Count > 0 ? playerScoreList[0] : default;
+            //统计第一名第二名和第三名
+            var playerScoreList = game.PlayerScore.ToList();
+            playerScoreList.Sort((a, b) => b.Value.CompareTo(a.Value));
+
+            var firstPlace = playerScoreList.Count > 0 ? playerScoreList[0] : default;
             var secondPlace = playerScoreList.Count > 1 ? playerScoreList[1] : default;
-                var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
+            var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
 
-                //统计每个玩家的正确和错误次数
-                var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator).GroupBy(p => p.PlayerId)
-                    .Select(p => new
-                    {
-                        PlayerId = p.Key,
-                        CorrectCount = p.Count(c => c.IsCorrect),
-                        WrongCount = p.Count(c => !c.IsCorrect)
-                    }).ToList();
-
-                foreach (var pl in game.PlayerList)
+            //统计每个玩家的正确和错误次数
+            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator).GroupBy(p => p.PlayerId)
+                .Select(p => new
                 {
-                    var playerId = pl.Key;
+                    PlayerId = p.Key,
+                    CorrectCount = p.Count(c => c.IsCorrect),
+                    WrongCount = p.Count(c => !c.IsCorrect)
+                }).ToList();
 
-                    var playerSt =
-                        dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
-                    if (playerSt == null)
-                    {
-                        playerSt = new ApplicationUserMinigameStatistics()
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserId = playerId,
-                            TotalGamesPlayed = 0,
-                            TotalGamesFirstPlace = 0,
-                            TotalGamesSecondPlace = 0,
-                            TotalGamesThirdPlace = 0,
-                            TotalAnswersCorrect = 0,
-                            TotalAnswersWrong = 0
-                        };
-                        dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
-                    }
+            foreach (var pl in game.PlayerList)
+            {
+                var playerId = pl.Key;
 
-                    playerSt.TotalGamesPlayed++;
-                    playerSt.TotalAnswersCorrect +=
-                        playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.CorrectCount ?? 0;
-                    playerSt.TotalAnswersWrong +=
-                        playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.WrongCount ?? 0;
-
-                    if (firstPlace.Key == playerId)
+                var playerSt =
+                    dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
+                if (playerSt == null)
+                {
+                    playerSt = new ApplicationUserMinigameStatistics()
                     {
-                        playerSt.TotalGamesFirstPlace++;
-                    }
-                    else if (secondPlace.Key == playerId)
-                    {
-                        playerSt.TotalGamesSecondPlace++;
-                    }
-                    else if (thirdPlace.Key == playerId)
-                    {
-                        playerSt.TotalGamesThirdPlace++;
-                    }
-
-                    dbContext.SaveChanges();
+                        Id = Guid.NewGuid().ToString(),
+                        UserId = playerId,
+                        TotalGamesPlayed = 0,
+                        TotalGamesFirstPlace = 0,
+                        TotalGamesSecondPlace = 0,
+                        TotalGamesThirdPlace = 0,
+                        TotalAnswersCorrect = 0,
+                        TotalAnswersWrong = 0
+                    };
+                    dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
                 }
+
+                playerSt.TotalGamesPlayed++;
+                playerSt.TotalAnswersCorrect +=
+                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.CorrectCount ?? 0;
+                playerSt.TotalAnswersWrong +=
+                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.WrongCount ?? 0;
+
+                if (firstPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesFirstPlace++;
+                }
+                else if (secondPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesSecondPlace++;
+                }
+                else if (thirdPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesThirdPlace++;
+                }
+
+                dbContext.SaveChanges();
+            }
         }
 
         public async Task<object> GetGamePayload(Game rawGame)

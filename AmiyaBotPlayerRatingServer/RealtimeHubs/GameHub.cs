@@ -158,6 +158,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             await Groups.AddToGroupAsync(Context.ConnectionId, game.Id!);
             await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
             {
+                Message = "请注意，以Game开头的一系列字段如GameId和GameType，以及CreatorId与CreatorConnectionId均已废弃，请改为使用Game对象。",
                 GameId = game.Id,
                 GameType = game.GameType,
                 GameJoinCode = game.JoinCode,
@@ -349,6 +350,12 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 },
                 Game = FormatGame(game),
             }));
+
+            //如果房主离开了，就关闭房间
+            if (game.CreatorId == appUser.Id)
+            {
+                await CloseGame(gameId);
+            }
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -384,6 +391,36 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
             await Clients.Group(gameId).SendAsync("GameClosed", JsonConvert.SerializeObject(ret));
+        }
+
+        //放弃整个游戏
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
+        public async Task CompleteGame(string gameId)
+        {
+            await using var game = await ValidateGame(gameId, false);
+            var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
+
+            if (game.CreatorId != appUser.Id)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            if (game.IsClosed == true)
+            {
+                return;
+            }
+
+            var ret = await manager.GetCompleteGamePayload(game);
+
+            await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
+            {
+                Game = FormatGame(game),
+                Payload = ret,
+            }));
+
+            await _gameManager.SaveGameAsync(game);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -688,6 +725,9 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
         }
+
+        
+
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [UsedImplicitly]

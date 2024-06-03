@@ -32,8 +32,12 @@ namespace AmiyaBotPlayerRatingServer.Hangfire
                     continue;
                 }
 
-                if ((game.IsCompleted && (DateTime.Now - game.CompleteTime > new TimeSpan(0, 1, 0, 0)))
-                    || (game.IsStarted && (DateTime.Now - game.StartTime > new TimeSpan(1, 0, 0, 0))))
+                //关闭后一小时回收
+                //开始后六小时回收
+                //未开始两天后回收
+                if ((game.IsCompleted && (DateTime.Now - game.StartTime > new TimeSpan(0, 1, 0, 0)))
+                    || (game.IsStarted && (DateTime.Now - game.StartTime > new TimeSpan(0, 6, 0, 0)))
+                    || (DateTime.Now - game.CreateTime > new TimeSpan(2,0,0,0)))
                 {
                     await using var depGame = await _gameManager.GetGameAsync(info.Id,false);
                     if (depGame != null)

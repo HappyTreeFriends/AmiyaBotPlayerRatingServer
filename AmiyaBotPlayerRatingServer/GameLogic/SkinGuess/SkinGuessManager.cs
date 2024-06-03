@@ -291,6 +291,30 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         }
 
+        public Task<object> GetCompleteGamePayload(Game rawGame)
+        {
+            var game = rawGame as SkinGuessGame;
+            if (game == null)
+            {
+                throw new DataException("Game 类型不匹配.");
+            }
+
+            if (!game.IsCompleted)
+            {
+                game.IsCompleted = true;
+                game.CompleteTime = DateTime.Now;
+
+                CreateStatistics(game);
+            }
+
+
+            return Task.FromResult<object>(new
+            {
+                GameId = game.Id,
+                RemainingAnswers = game.AnswerList.Where(a => a.Completed == false)
+            });
+        }
+
         public Task<object> GetCloseGamePayload(Game rawGame)
         {
             var game = rawGame as SkinGuessGame;
