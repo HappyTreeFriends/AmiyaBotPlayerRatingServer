@@ -2,20 +2,171 @@
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace AmiyaBotPlayerRatingServer.Data
 {
     public class ArknightsMemoryCache
     {
-        private readonly IMemoryCache _cache;
+        private readonly string _directoryPath = "Resources/amiya-bot-assets";
+        private readonly string _gitRepoUrl = "https://gitee.com/amiya-bot/amiya-bot-assets.git";
+        private readonly string _zipFilePath = "Resources/amiya-bot-assets/gamedata.zip";
+        private readonly string _extractPath = "Resources/amiya-bot-assets/gamedata";
 
-        public ArknightsMemoryCache(IMemoryCache memoryCache)
+
+        public class ArknightsOperator
+        {
+        public Dictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
+
+        public string Id { get; set; } = string.Empty;
+        public Dictionary<string, object> Cv { get; set; } = new Dictionary<string, object>();
+
+        public string Type { get; set; } = string.Empty;
+        public List<string> Tags { get; set; } = new List<string>();
+        public string Range { get; set; } = string.Empty;
+        public int Rarity { get; set; } = 0;
+        public string Number { get; set; } = string.Empty;
+
+        public string Name { get; set; } = string.Empty;
+        public string EnName { get; set; } = string.Empty;
+        public string WikiName { get; set; } = string.Empty;
+        public string IndexName { get; set; } = string.Empty;
+        public string OriginName { get; set; } = string.Empty;
+
+        public string Classes { get; set; } = string.Empty;
+        public string ClassesSub { get; set; } = string.Empty;
+        public string ClassesCode { get; set; } = string.Empty;
+
+        public string Sex { get; set; } = string.Empty;
+        public string Race { get; set; } = string.Empty;
+        public string Drawer { get; set; } = string.Empty;
+        public string TeamId { get; set; } = string.Empty;
+        public string Team { get; set; } = string.Empty;
+        public string GroupId { get; set; } = string.Empty;
+        public string Group { get; set; } = string.Empty;
+        public string NationId { get; set; } = string.Empty;
+        public string Nation { get; set; } = string.Empty;
+        public string Birthday { get; set; } = string.Empty;
+
+        public string Profile { get; set; } = string.Empty;
+        public string Impression { get; set; } = string.Empty;
+        public string PotentialItem { get; set; } = string.Empty;
+
+        public bool Limit { get; set; } = false;
+        public bool Unavailable { get; set; } = false;
+        public bool IsRecruit { get; set; } = false;
+        public bool IsClassic { get; set; } = false;
+        public bool IsSp { get; set; } = false;
+
+        //public abstract Dictionary<string, string> Dict();
+        //public abstract Tuple<Dictionary<string, string>, Dictionary<string, string>> Detail();
+        //public abstract List<Dictionary<string, string>> Tokens();
+        //public abstract List<Dictionary<string, string>> Talents();
+        //public abstract List<Dictionary<string, string>> Potential();
+        //public abstract List<Dictionary<string, string>> EvolveCosts();
+        //public abstract Tuple<List<Dictionary<string, string>>, List<string>, List<Dictionary<string, string>>, Dictionary<string, List<Dictionary<string, string>>>> Skills();
+        //public abstract List<Dictionary<string, string>> BuildingSkills();
+        //public abstract List<Dictionary<string, string>> Voices();
+        //public abstract List<Dictionary<string, string>> Stories();
+        //public abstract List<Dictionary<string, string>> Skins();
+        //public abstract List<Dictionary<string, string>> Modules();
+    }
+        
+        private readonly IMemoryCache _cache;
+        private readonly ILogger<ArknightsMemoryCache> _logger;
+        private readonly CancellationToken cancellationToken = new CancellationToken();
+
+        public ArknightsMemoryCache(IMemoryCache memoryCache,ILogger<ArknightsMemoryCache> logger)
         {
             _cache = memoryCache;
+            _logger = logger;
+
+            Task.Run(() => InitializeAssets(), cancellationToken);
 
             //不可以用Hangfire，因为每个服务器都会有一个实例
             _ = new Timer(UpdateCache, null, TimeSpan.Zero, TimeSpan.FromHours(1));
             UpdateCache(null);
+        }
+
+        private void InitializeAssets()
+        {
+            //输出目录绝对路径
+            var dir = new DirectoryInfo(_directoryPath);
+            _logger.LogInformation($"Directory Path: {dir.FullName}");
+
+
+            if (!Directory.Exists(_directoryPath))
+            {
+                Directory.CreateDirectory(_directoryPath);
+                CloneRepo();
+                ExtractGameData();
+            }
+            else
+            {
+                if (!IsGitRepo())
+                {
+                    Directory.Delete(_directoryPath, true);
+                    Directory.CreateDirectory(_directoryPath);
+                    CloneRepo();
+                }
+                else
+                {
+                    PullRepo();
+                }
+                ExtractGameData();
+            }
+        }
+
+        private void CloneRepo()
+        {
+            ExecuteShellCommand($"git clone {_gitRepoUrl} {_directoryPath}");
+        }
+
+        private void PullRepo()
+        {
+            ExecuteShellCommand($"cd {_directoryPath} && git pull");
+        }
+
+        private bool IsGitRepo()
+        {
+            return Directory.Exists(Path.Combine(_directoryPath, ".git"));
+        }
+
+        private void ExtractGameData()
+        {
+            if (Directory.Exists(_extractPath))
+            {
+                Directory.Delete(_extractPath, true);
+            }
+            ZipFile.ExtractToDirectory(_zipFilePath, _extractPath);
+        }
+
+        private void ExecuteShellCommand(string command)
+        {
+            var processInfo = new ProcessStartInfo("bash", $"-c \"{command}\"")
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            using var process = new Process { StartInfo = processInfo };
+            process.Start();
+            process.WaitForExit();
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public void UpdateAssets()
+        {
+            PullRepo();
+            ExtractGameData();
         }
 
         private void UpdateCache(object? state)
