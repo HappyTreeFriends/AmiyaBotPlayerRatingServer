@@ -12,10 +12,10 @@ namespace AmiyaBotPlayerRatingServer.Data
     public class ArknightsMemoryCache
     {
         // abs path is /app/Resources
-        private readonly string _directoryPath = "Resources/amiya-bot-assets";
+        private readonly string _directoryPath = "Resources/amiya-bot-assets/repo";
         private readonly string _gitRepoUrl = "https://gitee.com/amiya-bot/amiya-bot-assets.git";
-        private readonly string _zipFilePath = "Resources/amiya-bot-assets/gamedata.zip";
-        private readonly string _extractPath = "Resources/amiya-bot-assets/gamedata";
+        private readonly string _zipFilePath = "Resources/amiya-bot-assets/repo/gamedata.zip";
+        private readonly string _extractPath = "Resources/amiya-bot-assets/repo/gamedata";
 
 
         public class ArknightsOperator
@@ -112,7 +112,6 @@ namespace AmiyaBotPlayerRatingServer.Data
 
             if (!Directory.Exists(_directoryPath))
             {
-                //因为目标文件夹是NFSMount,因此不会有需要创建的情况,但是还是留着.
                 Directory.CreateDirectory(_directoryPath);
                 CloneRepo();
                 ExtractGameData();

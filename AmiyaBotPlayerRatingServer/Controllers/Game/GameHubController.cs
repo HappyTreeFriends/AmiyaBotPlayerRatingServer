@@ -18,32 +18,6 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         GameManager gameManager)
         : ControllerBase
     {
-#pragma warning disable CS8618
-        // ReSharper disable UnusedAutoPropertyAccessor.Global
-        public class SendNotificationModel
-        {
-            public string Message { get; set; }
-            public DateTime ExpiredAt { get; set; }
-        }
-        // ReSharper restore UnusedAutoPropertyAccessor.Global
-#pragma warning restore CS8618
-
-        [Authorize(Roles = "管理员账户")]
-        [HttpPost("sendNotificationToAll")]
-        public async Task<IActionResult> SendNotificationToAll([FromBody] SendNotificationModel model)
-        {
-            var not = new SystemNotification
-            {
-                Id = Guid.NewGuid(),
-                Message = model.Message,
-                ExpiredAt = model.ExpiredAt
-            };
-
-            dbContext.SystemNotifications.Add(not);
-            await dbContext.SaveChangesAsync();
-
-            return Ok();
-        }
 
         private object GetGameReturnObj(GameLogic.Game game)
         {
