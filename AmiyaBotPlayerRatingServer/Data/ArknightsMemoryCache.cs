@@ -11,6 +11,7 @@ namespace AmiyaBotPlayerRatingServer.Data
 {
     public class ArknightsMemoryCache
     {
+        // abs path is /app/Resources
         private readonly string _directoryPath = "Resources/amiya-bot-assets";
         private readonly string _gitRepoUrl = "https://gitee.com/amiya-bot/amiya-bot-assets.git";
         private readonly string _zipFilePath = "Resources/amiya-bot-assets/gamedata.zip";
@@ -84,7 +85,18 @@ namespace AmiyaBotPlayerRatingServer.Data
             _cache = memoryCache;
             _logger = logger;
 
-            Task.Run(() => InitializeAssets(), cancellationToken);
+            Task.Run(() =>
+            {
+                try
+                {
+                    InitializeAssets();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to initialize assets");
+                }
+
+            }, cancellationToken);
 
             //不可以用Hangfire，因为每个服务器都会有一个实例
             _ = new Timer(UpdateCache, null, TimeSpan.Zero, TimeSpan.FromHours(1));
