@@ -42,6 +42,12 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [HttpGet("files")]
+        public IActionResult GetFiles()
+        {
+            return Ok(memeCache.GetKeys());
+        }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
         [HttpPost("jmes-path")]

@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AmiyaBotPlayerRatingServer.Controllers.Game
+namespace AmiyaBotPlayerRatingServer.Controllers
 {
     [ApiController]
-    [Route("api/gameHub")]
-    public class GameServerController(
+    [Route("api/server")]
+    public class ServerController(
         PlayerRatingDatabaseContext dbContext,
         IConfiguration configuration,
         ArknightsMemoryCache memoryCache)
@@ -67,7 +67,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
             {
                 memoryCache.UpdateAssets();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return BadRequest(e.Message);
             }

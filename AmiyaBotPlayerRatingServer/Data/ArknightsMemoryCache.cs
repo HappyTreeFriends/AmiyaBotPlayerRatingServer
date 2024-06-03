@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Threading;
+using StackExchange.Redis;
 
 namespace AmiyaBotPlayerRatingServer.Data
 {
@@ -77,8 +78,8 @@ namespace AmiyaBotPlayerRatingServer.Data
     }
         
         private readonly IMemoryCache _cache;
+        private readonly HashSet<String> _keys = new HashSet<String>();
         private readonly ILogger<ArknightsMemoryCache> _logger;
-        private readonly CancellationToken cancellationToken = new CancellationToken();
 
         public ArknightsMemoryCache(IMemoryCache memoryCache,ILogger<ArknightsMemoryCache> logger)
         {
@@ -96,7 +97,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                     _logger.LogError(ex, "Failed to initialize assets");
                 }
 
-            }, cancellationToken);
+            });
 
             //不可以用Hangfire，因为每个服务器都会有一个实例
             _ = new Timer(UpdateCache, null, TimeSpan.Zero, TimeSpan.FromHours(1));
@@ -176,11 +177,6 @@ namespace AmiyaBotPlayerRatingServer.Data
             process.WaitForExit();
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
         public void UpdateAssets()
         {
             PullRepo();
@@ -189,10 +185,29 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         private void UpdateCache(object? state)
         {
-            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "character_table.json"), "character_table.json");
-            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skill_table.json"), "skill_table.json");
-            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skin_table.json"), "skin_table.json");
-            LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skinUrls.json"), "skinUrls.json");
+            //遍历gamedata/excel目录下的所有json文件
+            Directory.GetFiles(Path.Combine(_directoryPath, "gamedata/excel")).ToList().ForEach(file =>
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName.EndsWith(".json"))
+                {
+                    LoadFile(file, fileName);
+                }
+            });
+
+            Directory.GetFiles(Path.Combine(_directoryPath, "gamedata/indexes")).ToList().ForEach(file =>
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName.EndsWith(".json"))
+                {
+                    LoadFile(file, fileName);
+                }
+            });
+
+            //LoadFile(Path.Combine(_directoryPath, "gamedata/excel", "character_table.json"), "character_table.json");
+            //LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skill_table.json"), "skill_table.json");
+            //LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skin_table.json"), "skin_table.json");
+            //LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "Resources/gamedata", "skinUrls.json"), "skinUrls.json");
 
             GenerateCustomFiles();
 
@@ -305,7 +320,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 var characterMap = JToken.Parse(text);
                 _cache.Set("JToken:"+resKey, characterMap);
                 _cache.Set("Text:"+resKey, text);
-
+                _keys.Add(resKey);
             }
         }
 
@@ -313,6 +328,7 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
             _cache.Set("JToken:" + key, json);
             _cache.Set("Text:" + key, json.ToString());
+            _keys.Add(key);
         }
 
         public void LoadObject(Object obj, String key)
@@ -321,6 +337,7 @@ namespace AmiyaBotPlayerRatingServer.Data
             var jsonObj = JsonConvert.DeserializeObject(jsonText);
             _cache.Set("JToken:" + key, jsonObj);
             _cache.Set("Text:" + key, jsonText);
+            _keys.Add(key);
         }
 
         public JToken? GetJson(String key)
@@ -339,6 +356,20 @@ namespace AmiyaBotPlayerRatingServer.Data
                 return value;
             }
             return null;
+        }
+
+        public object? GetObject(String key)
+        {
+            if (_cache.TryGetValue<Object>("JToken:" + key, out var value))
+            {
+                return value;
+            }
+            return null;
+        }
+
+        public List<String> GetKeys()
+        {
+            return _keys.ToList();
         }
     }
 }
