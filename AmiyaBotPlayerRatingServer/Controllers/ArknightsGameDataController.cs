@@ -21,7 +21,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         // ReSharper restore UnusedAutoPropertyAccessor.Global
 #pragma warning restore CS8618
 
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize(Roles = "普通账户,开发者账户")]
         [HttpPost("json-path")]
         public IActionResult Query([FromBody] JsonPathQueryModel model)
         {
@@ -43,6 +44,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [Authorize(Roles = "普通账户,开发者账户")]
         [HttpGet("files")]
         public IActionResult GetFiles()
         {
@@ -50,6 +52,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
+        [Authorize(Roles = "普通账户,开发者账户")]
         [HttpPost("jmes-path")]
         public IActionResult QueryJmes([FromBody] JsonPathQueryModel model)
         {
