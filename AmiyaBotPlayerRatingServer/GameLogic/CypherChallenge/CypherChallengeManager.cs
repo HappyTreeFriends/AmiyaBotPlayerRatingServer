@@ -377,7 +377,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                         continue;
                     }
                 }
-
+                
                 var answerList = new List<object>();
                 foreach (var answer in question.AnswerList)
                 {
