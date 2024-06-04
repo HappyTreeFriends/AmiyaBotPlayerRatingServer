@@ -9,6 +9,19 @@ using RedLockNet;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic
 {
+    public class PlayerMove
+    {
+        public string PlayerId { get; set; }
+        public String CharacterName { get; set; }
+        public bool IsValid { get; set; }
+        public bool IsCorrect { get; set; }
+    }
+
+    public interface IScoreable
+    {
+        List<PlayerMove> PlayerMoveList { get; set; }
+    }
+
     public class Game:IDisposable,IAsyncDisposable
     {
         public String? Id { get; set; }

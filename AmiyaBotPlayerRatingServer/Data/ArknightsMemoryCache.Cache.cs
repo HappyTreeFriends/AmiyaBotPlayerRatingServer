@@ -6,7 +6,7 @@ namespace AmiyaBotPlayerRatingServer.Data
 {
     public partial class ArknightsMemoryCache
     {
-        private readonly HashSet<String> _keys = new();
+        private readonly Dictionary<String,DateTime> _lastModified = new();
 
         private void LoadFile(String filePath, String resKey)
         {
@@ -18,7 +18,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 var characterMap = JToken.Parse(text);
                 _cache.Set("JToken:" + resKey, characterMap);
                 _cache.Set("Text:" + resKey, text);
-                _keys.Add(resKey);
+                _lastModified[resKey] = File.GetLastWriteTime(filePath);
             }
         }
 
@@ -26,7 +26,7 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
             _cache.Set("JToken:" + key, json);
             _cache.Set("Text:" + key, json.ToString());
-            _keys.Add(key);
+            _lastModified[key] = DateTime.Now;
         }
 
         public void LoadObject(Object obj, String key)
@@ -35,7 +35,7 @@ namespace AmiyaBotPlayerRatingServer.Data
             var jsonObj = JsonConvert.DeserializeObject(jsonText);
             _cache.Set("JToken:" + key, jsonObj);
             _cache.Set("Text:" + key, jsonText);
-            _keys.Add(key);
+            _lastModified[key] = DateTime.Now;
         }
 
         public JToken? GetJson(String key)
@@ -70,9 +70,9 @@ namespace AmiyaBotPlayerRatingServer.Data
             return default;
         }
 
-        public List<String> GetKeys()
+        public Dictionary<String,DateTime> GetKeys()
         {
-            return _keys.ToList();
+            return _lastModified;
         }
     }
 }
