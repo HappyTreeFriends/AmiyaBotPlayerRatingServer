@@ -1,5 +1,9 @@
 ﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Json.Path;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AmiyaBotPlayerRatingServer.Data
 {
@@ -220,6 +224,133 @@ namespace AmiyaBotPlayerRatingServer.Data
             return text;
         }
 
+        public string ParseTemplate(JToken blackboard, string description)
+        {
+            var formatter = new Dictionary<string, Func<double, string>>
+            {
+                { "0%", v => $"{Math.Round(v * 100)}%" }
+            };
+
+            var dataDict = new Dictionary<string, object>();
+            foreach (var item in blackboard)
+            {
+                var key = item["key"].ToString();
+                var valueStr = item["valueStr"]?.ToString();
+                var value = item["value"]?.ToString();
+                dataDict[key] = valueStr ?? value;
+            }
+
+            var desc = HtmlTagFormat(description.Replace(">-{", ">{"));
+            var formatStr = Regex.Matches(desc, @"({(\S+?)})");
+
+            foreach (Match descItem in formatStr)
+            {
+                var key = descItem.Groups[2].Value.Split(':');
+                var fd = key[0].ToLower().Trim('-');
+                if (dataDict.ContainsKey(fd))
+                {
+                    var value = Integer(dataDict[fd]);
+
+                    if (key.Length >= 2 && formatter.ContainsKey(key[1]) && value != null)
+                    {
+                        value = Integer(formatter[key[1]](value.Value));
+                    }
+
+                    desc = desc.Replace(descItem.Groups[1].Value, $" [cl {value}@#174CC6 cle] ");
+                }
+            }
+
+            return desc;
+        }
+
+        public int? Integer(object value)
+        {
+            if (value == null) return null;
+            if (int.TryParse(value.ToString(), out int result))
+            {
+                return result;
+            }
+            return null;
+        }
+
+
+        public string HtmlTagFormat(string text)
+        {
+            var htmlSymbol = new Dictionary<string, string>
+            {
+                { "&lt;", "<" },
+                { "&gt;", ">" },
+                { "&amp;", "&" },
+                { "&quot;", "\"" },
+                { "&apos;", "'" }
+                // Add more HTML symbols and their replacements as needed
+            };
+
+            foreach (var symbol in htmlSymbol)
+            {
+                text = text.Replace(symbol.Key, symbol.Value);
+            }
+
+            // Remove XML tags using a simple regex pattern
+            text = Regex.Replace(text, @"<[^>]+>", string.Empty);
+
+            return text;
+        }
+
+
+        private string BuildRange(JArray grids)
+        {
+            int[] _max = { 0, 0, 0, 0 };
+
+            var items = new List<JObject> { JObject.FromObject(new { row = 0, col = 0 }) };
+            items.AddRange(grids.Select(g => (JObject)g));
+
+            foreach (var item in items)
+            {
+                int row = item["row"].ToObject<int>();
+                int col = item["col"].ToObject<int>();
+                if (row <= _max[0]) _max[0] = row;
+                if (row >= _max[1]) _max[1] = row;
+                if (col <= _max[2]) _max[2] = col;
+                if (col >= _max[3]) _max[3] = col;
+            }
+
+            int width = Math.Abs(_max[2]) + _max[3] + 1;
+            int height = Math.Abs(_max[0]) + _max[1] + 1;
+
+            string empty = "　";
+            string block = "□";
+            string origin = "■";
+
+            var rangeMap = new List<List<string>>();
+            for (int h = 0; h < height; h++)
+            {
+                var row = new List<string>();
+                for (int w = 0; w < width; w++)
+                {
+                    row.Add(empty);
+                }
+                rangeMap.Add(row);
+            }
+
+            foreach (var item in grids)
+            {
+                int x = Math.Abs(_max[0]) + item["row"].ToObject<int>();
+                int y = Math.Abs(_max[2]) + item["col"].ToObject<int>();
+                rangeMap[x][y] = block;
+            }
+            rangeMap[Math.Abs(_max[0])][Math.Abs(_max[2])] = origin;
+
+            var result = new StringBuilder();
+            foreach (var row in rangeMap)
+            {
+                result.AppendLine(string.Join(string.Empty, row));
+            }
+
+            return result.ToString();
+        }
+
+
         private void GenerateOperatorArchiveTable()
         {
             _logger.LogInformation("start generating operator archive!");
@@ -234,6 +365,10 @@ namespace AmiyaBotPlayerRatingServer.Data
             var wordTable = GetJson("charword_table.json");
             var voiceLangDict = wordTable?["voiceLangDict"];
             var voiceLangTypeDict = wordTable?["voiceLangTypeDict"];
+
+            var skinTable = GetJson("skin_table.json")?["charSkins"];
+            var skillTable = GetJson("skill_table.json") as JObject;
+            var rangeTable = GetJson("range_table.json") as JObject;
 
             _logger.LogInformation("all resources loadded into memory!");
 
@@ -366,7 +501,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                         }
                     }
                 }
-                
+
                 //tags
 
                 //drawer
@@ -378,10 +513,200 @@ namespace AmiyaBotPlayerRatingServer.Data
                 //extra
 
                 //skin
-                // TODO: SkinList
+                //self.__skins_list = sorted(Collection.get_skins_list(code), key = lambda n: n['displaySkin']['getTime'])
+                var skins = skinTable?.Where(s => (s as JProperty).Value["charId"]?.ToString() == operatorId)
+                    .Select(s=> (s as JProperty).Value).ToList();
+                if (skins != null)
+                {
+                    var skinList = new JArray();
+                    int skinSort = 0;
+                    var skinLevels = new Dictionary<string, (string, string)>
+                    {
+                        { "1", ("初始", "stage0") },
+                        { "1+", ("精英一", "stage1") },
+                        { "2", ("精英二", "stage2") }
+                    };
+
+                    foreach (var skin in skins)
+                    {
+                        var skinDisplayData = skin["displaySkin"];
+                        if (skinDisplayData == null)
+                        {
+                            continue;
+                        }
+
+                        var skinId = skin["skinId"]?.ToString();
+                        if (skinId == null)
+                        {
+                            continue;
+                        }
+
+                        var skinInfo = skinId.Split('#');
+                        var skinIndex = skinInfo.Length>1?skinInfo[1]:null;
+                        string skinName = string.Empty;
+                        string skinKey;
+
+                        if (skinIndex!=null && !skinId.Contains("@"))
+                        {
+                            var skinLevelInfo = skinLevels[skinIndex];
+                            skinName = skinLevelInfo.Item1;
+                            skinKey = skinLevelInfo.Item2;
+                        }
+                        else
+                        {
+                            skinSort += 1;
+                            skinKey = $"skin{skinSort}";
+                        }
+
+                        var skinData = new JObject
+                        {
+                            ["skin_id"] = skinId,
+                            ["skin_key"] = skinKey,
+                            ["skin_name"] = skinDisplayData["skinName"]?.ToString() ?? skinName,
+                            ["skin_drawer"] = skinDisplayData["drawerList"]?.LastOrDefault()?.ToString() ?? string.Empty,
+                            ["skin_group"] = skinDisplayData["skinGroupName"]?.ToString() ?? string.Empty,
+                            ["skin_content"] = skinDisplayData["dialog"]?.ToString() ?? string.Empty,
+                            ["skin_usage"] = skinDisplayData["usage"]?.ToString() ?? $"{skinName}立绘",
+                            ["skin_desc"] = skinDisplayData["description"]?.ToString() ?? string.Empty,
+                            ["skin_source"] = skinDisplayData["obtainApproach"]?.ToString() ?? string.Empty
+                        };
+
+                        skinList.Add(skinData);
+                    }
+
+                    operatorArchiveData["skins"] = skinList;
+                }
+
 
                 //skill
                 // TODO: SkillList
+                var skills = new JArray();
+                var skillsId = new JArray();
+                var skillsCost = new JArray();
+                var skillsDesc = new JObject();
+
+                var skillLevelUpData = operatorJson["allSkillLvlup"]?.ToObject<JArray>();
+
+                if (skillLevelUpData != null)
+                {
+                    int index = 1;
+                    foreach (var item in skillLevelUpData)
+                    {
+                        var lvlUpCost = item["lvlUpCost"]?.ToObject<JArray>();
+                        if (lvlUpCost != null)
+                        {
+                            foreach (var cost in lvlUpCost)
+                            {
+                                var skillCost = new JObject
+                                {
+                                    ["skill_no"] = null,
+                                    ["level"] = index + 1,
+                                    ["mastery_level"] = 0,
+                                    ["use_material_id"] = cost["id"],
+                                    ["use_number"] = cost["count"]
+                                };
+                                skillsCost.Add(skillCost);
+                            }
+                        }
+                        index++;
+                    }
+                }
+
+                foreach (var skill in operatorJson["skills"]?.ToObject<JArray>())
+                {
+                    var code = skill["skillId"]?.ToString();
+
+                    if (code == null || !skillTable.ContainsKey(code))
+                    {
+                        continue;
+                    }
+
+                    var detail = skillTable[code];
+                    var icon = detail["iconId"]?.ToString() ?? detail["skillId"]?.ToString();
+
+                    if (detail == null)
+                    {
+                        continue;
+                    }
+
+                    skillsId.Add(code);
+
+                    if (!skillsDesc.ContainsKey(code))
+                    {
+                        skillsDesc[code] = new JArray();
+                    }
+
+                    int levelIndex = 1;
+                    foreach (var desc in detail["levels"]?.ToObject<JArray>())
+                    {
+                        var description = ParseTemplate(desc["blackboard"], desc["description"]?.ToString());
+
+                        var skillRange = operatorJson["range"]?.ToString();
+                        if (desc["rangeId"] != null && rangeTable.ContainsKey(desc["rangeId"].ToString()))
+                        {
+                            skillRange = BuildRange(rangeTable[desc["rangeId"].ToString()]["grids"]?.ToObject<JArray>());
+                        }
+
+                        var skillDesc = new JObject
+                        {
+                            ["skill_level"] = levelIndex,
+                            ["skill_type"] = desc["skillType"],
+                            ["sp_type"] = desc["spData"]?["spType"],
+                            ["sp_init"] = desc["spData"]?["initSp"],
+                            ["sp_cost"] = desc["spData"]?["spCost"],
+                            ["duration"] = Convert.ToInt32(desc["duration"]),
+                            ["description"] = description.Replace("\\n", "\n"),
+                            ["max_charge"] = desc["spData"]?["maxChargeTime"],
+                            ["range"] = skillRange
+                        };
+
+                        ((JArray)skillsDesc[code]).Add(skillDesc);
+                        levelIndex++;
+                    }
+
+                    var levelUpCostData = skill["specializeLevelUpData"]?.ToObject<JArray>() ?? skill["levelUpCostCond"]?.ToObject<JArray>();
+
+                    if (levelUpCostData != null)
+                    {
+                        int levIndex = 1;
+                        foreach (var cond in levelUpCostData)
+                        {
+                            var levelUpCost = cond["levelUpCost"]?.ToObject<JArray>();
+                            if (levelUpCost != null)
+                            {
+                                foreach (var cost in levelUpCost)
+                                {
+                                    var skillCost = new JObject
+                                    {
+                                        ["skill_no"] = code,
+                                        ["level"] = levIndex + 7,
+                                        ["mastery_level"] = levIndex,
+                                        ["use_material_id"] = cost["id"],
+                                        ["use_number"] = cost["count"]
+                                    };
+                                    skillsCost.Add(skillCost);
+                                }
+                            }
+                            levIndex++;
+                        }
+                    }
+
+                    var skillEntry = new JObject
+                    {
+                        ["skill_no"] = code,
+                        ["skill_index"] = skills.Count + 1,
+                        ["skill_name"] = detail["levels"]?[0]?["name"]?.ToString(),
+                        ["skill_icon"] = icon
+                    };
+
+                    skills.Add(skillEntry);
+                }
+
+                operatorArchiveData["skills"] = skills;
+                operatorArchiveData["skills_id"] = skillsId;
+                operatorArchiveData["skills_cost"] = skillsCost;
+                operatorArchiveData["skills_desc"] = skillsDesc;
+
 
                 operatorArchive[operatorId] = operatorArchiveData;
             }
