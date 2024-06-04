@@ -326,7 +326,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 {
                     _logger.LogInformation("Operator {0} {1} has no position", operatorId, operatorName);
                 }
-                operatorArchiveData["type"] = GetJson("types.json")?[operatorJson["position"] ??""];
+                operatorArchiveData["type"] = GetJson("types.json")?[operatorJson["position"]?.ToString()??""];
                 operatorArchiveData["tags"] = new JArray();
                 operatorArchiveData["range"] = "无范围";
                 operatorArchiveData["rarity"] = operatorJson["rarity"]?.Type == JTokenType.String ? int.Parse(operatorJson["rarity"]?.ToString().Split('_').Last()!) : (operatorJson["rarity"]?.ToObject<int>() + 1);
@@ -391,7 +391,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                         stories.Add(new JObject
                         {
                             {"story_title", item["storyTitle"]},
-                            {"story_text", item["stories"][0]["storyText"]}
+                            {"story_text", item["stories"]?[0]?["storyText"]}
                         });
                     }
                 }
@@ -401,15 +401,24 @@ namespace AmiyaBotPlayerRatingServer.Data
 
 
                 //CV
-                if (voiceLangDict != null && voiceLangDict[operatorId] != null)
+                var opCV = voiceLangDict?[operatorId];
+                if (opCV != null)
                 {
-                    var voiceLang = voiceLangDict[operatorId]["dict"] as JObject;
-                    var cvObject = new JObject();
-                    foreach (var item in voiceLang)
+                    if (opCV["dict"] is JObject voiceLang)
                     {
-                        cvObject[voiceLangTypeDict[item.Key??""]?.ToString()] = item.Value["cvName"];
+                        var cvObject = new JObject();
+
+                        foreach (var item in voiceLang)
+                        {
+                            var cvKey = voiceLangTypeDict[item.Key]?.ToString();
+                            if (cvKey != null)
+                            {
+                                cvObject[cvKey] = item.Value?["cvName"];
+                            }
+                        }
+
+                        operatorArchiveData["cv"] = cvObject;
                     }
-                    operatorArchiveData["cv"] = cvObject;
                 }
 
                 _logger.LogInformation("Log 8");
