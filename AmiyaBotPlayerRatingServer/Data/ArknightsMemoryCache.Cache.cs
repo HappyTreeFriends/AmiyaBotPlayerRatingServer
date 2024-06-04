@@ -58,9 +58,14 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         public T? GetObject<T>(String key)
         {
-            if (_cache.TryGetValue<T>("JToken:" + key, out var value))
+            if (_cache.TryGetValue<JToken>("JToken:" + key, out var value))
             {
-                return value;
+                if (value == null)
+                {
+                    return default;
+                }
+                var obj = value.ToObject<T>();
+                return obj;
             }
             return default;
         }

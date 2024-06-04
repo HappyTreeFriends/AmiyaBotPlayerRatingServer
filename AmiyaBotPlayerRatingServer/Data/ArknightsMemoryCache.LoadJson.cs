@@ -51,6 +51,7 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         private void PullRepo()
         {
+            ExecuteShellCommand($"rm -f {_directoryPath}/.git/index.lock");
             ExecuteShellCommand($"cd {_directoryPath} && git fetch origin && git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)");
         }
 
