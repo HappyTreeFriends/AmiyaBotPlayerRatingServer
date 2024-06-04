@@ -67,7 +67,15 @@ namespace AmiyaBotPlayerRatingServer.Data
             GenerateArknightsConfig();
             GenerateCharacterNameFull();
             GenerateCharacterNames();
-            GenerateOperatorArchiveTable();
+
+            try
+            {
+                GenerateOperatorArchiveTable();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GenerateOperatorArchiveTable failed");
+            }
 
             _logger.LogInformation("Custom files generated");
         }
