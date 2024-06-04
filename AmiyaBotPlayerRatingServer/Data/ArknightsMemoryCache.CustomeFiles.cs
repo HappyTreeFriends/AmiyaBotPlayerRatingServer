@@ -350,7 +350,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 _logger.LogInformation("Log 3");
 
 
-                operatorArchiveData["classes"] = GetJson("classes.json") ? [operatorJson["profession"]!];
+                operatorArchiveData["classes"] = GetJson("classes.json") ? [operatorJson["profession"]?.ToString()??""];
                 operatorArchiveData["classes_sub"] =
                     subClassesTable[operatorJson["subProfessionId"]?.ToString()??""]?["subProfessionName"]??"";
                 operatorArchiveData["classes_code"] = operatorJson["profession"];
