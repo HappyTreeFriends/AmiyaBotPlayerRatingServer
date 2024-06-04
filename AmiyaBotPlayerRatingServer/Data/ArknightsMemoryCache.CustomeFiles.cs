@@ -278,6 +278,8 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         private void GenerateOperatorArchiveTable()
         {
+            _logger.LogInformation("start generating operator archive!");
+
             var characterNames = GetObject<Dictionary<String, String>>("character_names.json");
             var characterTable = GetJson("character_table.json") as JObject;
             var teamTable = GetJson("handbook_team_table.json");
@@ -288,6 +290,8 @@ namespace AmiyaBotPlayerRatingServer.Data
             var wordTable = GetJson("charword_table.json");
             var voiceLangDict = wordTable?["voiceLangDict"];
             var voiceLangTypeDict = wordTable?["voiceLangTypeDict"];
+
+            _logger.LogInformation("all resources loadded into memory!");
 
             if (characterNames == null|| characterTable==null)
             {
