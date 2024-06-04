@@ -65,9 +65,9 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
 
             GenerateArknightsConfig();
+            GenerateCharacterNameFull();
             GenerateCharacterNames();
             GenerateOperatorArchiveTable();
-            GenerateCharacterNameFull();
 
             _logger.LogInformation("Custom files generated");
         }
