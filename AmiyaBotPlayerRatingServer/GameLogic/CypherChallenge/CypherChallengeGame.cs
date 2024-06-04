@@ -27,6 +27,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             public String CharacterName { get; set; }
             public String CharacterId { get; set; }
 
+            public bool IsHinted { get; set; }
             public bool IsCompleted { get; set; }
 
             public Dictionary<String,String> CharacterProperties { get; set; } = new();
