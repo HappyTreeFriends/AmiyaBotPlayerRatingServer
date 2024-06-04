@@ -5,95 +5,36 @@ namespace AmiyaBotPlayerRatingServer.Data
 {
     public partial class ArknightsMemoryCache
     {
-
-        public class ArknightsOperator
-        {
-            public Dictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
-
-            public Dictionary<string, object> Cv { get; set; } = new Dictionary<string, object>();
-
-            public string Type { get; set; } = string.Empty;
-            public List<string> Tags { get; set; } = new List<string>();
-            public string Range { get; set; } = string.Empty;
-            public int Rarity { get; set; } = 0;
-            public string Number { get; set; } = string.Empty;
-
-            public string WikiName { get; set; } = string.Empty;
-            public string IndexName { get; set; } = string.Empty;
-            public string OriginName { get; set; } = string.Empty;
-
-            public string Classes { get; set; } = string.Empty;
-            public string ClassesSub { get; set; } = string.Empty;
-            public string ClassesCode { get; set; } = string.Empty;
-
-            public string Sex { get; set; } = string.Empty;
-            public string Race { get; set; } = string.Empty;
-            public string Drawer { get; set; } = string.Empty;
-            public string TeamId { get; set; } = string.Empty;
-            public string Team { get; set; } = string.Empty;
-            public string GroupId { get; set; } = string.Empty;
-            public string Group { get; set; } = string.Empty;
-            public string NationId { get; set; } = string.Empty;
-            public string Nation { get; set; } = string.Empty;
-            public string Birthday { get; set; } = string.Empty;
-
-            public string Profile { get; set; } = string.Empty;
-            public string Impression { get; set; } = string.Empty;
-            public string PotentialItem { get; set; } = string.Empty;
-
-            public bool Limit { get; set; } = false;
-            public bool Unavailable { get; set; } = false;
-            public bool IsRecruit { get; set; } = false;
-            public bool IsClassic { get; set; } = false;
-            public bool IsSp { get; set; } = false;
-
-            //public abstract Dictionary<string, string> Dict();
-            //public abstract Tuple<Dictionary<string, string>, Dictionary<string, string>> Detail();
-            //public abstract List<Dictionary<string, string>> Tokens();
-            //public abstract List<Dictionary<string, string>> Talents();
-            //public abstract List<Dictionary<string, string>> Potential();
-            //public abstract List<Dictionary<string, string>> EvolveCosts();
-            //public abstract Tuple<List<Dictionary<string, string>>, List<string>, List<Dictionary<string, string>>, Dictionary<string, List<Dictionary<string, string>>>> Skills();
-            //public abstract List<Dictionary<string, string>> BuildingSkills();
-            //public abstract List<Dictionary<string, string>> Voices();
-            //public abstract List<Dictionary<string, string>> Stories();
-            //public abstract List<Dictionary<string, string>> Skins();
-            //public abstract List<Dictionary<string, string>> Modules();
-        }
-
         private void GenerateCustomFiles()
         {
-
-            GenerateArknightsConfig();
-            GenerateCharacterNameFull();
-            GenerateCharacterNames();
-
             try
             {
+                GenerateArknightsConfig();
+                GenerateCharacterNames();
+                GenerateCharacterTableFull();
                 GenerateOperatorArchiveTable();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "GenerateOperatorArchiveTable failed");
+                _logger.LogError(ex, "GenerateCustomFiles failed");
             }
 
             _logger.LogInformation("Custom files generated");
         }
-        
-        private void GenerateCharacterNameFull()
+
+        private void GenerateCharacterTableFull()
         {
             try
             {
                 //进行一点点逻辑处理
                 var characterTable = JsonConvert.DeserializeObject<JToken>(GetText("character_table.json")!) as JObject;
+                var characterNames = GetObject<Dictionary<String, String>>("character_names.json");
 
-                if (characterTable == null)
+                if (characterTable == null||characterNames==null)
                 {
                     return;
                 }
-
-                var characterNames = new JObject();
-
+                
                 var newCharacterTable = new JObject();
 
                 foreach (var character in characterTable)
@@ -103,16 +44,11 @@ namespace AmiyaBotPlayerRatingServer.Data
                         continue;
                     }
 
-                    var obtain = character.Value["itemObtainApproach"]?.ToString();
-                    if (obtain != "凭证交易所" && obtain != "招募寻访" &&
-                        obtain != "活动获得" && obtain != "主线剧情" &&
-                        obtain != "信用交易所")
+                    if (characterNames.Keys.Contains(character.Key))
                     {
-                        continue;
+                        character.Value["charId"] = character.Key;
+                        newCharacterTable[character.Key] = character.Value;
                     }
-                    character.Value["charId"] = character.Key;
-                    characterNames[character.Key] = character.Value["name"];
-                    newCharacterTable[character.Key] = character.Value;
                 }
                 
                 characterTable = newCharacterTable;
@@ -318,15 +254,15 @@ namespace AmiyaBotPlayerRatingServer.Data
 
             foreach (var operatorId in characterNames.Keys)
             {
-                _logger.LogInformation("Log 1");
-
                 var operatorJson = characterTable[operatorId];
                 var operatorName = characterNames[operatorId];
 
                 if (operatorJson==null) continue;
 
+#pragma warning disable IDE0028 // 简化集合初始化
                 var operatorArchiveData = new JObject();
-                
+#pragma warning restore IDE0028 // 简化集合初始化
+
                 operatorArchiveData["id"] = operatorId;
                 operatorArchiveData["cv"] = new JArray();
 
@@ -340,22 +276,16 @@ namespace AmiyaBotPlayerRatingServer.Data
                 operatorArchiveData["rarity"] = operatorJson["rarity"]?.Type == JTokenType.String ? int.Parse(operatorJson["rarity"]?.ToString().Split('_').Last()!) : (operatorJson["rarity"]?.ToObject<int>() + 1);
                 operatorArchiveData["number"] = operatorJson["displayNumber"];
 
-                _logger.LogInformation("Log 2");
-
                 operatorArchiveData["name"] = characterNames[operatorId];
                 operatorArchiveData["enName"] = operatorJson["appellation"];
                 operatorArchiveData["wiki_name"] = operatorJson["name"];
                 operatorArchiveData["index_name"] = RemovePunctuation(operatorJson["name"]?.ToString()!);
                 operatorArchiveData["origin_name"] ="未知";
-                _logger.LogInformation("Log 3");
-
 
                 operatorArchiveData["classes"] = GetJson("classes.json") ? [operatorJson["profession"]?.ToString()??""];
                 operatorArchiveData["classes_sub"] =
                     subClassesTable[operatorJson["subProfessionId"]?.ToString()??""]?["subProfessionName"]??"";
                 operatorArchiveData["classes_code"] = operatorJson["profession"];
-
-                _logger.LogInformation("Log 4");
 
                 operatorArchiveData["sex"] = "未知";
                 operatorArchiveData["race"] = "未知";
@@ -370,9 +300,7 @@ namespace AmiyaBotPlayerRatingServer.Data
 
                 operatorArchiveData["profile"] = operatorJson["itemUsage"]??"无";
                 operatorArchiveData["impression"] = operatorJson["itemDesc"]??"无";
-
-                _logger.LogInformation("Log 5 ");
-
+                
                 operatorArchiveData["potential_item"] = itemTable[operatorJson["potentialItemId"]?.ToString() ?? ""]?["description"]?.ToString() ?? "";
 
                 operatorArchiveData["limit"] = ""; //当前版本无法获取本数据
@@ -381,9 +309,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 operatorArchiveData["is_recruit"] = ""; //当前版本无法获取本数据
                 operatorArchiveData["is_classic"] = operatorJson["classicPotentialItemId"] != null;
                 operatorArchiveData["is_sp"] = operatorJson["isSpChar"];
-
-                _logger.LogInformation("Log 6");
-
+                
                 //stories
                 //stories_data = JsonData.get_json_data('handbook_info_table')['handbookDict']
                 // stories = []
@@ -404,21 +330,18 @@ namespace AmiyaBotPlayerRatingServer.Data
                     }
                 }
                 operatorArchiveData["stories"] = stories;
-
-                _logger.LogInformation("Log 7");
-
-
+                
                 //CV
-                var opCV = voiceLangDict?[operatorId];
-                if (opCV != null)
+                var opCv = voiceLangDict?[operatorId];
+                if (opCv != null)
                 {
-                    if (opCV["dict"] is JObject voiceLang)
+                    if (opCv["dict"] is JObject voiceLang)
                     {
                         var cvObject = new JObject();
 
                         foreach (var item in voiceLang)
                         {
-                            var cvKey = voiceLangTypeDict[item.Key]?.ToString();
+                            var cvKey = voiceLangTypeDict[item.Key]?["name"]?.ToString();
                             if (cvKey != null)
                             {
                                 cvObject[cvKey] = item.Value?["cvName"];
@@ -428,9 +351,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                         operatorArchiveData["cv"] = cvObject;
                     }
                 }
-
-                _logger.LogInformation("Log 8");
-
+                
                 //race
                 foreach (var story in stories)
                 {
@@ -445,9 +366,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                         }
                     }
                 }
-
-                _logger.LogInformation("Log 9");
-
+                
                 //tags
 
                 //drawer
@@ -457,6 +376,12 @@ namespace AmiyaBotPlayerRatingServer.Data
                 //origin
 
                 //extra
+
+                //skin
+                // TODO: SkinList
+
+                //skill
+                // TODO: SkillList
 
                 operatorArchive[operatorId] = operatorArchiveData;
             }

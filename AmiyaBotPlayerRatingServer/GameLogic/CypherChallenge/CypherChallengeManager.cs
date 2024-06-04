@@ -9,12 +9,20 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
         
         private Game? GenerateGame()
         {
-            var operatorList = memoryCache.GetJson("character_table_full.json");
+            var operatorNames = memoryCache.GetObject<Dictionary<String,String>>("character_names.json");
+            var operatorList = memoryCache.GetJson("operator_archive.json");
+
+            if (operatorNames == null || operatorList == null)
+            {
+                return null;
+            }
 
             //随机选择一个
             var random = new Random();
-            var randomIndex = random.Next(0, operatorList.Count());
-            var randomOperator = operatorList[randomIndex];
+            var operatorIdList = operatorNames.Keys.ToList();
+            var randomIndex = random.Next(0, operatorIdList.Count);
+            var operatorId = operatorIdList[randomIndex];
+            var randomOperator = operatorList[operatorId];
 
             var game = new CypherChallengeGame
             {
