@@ -313,15 +313,20 @@ namespace AmiyaBotPlayerRatingServer.Data
                 _logger.LogInformation("Log 1");
 
                 var operatorJson = characterTable[operatorId];
+                var operatorName = characterNames[operatorId];
 
-                if(operatorJson==null) continue;
+                if (operatorJson==null) continue;
 
                 var operatorArchiveData = new JObject();
                 
                 operatorArchiveData["id"] = operatorId;
                 operatorArchiveData["cv"] = new JArray();
 
-                operatorArchiveData["type"] = GetJson("types.json")?[characterTable["position"]!];
+                if (operatorJson["position"] == null)
+                {
+                    _logger.LogInformation("Operator {0} {1} has no position", operatorId, operatorName);
+                }
+                operatorArchiveData["type"] = GetJson("types.json")?[operatorJson["position"] ??""];
                 operatorArchiveData["tags"] = new JArray();
                 operatorArchiveData["range"] = "无范围";
                 operatorArchiveData["rarity"] = operatorJson["rarity"]?.Type == JTokenType.String ? int.Parse(operatorJson["rarity"]?.ToString().Split('_').Last()!) : (operatorJson["rarity"]?.ToObject<int>() + 1);
