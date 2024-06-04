@@ -56,13 +56,13 @@ namespace AmiyaBotPlayerRatingServer.Data
             return null;
         }
 
-        public object? GetObject(String key)
+        public T? GetObject<T>(String key)
         {
-            if (_cache.TryGetValue<Object>("JToken:" + key, out var value))
+            if (_cache.TryGetValue<T>("JToken:" + key, out var value))
             {
                 return value;
             }
-            return null;
+            return default;
         }
 
         public List<String> GetKeys()

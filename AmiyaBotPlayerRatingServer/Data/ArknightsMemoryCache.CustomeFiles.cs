@@ -278,11 +278,11 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         private void GenerateOperatorArchiveTable()
         {
-            var characterTable = JsonConvert.DeserializeObject<JToken>(GetText("character_table.json")!) as JObject;
-            var characterNames = JsonConvert.DeserializeObject<Dictionary<String,String>>(GetText("character_names.json")!);
+            var characterTable = GetJson("character_table.json") as JObject;
+            var characterNames = GetObject<Dictionary<String, String>>("character_names.json");
             var subClassesTable = GetJson("uniequip_table.json")?["subProfDict"];
             var teamTable = GetJson("handbook_team_table.json");
-            var itemTable = GetJson("item_table.json")!["items"];
+            var itemTable = GetJson("item_table.json")?["items"];
             var handbookInfoTable = GetJson("handbook_info_table.json")?["handbookDict"];
 
             var wordTable = GetJson("charword_table.json");
