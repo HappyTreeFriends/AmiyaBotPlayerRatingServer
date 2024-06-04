@@ -278,10 +278,10 @@ namespace AmiyaBotPlayerRatingServer.Data
 
         private void GenerateOperatorArchiveTable()
         {
-            var characterTable = GetJson("character_table.json") as JObject;
             var characterNames = GetObject<Dictionary<String, String>>("character_names.json");
-            var subClassesTable = GetJson("uniequip_table.json")?["subProfDict"];
+            var characterTable = GetJson("character_table.json") as JObject;
             var teamTable = GetJson("handbook_team_table.json");
+            var subClassesTable = GetJson("uniequip_table.json")?["subProfDict"];
             var itemTable = GetJson("item_table.json")?["items"];
             var handbookInfoTable = GetJson("handbook_info_table.json")?["handbookDict"];
 
