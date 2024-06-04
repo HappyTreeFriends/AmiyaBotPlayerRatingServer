@@ -293,7 +293,15 @@ namespace AmiyaBotPlayerRatingServer.Data
 
             _logger.LogInformation("all resources loadded into memory!");
 
-            if (characterNames == null|| characterTable==null)
+            if (characterNames == null
+                || characterTable == null
+                || teamTable == null
+                || subClassesTable == null
+                || itemTable == null
+                || handbookInfoTable == null
+                || wordTable == null
+                || voiceLangDict == null
+                || voiceLangTypeDict == null)
             {
                 return;
             }
@@ -302,6 +310,8 @@ namespace AmiyaBotPlayerRatingServer.Data
 
             foreach (var operatorId in characterNames.Keys)
             {
+                _logger.LogInformation("Log 1");
+
                 var operatorJson = characterTable[operatorId];
 
                 if(operatorJson==null) continue;
@@ -317,32 +327,40 @@ namespace AmiyaBotPlayerRatingServer.Data
                 operatorArchiveData["rarity"] = operatorJson["rarity"]?.Type == JTokenType.String ? int.Parse(operatorJson["rarity"]?.ToString().Split('_').Last()!) : (operatorJson["rarity"]?.ToObject<int>() + 1);
                 operatorArchiveData["number"] = operatorJson["displayNumber"];
 
+                _logger.LogInformation("Log 2");
+
                 operatorArchiveData["name"] = characterNames[operatorId];
                 operatorArchiveData["enName"] = operatorJson["appellation"];
                 operatorArchiveData["wiki_name"] = operatorJson["name"];
                 operatorArchiveData["index_name"] = RemovePunctuation(operatorJson["name"]?.ToString()!);
                 operatorArchiveData["origin_name"] ="未知";
+                _logger.LogInformation("Log 3");
+
 
                 operatorArchiveData["classes"] = GetJson("classes.json") ? [operatorJson["profession"]!];
                 operatorArchiveData["classes_sub"] =
-                    subClassesTable![operatorJson["subProfessionId"]?.ToString()??""]?["subProfessionName"]??"";
+                    subClassesTable[operatorJson["subProfessionId"]?.ToString()??""]?["subProfessionName"]??"";
                 operatorArchiveData["classes_code"] = operatorJson["profession"];
+
+                _logger.LogInformation("Log 4");
 
                 operatorArchiveData["sex"] = "未知";
                 operatorArchiveData["race"] = "未知";
                 operatorArchiveData["drawer"] = "未知";
                 operatorArchiveData["team_id"] = operatorJson["teamId"];
-                operatorArchiveData["team"] = teamTable?[operatorJson["teamId"]?.ToString() ?? ""]?["powerName"]?.ToString() ?? "未知";
+                operatorArchiveData["team"] = teamTable[operatorJson["teamId"]?.ToString() ?? ""]?["powerName"]?.ToString() ?? "未知";
                 operatorArchiveData["group_id"] = operatorJson["groupId"];
-                operatorArchiveData["group"] = teamTable?[operatorJson["groupId"]?.ToString() ?? ""]?["powerName"]?.ToString() ?? "未知";
+                operatorArchiveData["group"] = teamTable[operatorJson["groupId"]?.ToString() ?? ""]?["powerName"]?.ToString() ?? "未知";
                 operatorArchiveData["nation_id"] = operatorJson["nationId"];
-                operatorArchiveData["nation"] = teamTable?[operatorJson["nationId"]?.ToString() ?? ""]?["powerName"]?.ToString() ?? "未知";
+                operatorArchiveData["nation"] = teamTable[operatorJson["nationId"]?.ToString() ?? ""]?["powerName"]?.ToString() ?? "未知";
                 operatorArchiveData["birthday"] = "未知";
 
                 operatorArchiveData["profile"] = operatorJson["itemUsage"]??"无";
                 operatorArchiveData["impression"] = operatorJson["itemDesc"]??"无";
 
-                operatorArchiveData["potential_item"] = itemTable?[operatorJson["potentialItemId"]?.ToString() ?? ""]?["description"]?.ToString() ?? "";
+                _logger.LogInformation("Log 5 ");
+
+                operatorArchiveData["potential_item"] = itemTable[operatorJson["potentialItemId"]?.ToString() ?? ""]?["description"]?.ToString() ?? "";
 
                 operatorArchiveData["limit"] = ""; //当前版本无法获取本数据
                 operatorArchiveData["unavailable"] = ""; //当前版本无法获取本数据
@@ -350,6 +368,8 @@ namespace AmiyaBotPlayerRatingServer.Data
                 operatorArchiveData["is_recruit"] = ""; //当前版本无法获取本数据
                 operatorArchiveData["is_classic"] = operatorJson["classicPotentialItemId"] != null;
                 operatorArchiveData["is_sp"] = operatorJson["isSpChar"];
+
+                _logger.LogInformation("Log 6");
 
                 //stories
                 //stories_data = JsonData.get_json_data('handbook_info_table')['handbookDict']
@@ -372,6 +392,8 @@ namespace AmiyaBotPlayerRatingServer.Data
                 }
                 operatorArchiveData["stories"] = stories;
 
+                _logger.LogInformation("Log 7");
+
 
                 //CV
                 if (voiceLangDict != null && voiceLangDict[operatorId] != null)
@@ -380,13 +402,15 @@ namespace AmiyaBotPlayerRatingServer.Data
                     var cvObject = new JObject();
                     foreach (var item in voiceLang)
                     {
-                        cvObject[voiceLangTypeDict[item.Key]?.ToString()] = item.Value["cvName"];
+                        cvObject[voiceLangTypeDict[item.Key??""]?.ToString()] = item.Value["cvName"];
                     }
                     operatorArchiveData["cv"] = cvObject;
                 }
 
+                _logger.LogInformation("Log 8");
+
                 //race
-                foreach(var story in stories)
+                foreach (var story in stories)
                 {
                     if (story["story_title"]?.ToString() == "基础档案")
                     {
@@ -399,7 +423,9 @@ namespace AmiyaBotPlayerRatingServer.Data
                         }
                     }
                 }
-                
+
+                _logger.LogInformation("Log 9");
+
                 //tags
 
                 //drawer
