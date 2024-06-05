@@ -204,6 +204,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 return;
             }
 
+            game.GameType = gameType;
             game.IsPrivate = paramObj["IsPrivate"].ToObject<bool>();
             game.RoomSettings = paramObj;
             game.CreatorId= appUser.Id;
