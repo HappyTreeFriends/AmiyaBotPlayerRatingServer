@@ -31,7 +31,21 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 _ => throw new ArgumentException("Invalid game type: "+gameType),
             };
         }
-        
+
+        private Game DeserializeGame(string gameJson)
+        {
+            var peek = JsonConvert.DeserializeObject<Game>(gameJson);
+            var gameType = peek?.GameType;
+            return gameType switch
+            {
+                "SchulteGrid" => JsonConvert.DeserializeObject<SchulteGridGame>(gameJson)!,
+                "SkinGuess" => JsonConvert.DeserializeObject<SkinGuessGame>(gameJson)!,
+                "SkillGuess" => JsonConvert.DeserializeObject<SkillGuessGame>(gameJson)!,
+                "CypherChallenge" => JsonConvert.DeserializeObject<CypherChallengeGame>(gameJson)!,
+                _ => throw new ArgumentException("Invalid game type"),
+            };
+        }
+
         public async Task<String> RequestJoinCode()
         {
             int maxTry = 100;
@@ -70,20 +84,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             var gameJson = SerializeGame(game);
             await _redisService.StringSetAsync("AmiyaBot-Minigame-Game-" + game.Id, gameJson);
         }
-
-        private Game DeserializeGame(string gameJson)
-        {
-            var peek = JsonConvert.DeserializeObject<Game>(gameJson);
-            var gameType = peek?.GameType;
-            return gameType switch
-            {
-                "SchulteGrid" => JsonConvert.DeserializeObject<SchulteGridGame>(gameJson)!,
-                "SkinGuess" => JsonConvert.DeserializeObject<SkinGuessGame>(gameJson)!,
-                "SkillGuess" => JsonConvert.DeserializeObject<SkillGuessGame>(gameJson)!,
-                _ => throw new ArgumentException("Invalid game type"),
-            };
-        }
-
+        
         private string SerializeGame(Game game)
         {
             return JsonConvert.SerializeObject(game);
