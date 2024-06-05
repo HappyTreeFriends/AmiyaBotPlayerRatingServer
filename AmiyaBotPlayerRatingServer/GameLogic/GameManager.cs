@@ -42,7 +42,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 "SkinGuess" => JsonConvert.DeserializeObject<SkinGuessGame>(gameJson)!,
                 "SkillGuess" => JsonConvert.DeserializeObject<SkillGuessGame>(gameJson)!,
                 "CypherChallenge" => JsonConvert.DeserializeObject<CypherChallengeGame>(gameJson)!,
-                _ => throw new ArgumentException("Invalid game type"),
+                _ => throw new ArgumentException("Invalid game type" + gameType),
             };
         }
 

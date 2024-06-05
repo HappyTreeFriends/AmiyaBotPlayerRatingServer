@@ -23,6 +23,9 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         {
             var creator = dbContext.Users.Find(game.CreatorId);
 
+            var manager = gameManager.CreateGameManager(game.GameType);
+            var payload = manager.GetGamePayload(game);
+
             return new
             {
                 game.Id,
@@ -41,7 +44,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
                 game.CloseTime,
                 game.IsPrivate,
                 game.PlayerList,
-                game.RoomSettings
+                game.RoomSettings,
+                Payload = payload
             };
         }
 
