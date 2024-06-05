@@ -28,7 +28,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 "SkinGuess" => serviceProvider.GetService<SkinGuessManager>()!,
                 "SkillGuess" => serviceProvider.GetService<SkillGuessManager>()!,
                 "CypherChallenge" => serviceProvider.GetService<CypherChallengeManager>()!,
-                _ => throw new ArgumentException("Invalid game type"),
+                _ => throw new ArgumentException("Invalid game type: "+gameType),
             };
         }
         
