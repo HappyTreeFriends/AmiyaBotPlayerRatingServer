@@ -15,10 +15,17 @@ namespace AmiyaBotPlayerRatingServer.Data
                 using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
                 using var reader = new StreamReader(fileStream);
                 var text = reader.ReadToEnd();
-                var characterMap = JToken.Parse(text);
-                _cache.Set("JToken:" + resKey, characterMap);
-                _cache.Set("Text:" + resKey, text);
-                _lastModified[resKey] = File.GetLastWriteTime(filePath);
+                try
+                {
+                    var characterMap = JToken.Parse(text);
+                    _cache.Set("JToken:" + resKey, characterMap);
+                    _cache.Set("Text:" + resKey, text);
+                    _lastModified[resKey] = File.GetLastWriteTime(filePath);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, $"Error loading file {filePath}");
+                }
             }
         }
 
