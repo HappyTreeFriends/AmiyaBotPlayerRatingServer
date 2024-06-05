@@ -492,12 +492,18 @@ namespace AmiyaBotPlayerRatingServer.Data
                 {
                     if (story["story_title"]?.ToString() == "基础档案")
                     {
-                        var r = System.Text.RegularExpressions.Regex.Match(story["story_text"]?.ToString() ?? "",
+                        var raceReg = System.Text.RegularExpressions.Regex.Match(story["story_text"]?.ToString() ?? "",
                             @"\n【种族】.*?(\S+).*?\n");
-                        if (r.Success)
+                        if (raceReg.Success)
                         {
-                            operatorArchiveData["race"] = r.Groups[1].Value;
-                            break;
+                            operatorArchiveData["race"] = raceReg.Groups[1].Value;
+                        }
+
+                        var sexReg = System.Text.RegularExpressions.Regex.Match(story["story_text"]?.ToString() ?? "",
+                                                       @"\n【性别】.*?(\S+).*?\n");
+                        if (sexReg.Success)
+                        {
+                            operatorArchiveData["sex"] = sexReg.Groups[1].Value;
                         }
                     }
                 }
@@ -575,7 +581,10 @@ namespace AmiyaBotPlayerRatingServer.Data
                     }
 
                     operatorArchiveData["skins"] = skinList;
+                    //所有画师逗号分隔
+                    operatorArchiveData["drawer"] = string.Join(",", skinList.Select(s => s["skin_drawer"]?.ToString()).Distinct());
                 }
+
 
 
                 //skill

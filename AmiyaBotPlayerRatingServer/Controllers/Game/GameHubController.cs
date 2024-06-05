@@ -19,12 +19,12 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         : ControllerBase
     {
 
-        private object GetGameReturnObj(GameLogic.Game game)
+        private async Task<object> GetGameReturnObj(GameLogic.Game game)
         {
             var creator = dbContext.Users.Find(game.CreatorId);
 
             var manager = gameManager.CreateGameManager(game.GameType);
-            var payload = manager.GetGamePayload(game);
+            var payload = await manager.GetGamePayload(game);
 
             return new
             {
@@ -59,7 +59,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
                 return NotFound();
             }
 
-            return Ok(GetGameReturnObj(game));
+            return Ok(await GetGameReturnObj(game));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
