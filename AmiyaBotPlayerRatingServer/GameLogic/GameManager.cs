@@ -1,4 +1,5 @@
 ﻿using AmiyaBotPlayerRatingServer.Data;
+using AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge;
 using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using AmiyaBotPlayerRatingServer.GameLogic.SkillGuess;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
@@ -26,6 +27,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
                 "SchulteGrid" => serviceProvider.GetService<SchulteGridGameManager>()!,
                 "SkinGuess" => serviceProvider.GetService<SkinGuessManager>()!,
                 "SkillGuess" => serviceProvider.GetService<SkillGuessManager>()!,
+                "CypherChallenge" => serviceProvider.GetService<CypherChallengeManager>()!,
                 _ => throw new ArgumentException("Invalid game type"),
             };
         }
