@@ -36,7 +36,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 }
                 else
                 {
-                    PullRepo();
+                    PullRepo(null);
                 }
                 ExtractGameData();
             }
@@ -49,10 +49,18 @@ namespace AmiyaBotPlayerRatingServer.Data
             ExecuteShellCommand($"git clone {_gitRepoUrl} {_directoryPath}");
         }
 
-        private void PullRepo()
+        private void PullRepo(String? commit)
         {
             ExecuteShellCommand($"rm -f {_directoryPath}/.git/index.lock");
-            ExecuteShellCommand($"cd {_directoryPath} && git fetch origin && git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)");
+            if (String.IsNullOrWhiteSpace(commit))
+            {
+                ExecuteShellCommand($"cd {_directoryPath} && git fetch origin && git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)");
+            }
+            else
+            {
+                ExecuteShellCommand($"cd {_directoryPath} && git fetch origin && git reset --hard origin/{commit}");
+            }
+            
         }
 
         private bool IsGitRepo()
@@ -101,9 +109,9 @@ namespace AmiyaBotPlayerRatingServer.Data
             process.WaitForExit();
         }
 
-        public void UpdateAssets()
+        public void UpdateAssets(String commit)
         {
-            PullRepo();
+            PullRepo(commit);
             ExtractGameData();
         }
 

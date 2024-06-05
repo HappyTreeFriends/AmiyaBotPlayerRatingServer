@@ -22,6 +22,11 @@ namespace AmiyaBotPlayerRatingServer.Controllers
             public string Message { get; set; }
             public DateTime ExpiredAt { get; set; }
         }
+
+        public class RefreshArknightsDataModel
+        {
+            public string Commit { get; set; }
+        }
         // ReSharper restore UnusedAutoPropertyAccessor.Global
 #pragma warning restore CS8618
 
@@ -60,12 +65,12 @@ namespace AmiyaBotPlayerRatingServer.Controllers
 
         [Authorize(Roles = "管理员账户")]
         [HttpPost("refreshArknightsData")]
-        public async Task<IActionResult> RefreshArknightsData()
+        public async Task<IActionResult> RefreshArknightsData([FromBody] RefreshArknightsDataModel model)
         {
 
             try
             {
-                memoryCache.UpdateAssets();
+                memoryCache.UpdateAssets(model.Commit);
                 memoryCache.UpdateCache();
             }
             catch (Exception e)
