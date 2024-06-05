@@ -1,4 +1,5 @@
-﻿using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
+﻿using AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge;
+using AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid;
 using AmiyaBotPlayerRatingServer.GameLogic.SkillGuess;
 using AmiyaBotPlayerRatingServer.GameLogic.SkinGuess;
 
@@ -12,6 +13,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             service.AddScoped<SchulteGridGameManager>();
             service.AddScoped<SkinGuessManager>();
             service.AddScoped<SkillGuessManager>();
+            service.AddScoped<CypherChallengeManager>();
         }
     }
 }
