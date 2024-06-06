@@ -110,6 +110,27 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             return retValue;
         }
 
+        private string JudgeAnswer(string prop, string userValue, string answerValue)
+        {
+            var retValue = "";
+            switch (prop)
+            {
+                case "稀有度":
+                case "职业":
+                case "子职业":
+                case "种族":
+                case "势力":
+                case "性别":
+                case "队伍":
+                case "阵营":
+                default:
+                    retValue = answerValue == userValue?"Correct":"Wrong";
+                    break;
+            }
+
+            return retValue;
+        }
+
         public Task<Game?> CreateNewGame(Dictionary<string, JToken> param)
         {
             return Task.FromResult(GenerateGame());
@@ -276,19 +297,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 var verifiedProperties = currentQuestion.CharacterPropertiesUsed.Where(v => v.Value).Select(v => v.Key)
                     .Where(k => currentQuestion.CharacterProperties[k] == thisOperatorsProperty[k]).ToDictionary(k => k, k => thisOperatorsProperty[k]);
 
-                var answer = new CypherChallengeGame.Answer()
-                {
-                    CharacterName = characterName,
-                    CharacterId = currentQuestion.CharacterId,
-                    AnswerTime = DateTime.Now,
-                    IsAnswerCorrect = true,
-                    PlayerId = playerId,
-                    //返回该干员的Property中，和正确答案一样的部分
-                    CharacterProperties = verifiedProperties,
-                    CharacterPropertiesResult = currentQuestion.CharacterPropertiesUsed.ToDictionary(k => k.Key, k => verifiedProperties[k.Key]!=null ? "Correct" : "Wrong")
-                };
+                var verifiedResult = verifiedProperties.ToDictionary(v=>v.Key,v =>
+                    JudgeAnswer(v.Key, v.Value, currentQuestion.CharacterProperties[v.Key]));
 
-                currentQuestion.AnswerList.Add(answer);
                 //检测并更新 currentQuestion.CharacterPropertyRevived
                 foreach (var property in verifiedProperties)
                 {
@@ -297,6 +308,20 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                         currentQuestion.CharacterPropertiesRevived[property.Key] = true;
                     }
                 }
+
+                var answer = new CypherChallengeGame.Answer()
+                {
+                    CharacterName = characterName,
+                    CharacterId = currentQuestion.CharacterId,
+                    AnswerTime = DateTime.Now,
+                    IsAnswerCorrect = true,
+                    PlayerId = playerId,
+                    CharacterProperties = verifiedProperties,
+                    //返回该干员的Property中，和正确答案一样的部分
+                    CharacterPropertiesResult = verifiedResult,
+                };
+
+                currentQuestion.AnswerList.Add(answer);
 
                 currentQuestion.GuessChanceLeft--;
                 if(currentQuestion.GuessChanceLeft==0)
@@ -340,6 +365,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 Game = FormatGame(game)
             });
         }
+
+
 
         public async Task<object> GetGamePayload(Game rawGame)
         {
