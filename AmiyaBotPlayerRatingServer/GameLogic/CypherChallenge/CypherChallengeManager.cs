@@ -400,7 +400,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     IsCompleted = question.IsCompleted,
                     CharacterName = (game.IsCompleted||question.IsCompleted)?question.CharacterName:"",
                     CharacterId = (game.IsCompleted || question.IsCompleted) ? question.CharacterId : "",
-                    CharacterProperties = question.CharacterProperties.Where(k => question.CharacterPropertiesRevived[k.Key]|| game.IsCompleted || question.IsCompleted ).ToDictionary(),
+                    CharacterProperties = question.CharacterProperties.Where(k => question.CharacterPropertiesRevived.GetValueOrDefault(k.Key)|| game.IsCompleted || question.IsCompleted ).ToDictionary(),
                     CharacterPropertiesRevived = question.CharacterPropertiesRevived,
                     CharacterPropertiesUsed = question.CharacterPropertiesUsed,
                     AnswerList = answerList,
