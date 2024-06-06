@@ -67,7 +67,7 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
         public async Task<IActionResult> ListGame()
         {
             var allGameInfos = dbContext.GameInfos.Where(g=>g.IsClosed==false).ToList();
-            var allGames = new List<GameLogic.Game>();
+            var allGames = new List<object>();
             foreach (var gameInfo in allGameInfos)
             {
                 var game = await gameManager.GetGameAsync(gameInfo.Id);
@@ -75,11 +75,11 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
 
                 if (game is { IsPrivate: false, IsCompleted: false })
                 {
-                    allGames.Add(game);
+                    allGames.Add(await GetGameReturnObj(game));
                 }
             }
             
-            return Ok(allGames.Select(GetGameReturnObj));
+            return Ok(allGames);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "普通账户")]
