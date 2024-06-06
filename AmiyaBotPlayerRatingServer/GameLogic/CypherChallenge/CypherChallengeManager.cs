@@ -65,7 +65,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                         question.CharacterProperties[property] = "";
                         question.CharacterPropertiesUsed[property] = false;
                     }
-                    question.CharacterPropertiesRevived[property] = false;
+                    question.CharacterPropertiesRevealed[property] = false;
                 }
 
                 //题目出好了
@@ -236,7 +236,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 };
 
                 currentQuestion.AnswerList.Add(answer);
-                currentQuestion.CharacterPropertiesRevived = currentQuestion.CharacterPropertiesUsed;
+                currentQuestion.CharacterPropertiesRevealed = currentQuestion.CharacterPropertiesUsed;
 
                 //更新分数
                 if (game.PlayerScore.ContainsKey(playerId))
@@ -300,12 +300,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 var verifiedResult = verifiedProperties.ToDictionary(v=>v.Key,v =>
                     JudgeAnswer(v.Key, v.Value, currentQuestion.CharacterProperties[v.Key]));
 
-                //检测并更新 currentQuestion.CharacterPropertyRevived
+                //检测并更新 currentQuestion.CharacterPropertyRevealed
                 foreach (var property in verifiedProperties)
                 {
                     if (currentQuestion.CharacterProperties[property.Key] == property.Value)
                     {
-                        currentQuestion.CharacterPropertiesRevived[property.Key] = true;
+                        currentQuestion.CharacterPropertiesRevealed[property.Key] = true;
                     }
                 }
 
@@ -427,8 +427,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     IsCompleted = question.IsCompleted,
                     CharacterName = (game.IsCompleted||question.IsCompleted)?question.CharacterName:"",
                     CharacterId = (game.IsCompleted || question.IsCompleted) ? question.CharacterId : "",
-                    CharacterProperties = question.CharacterProperties.Where(k => question.CharacterPropertiesRevived.GetValueOrDefault(k.Key)|| game.IsCompleted || question.IsCompleted ).ToDictionary(),
-                    CharacterPropertiesRevived = question.CharacterPropertiesRevived,
+                    CharacterProperties = question.CharacterProperties.Where(k => question.CharacterPropertiesRevealed.GetValueOrDefault(k.Key)|| game.IsCompleted || question.IsCompleted ).ToDictionary(),
+                    CharacterPropertiesRevealed = question.CharacterPropertiesRevealed,
                     CharacterPropertiesUsed = question.CharacterPropertiesUsed,
                     AnswerList = answerList,
                 });
@@ -529,7 +529,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             }
 
             //随机选择一个未揭露的属性
-            var unrevealedProperties = currentQuestion.CharacterPropertiesUsed.FirstOrDefault(k => !currentQuestion.CharacterPropertiesRevived[k.Key]);
+            var unrevealedProperties = currentQuestion.CharacterPropertiesUsed.FirstOrDefault(k => !currentQuestion.CharacterPropertiesRevealed[k.Key]);
             if (unrevealedProperties.Key == null)
             {
                 return Task.FromResult(new RequestHintOrGiveUpResult()
@@ -540,7 +540,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             }
 
             //标记为已揭露
-            currentQuestion.CharacterPropertiesRevived[unrevealedProperties.Key] = true;
+            currentQuestion.CharacterPropertiesRevealed[unrevealedProperties.Key] = true;
 
             return Task.FromResult(new RequestHintOrGiveUpResult()
             {

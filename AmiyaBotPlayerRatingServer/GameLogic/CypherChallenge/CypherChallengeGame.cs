@@ -32,7 +32,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
             public Dictionary<String,String> CharacterProperties { get; set; } = new();
 
-            public Dictionary<String, bool> CharacterPropertiesRevived { get; set; } = new();
+            public Dictionary<String, bool> CharacterPropertiesRevealed { get; set; } = new();
             public Dictionary<String, bool> CharacterPropertiesUsed { get; set; } = new();
 
             public List<Answer> AnswerList { get; set; } = new();
