@@ -405,7 +405,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     }
                 }
 
-                
+                var canQuestionReveal = (game.IsCompleted || question.IsCompleted || index < game.CurrentQuestionIndex);
+
+
+
                 var answerList = new List<object>();
                 foreach (var answer in question.AnswerList)
                 {
@@ -416,7 +419,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                         AnswerTime = answer.AnswerTime,
                         PlayerId = answer.PlayerId,
                         IsAnswerCorrect = answer.IsAnswerCorrect,
-                        CharacterProperties = answer.CharacterProperties.Where(k => answer.CharacterPropertiesResult.ContainsKey(k.Key) || game.IsCompleted || question.IsCompleted).ToDictionary(),
+                        //CharacterProperties = answer.CharacterProperties.Where(k => answer.CharacterPropertiesResult.ContainsKey(k.Key) || canQuestionReveal).ToDictionary(),
                         CharacterPropertiesResult = answer.CharacterPropertiesResult,
                     });
                 }
@@ -425,9 +428,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 {
                     GuessChanceLeft = question.GuessChanceLeft,
                     IsCompleted = question.IsCompleted,
-                    CharacterName = (game.IsCompleted||question.IsCompleted)?question.CharacterName:"",
-                    CharacterId = (game.IsCompleted || question.IsCompleted) ? question.CharacterId : "",
-                    CharacterProperties = question.CharacterProperties.Where(k => question.CharacterPropertiesRevealed.GetValueOrDefault(k.Key)|| game.IsCompleted || question.IsCompleted ).ToDictionary(),
+                    CharacterName = canQuestionReveal ? question.CharacterName:"",
+                    CharacterId = canQuestionReveal ? question.CharacterId : "",
+                    CharacterProperties = question.CharacterProperties.Where(
+                        k => question.CharacterPropertiesRevealed.GetValueOrDefault(k.Key) 
+                             || canQuestionReveal ).ToDictionary(),
                     CharacterPropertiesRevealed = question.CharacterPropertiesRevealed,
                     CharacterPropertiesUsed = question.CharacterPropertiesUsed,
                     AnswerList = answerList,
