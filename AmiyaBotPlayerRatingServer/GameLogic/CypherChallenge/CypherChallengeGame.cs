@@ -11,7 +11,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             public String CharacterId { get; set; }
 
             public Dictionary<String, String> CharacterProperties { get; set; } = new();
-            public Dictionary<String, String> CharacterPropertyResult { get; set; } = new();
+            public Dictionary<String, String> CharacterPropertiesResult { get; set; } = new();
 
             public DateTime AnswerTime { get; set; }
             public string? PlayerId { get; set; }
@@ -32,8 +32,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
             public Dictionary<String,String> CharacterProperties { get; set; } = new();
 
-            public Dictionary<String, bool> CharacterPropertyRevived { get; set; } = new();
-            public Dictionary<String, bool> CharacterPropertyUsed { get; set; } = new();
+            public Dictionary<String, bool> CharacterPropertiesRevived { get; set; } = new();
+            public Dictionary<String, bool> CharacterPropertiesUsed { get; set; } = new();
 
             public List<Answer> AnswerList { get; set; } = new();
         }
