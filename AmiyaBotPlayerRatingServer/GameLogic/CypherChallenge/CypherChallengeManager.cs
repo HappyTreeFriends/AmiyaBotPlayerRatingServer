@@ -29,7 +29,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             var game= new CypherChallengeGame();
             game.GameType="CypherChallenge";
 
-            while (game.QuestionList.Count<8)
+            while (game.QuestionList.Count<10)
             {
                 var randomIndex = random.Next(0, operatorIdList.Count);
                 var operatorId = operatorIdList[randomIndex];
@@ -68,7 +68,35 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     question.CharacterPropertiesRevealed[property] = false;
                 }
 
-                //题目出好了
+                //上一题的答案是下一题的第一个项目
+                if (game.QuestionList.Count>=1)
+                {
+                    var lastQuestion = game.QuestionList.Last();
+                    var answers = new Dictionary<String, string>();
+                    foreach (var usedProp in lastQuestion.CharacterPropertiesUsed.Where(k=>k.Value).Select(k=>k.Key))
+                    {
+                        var lastOp = lastQuestion.CharacterProperties[usedProp];
+                        var currOp = question.CharacterProperties[usedProp];
+                        var answerJd = JudgeAnswer(usedProp, lastOp, currOp);
+                        if(answerJd == "Correct")
+                        {
+                            question.CharacterPropertiesRevealed[usedProp] = true;
+                        }
+                        answers.Add(usedProp,answerJd);
+                    }
+
+                    var answer = new CypherChallengeGame.Answer()
+                    {
+                        CharacterName = lastQuestion.CharacterName,
+                        CharacterId = lastQuestion.CharacterId,
+                        AnswerTime = DateTime.Now,
+                        IsAnswerCorrect = true,
+                        PlayerId = null,
+                        CharacterPropertiesResult = answers
+                    };
+
+                    question.AnswerList.Add(answer);
+                }
 
                 game.QuestionList.Add(question);
             }
