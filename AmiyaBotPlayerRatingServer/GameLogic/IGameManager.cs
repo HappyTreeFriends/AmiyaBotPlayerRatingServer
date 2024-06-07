@@ -11,16 +11,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 {
     public interface IGameManager
     {
-        public Task<Game?> CreateNewGame(Dictionary<String, JToken> param);
-
-        public Task<object> HandleMove(Game game, string playerId, string move);
-
-        public Task<object> GetGamePayload(Game game);
-        public Task<object> GetGameStartPayload(Game game);
-        public Task<object> GetCloseGamePayload(Game game);
-
-        public Task<double> GetScore(Game game, string player);
-
 #pragma warning disable CS8618
         [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")]
         public class RequestHintOrGiveUpResult
@@ -31,8 +21,23 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         }
 #pragma warning restore CS8618
 
+        public Task<Game?> CreateNewGame(Dictionary<String, JToken> param);
+
+        public Task<object> GetGamePayload(Game rawGame);
+        public Task<double> GetScore(Game game, string player);
+
+        public Task<object> GetGameStartPayload(Game game);
+
+        public Task<object> HandleMove(Game game, string playerId, string move);
+
         public Task<RequestHintOrGiveUpResult> GiveUp(Game game, string appUserId);
         public Task<RequestHintOrGiveUpResult> RequestHint(Game game, string appUserId);
+
         public Task<object> GetCompleteGamePayload(Game game);
+        public Task<object> GetCloseGamePayload(Game game);
+
+
+
+
     }
 }

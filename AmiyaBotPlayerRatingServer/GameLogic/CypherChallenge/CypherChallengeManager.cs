@@ -10,7 +10,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
     public class CypherChallengeManager(ArknightsMemoryCache memoryCache, PlayerRatingDatabaseContext dbContext)
         : IGameManager
     {
-        private readonly List<String> Properties = new (){ "势力", "职业", "子职业", "稀有度", "性别", "队伍", "阵营", "画师" };
+        private readonly List<String> _properties = ["势力", "职业", "子职业", "稀有度", "性别", "队伍", "阵营", "画师"];
         
         private Game? GenerateGame()
         {
@@ -47,7 +47,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 };
 
                 //随机选择5个维度有值的维度
-                var randomProperties = Properties.Where(r=>GetPropValue(randomOperator, r)!=null).OrderBy(x => random.Next()).Take(5).ToList();
+                var randomProperties = _properties.Where(r=>GetPropValue(randomOperator, r)!=null).OrderBy(x => random.Next()).Take(5).ToList();
                 if (randomProperties.Count < 5)
                 {
                     continue;
@@ -58,7 +58,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     question.CharacterPropertiesUsed[property] = true;
                 }
 
-                foreach(var property in Properties)
+                foreach(var property in _properties)
                 {
                     if (!question.CharacterProperties.ContainsKey(property))
                     {
@@ -159,11 +159,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             return retValue;
         }
 
-        public Task<Game?> CreateNewGame(Dictionary<string, JToken> param)
-        {
-            return Task.FromResult(GenerateGame());
-        }
-
         private bool IsOperatorName(string name)
         {
             var charDataJson = memoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String, String>>();
@@ -174,6 +169,73 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             }
 
             return charDataJson.Values.Contains(name);
+        }
+        
+        private object FormatGame(CypherChallengeGame game)
+        {
+            var questionList = new List<object>();
+            for (var index = 0; index < game.QuestionList.Count; index++)
+            {
+                var question = game.QuestionList[index];
+                if (!game.IsCompleted)
+                {
+                    //未结束游戏只显示当前题目和已经回答的题目
+                    if (index > game.CurrentQuestionIndex)
+                    {
+                        continue;
+                    }
+                }
+
+                var canQuestionReveal = (game.IsCompleted || question.IsCompleted || index < game.CurrentQuestionIndex);
+
+
+
+                var answerList = new List<object>();
+                foreach (var answer in question.AnswerList)
+                {
+                    answerList.Add(new
+                    {
+                        CharacterName = answer.CharacterName,
+                        CharacterId = answer.CharacterId,
+                        AnswerTime = answer.AnswerTime,
+                        PlayerId = answer.PlayerId,
+                        IsAnswerCorrect = answer.IsAnswerCorrect,
+                        CharacterProperties = canQuestionReveal?answer.CharacterProperties:null,
+                        CharacterPropertiesResult = answer.CharacterPropertiesResult,
+                    });
+                }
+
+                questionList.Add(new
+                {
+                    GuessChanceLeft = question.GuessChanceLeft,
+                    IsCompleted = question.IsCompleted,
+                    CharacterName = canQuestionReveal ? question.CharacterName : "",
+                    CharacterId = canQuestionReveal ? question.CharacterId : "",
+                    CharacterProperties = question.CharacterProperties.Where(
+                        k => question.CharacterPropertiesRevealed.GetValueOrDefault(k.Key)
+                             || canQuestionReveal).ToDictionary(),
+                    CharacterPropertiesRevealed = question.CharacterPropertiesRevealed,
+                    CharacterPropertiesUsed = question.CharacterPropertiesUsed,
+                    AnswerList = answerList,
+                });
+            }
+
+            return new
+            {
+                QuestionList = questionList,
+                CurrentQuestionIndex = game.CurrentQuestionIndex,
+
+                IsCompleted = game.IsCompleted,
+                CompleteTime = game.CompleteTime,
+                IsClosed = true,
+                CloseTime = DateTime.Now
+            };
+
+        }
+        
+        public Task<Game?> CreateNewGame(Dictionary<string, JToken> param)
+        {
+            return Task.FromResult(GenerateGame());
         }
 
         public Task<object> HandleMove(Game rawGame, string playerId, string move)
@@ -340,11 +402,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 var answer = new CypherChallengeGame.Answer()
                 {
                     CharacterName = characterName,
-                    CharacterId = currentQuestion.CharacterId,
+                    CharacterId = thisOperatorId,
                     AnswerTime = DateTime.Now,
                     IsAnswerCorrect = true,
                     PlayerId = playerId,
-                    CharacterProperties = verifiedProperties,
+                    CharacterProperties = thisOperatorsProperty,
                     //返回该干员的Property中，和正确答案一样的部分
                     CharacterPropertiesResult = verifiedResult,
                 };
@@ -393,9 +455,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 Game = FormatGame(game)
             });
         }
-
-
-
+        
         public async Task<object> GetGamePayload(Game rawGame)
         {
             await Task.CompletedTask;
@@ -416,68 +476,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
         public Task<object> GetGameStartPayload(Game game)
         {
             return Task.FromResult<object>(new { });
-        }
-
-        private object FormatGame(CypherChallengeGame game)
-        {
-            var questionList = new List<object>();
-            for (var index = 0; index < game.QuestionList.Count; index++)
-            {
-                var question = game.QuestionList[index];
-                if (!game.IsCompleted)
-                {
-                    //未结束游戏只显示当前题目和已经回答的题目
-                    if (index > game.CurrentQuestionIndex)
-                    {
-                        continue;
-                    }
-                }
-
-                var canQuestionReveal = (game.IsCompleted || question.IsCompleted || index < game.CurrentQuestionIndex);
-
-
-
-                var answerList = new List<object>();
-                foreach (var answer in question.AnswerList)
-                {
-                    answerList.Add(new
-                    {
-                        CharacterName = answer.CharacterName,
-                        CharacterId = answer.CharacterId,
-                        AnswerTime = answer.AnswerTime,
-                        PlayerId = answer.PlayerId,
-                        IsAnswerCorrect = answer.IsAnswerCorrect,
-                        //CharacterProperties = answer.CharacterProperties.Where(k => answer.CharacterPropertiesResult.ContainsKey(k.Key) || canQuestionReveal).ToDictionary(),
-                        CharacterPropertiesResult = answer.CharacterPropertiesResult,
-                    });
-                }
-
-                questionList.Add(new
-                {
-                    GuessChanceLeft = question.GuessChanceLeft,
-                    IsCompleted = question.IsCompleted,
-                    CharacterName = canQuestionReveal ? question.CharacterName:"",
-                    CharacterId = canQuestionReveal ? question.CharacterId : "",
-                    CharacterProperties = question.CharacterProperties.Where(
-                        k => question.CharacterPropertiesRevealed.GetValueOrDefault(k.Key) 
-                             || canQuestionReveal ).ToDictionary(),
-                    CharacterPropertiesRevealed = question.CharacterPropertiesRevealed,
-                    CharacterPropertiesUsed = question.CharacterPropertiesUsed,
-                    AnswerList = answerList,
-                });
-            }
-            
-            return new
-            {
-                QuestionList = questionList,
-                CurrentQuestionIndex = game.CurrentQuestionIndex,
-
-                IsCompleted = game.IsCompleted,
-                CompleteTime = game.CompleteTime,
-                IsClosed = true,
-                CloseTime = DateTime.Now
-            };
-
         }
 
         public Task<object> GetCompleteGamePayload(Game rawGame)
