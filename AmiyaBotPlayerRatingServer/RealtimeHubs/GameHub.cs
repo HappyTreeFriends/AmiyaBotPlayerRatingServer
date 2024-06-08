@@ -559,9 +559,6 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var rallyNode = game.RallyNodes.GetOrAdd(rallyName, new Game.RallyNode(rallyName));
 
             rallyNode.PlayerIds.Add(appUser.Id);
-
-            await _gameManager.SaveGameAsync(game);
-
             
             await Clients.Group(gameId).SendAsync("RallyPointStatus", JsonConvert.SerializeObject(new
             {
@@ -582,6 +579,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 game.RallyNodes.Remove(rallyName, out _);
             }
 
+            await _gameManager.SaveGameAsync(game);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
