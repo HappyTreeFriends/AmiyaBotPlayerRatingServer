@@ -47,8 +47,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 };
 
                 //随机选择5个维度有值的维度
-                var randomProperties = _properties.Where(r=>GetPropValue(randomOperator, r)!=null).OrderBy(x => random.Next()).Take(5).ToList();
-                if (randomProperties.Count < 5)
+                var randomProperties = _properties.Where(r=>GetPropValue(randomOperator, r)!=null).OrderBy(x => random.Next()).Take(6).ToList();
+                if (randomProperties.Count < 6)
                 {
                     continue;
                 }
