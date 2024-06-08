@@ -482,10 +482,16 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
 
-            await Clients.Group(gameId).SendAsync("RallyPointCreated", JsonConvert.SerializeObject(new
+            await Clients.Caller.SendAsync("RallyPointCreated", JsonConvert.SerializeObject(new
             {
                 Name = rallyName,
                 CreatePlayer = appUser.Id,
+                Players = rallyNode.PlayerIds,
+            }));
+
+            await Clients.Group(gameId).SendAsync("RallyPointStatus", JsonConvert.SerializeObject(new
+            {
+                Name = rallyName,
                 Players = rallyNode.PlayerIds,
             }));
         }
@@ -556,15 +562,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
 
-            if (rallyNode.PlayerIds.Count == game.PlayerList.Count)
+            
+            await Clients.Group(gameId).SendAsync("RallyPointStatus", JsonConvert.SerializeObject(new
             {
-                await Clients.Group(gameId).SendAsync("RallyPointUpdated", JsonConvert.SerializeObject(new
-                {
-                    Name = rallyName,
-                    UpdatePlayer = appUser.Id,
-                    Players = rallyNode.PlayerIds,
-                }));
-            }
+                Name = rallyName,
+                Players = rallyNode.PlayerIds,
+            }));
+            
 
             //如果所有玩家都到达了这个点，就触发事件
             if (rallyNode.PlayerIds.Count == game.PlayerList.Count&& game.PlayerList.All(p=>rallyNode.PlayerIds.Contains(p.Key)) )
@@ -574,9 +578,10 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                     Name = rallyName,
                     Players = rallyNode.PlayerIds,
                 }));
+
+                game.RallyNodes.Remove(rallyName, out _);
             }
 
-            game.RallyNodes.Remove(rallyName,out _);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
