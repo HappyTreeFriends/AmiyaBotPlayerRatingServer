@@ -576,7 +576,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                     Players = rallyNode.PlayerIds,
                 }));
 
-                game.RallyNodes.Remove(rallyName, out _);
+                //game.RallyNodes.Remove(rallyName, out _);
             }
 
             await _gameManager.SaveGameAsync(game);
