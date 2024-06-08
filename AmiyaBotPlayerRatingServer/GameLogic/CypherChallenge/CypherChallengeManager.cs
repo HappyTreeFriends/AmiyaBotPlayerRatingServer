@@ -71,6 +71,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 //上一题的答案是下一题的第一个项目
                 if (game.QuestionList.Count>=1)
                 {
+                    question.GuessChanceLeft--;
+
                     var lastQuestion = game.QuestionList.Last();
                     var answers = new Dictionary<String, string>();
                     foreach (var usedProp in lastQuestion.CharacterPropertiesUsed.Where(k=>k.Value).Select(k=>k.Key))
