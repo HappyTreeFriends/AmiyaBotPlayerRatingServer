@@ -54,6 +54,7 @@ builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
     options.UseOpenIddict();
 });
 
+
 var redisConn = configuration["Redis:ConnectionString"];
 if (!string.IsNullOrWhiteSpace(redisConn))
 {
@@ -64,6 +65,13 @@ if (!string.IsNullOrWhiteSpace(redisConn))
     {
         new(connectionMultiplexer)
     }));
+
+    builder.Services.AddSignalR().AddStackExchangeRedis(redisConn);
+}
+else
+{
+    //错误! 本服务不能在没有Redis的情况下运行
+    throw new InvalidOperationException("Redis connection string is required.");
 }
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -214,8 +222,6 @@ builder.Services.AddOpenIddictScopePolicy();
 #endregion
 
 builder.Services.AddHttpClient();
-
-builder.Services.AddSignalR();
 
 //注入自定义服务
 builder.Services.AddScoped<CreateMAATaskService>();
