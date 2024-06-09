@@ -291,6 +291,74 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             return true;
         }
 
+        public void CreateStatistics(IScorable game)
+        {
+            //只有至少有两人有分数的房间才会统计
+            if (game.PlayerScore.Count(s => s.Value>0) < 2)
+            {
+                return;
+            }
+
+            //统计第一名第二名和第三名
+            var playerScoreList = game.PlayerScore.ToList();
+            playerScoreList.Sort((a, b) => b.Value.CompareTo(a.Value));
+
+            var firstPlace = playerScoreList.Count > 0 ? playerScoreList[0] : default;
+            var secondPlace = playerScoreList.Count > 1 ? playerScoreList[1] : default;
+            var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
+
+            //统计每个玩家的正确和错误次数
+            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsValid).GroupBy(p => p.PlayerId)
+                .Select(p => new
+                {
+                    PlayerId = p.Key,
+                    CorrectCount = p.Count(c => c.IsCorrect),
+                    WrongCount = p.Count(c => !c.IsCorrect)
+                }).ToList();
+
+            foreach (var pl in game.PlayerList)
+            {
+                var playerId = pl.Key;
+                var playerSt =
+                    dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
+                if (playerSt == null)
+                {
+                    playerSt = new ApplicationUserMinigameStatistics()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        UserId = playerId,
+                        TotalGamesPlayed = 0,
+                        TotalGamesFirstPlace = 0,
+                        TotalGamesSecondPlace = 0,
+                        TotalGamesThirdPlace = 0,
+                        TotalAnswersCorrect = 0,
+                        TotalAnswersWrong = 0
+                    };
+                    dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
+                }
+
+                playerSt.TotalGamesPlayed++;
+                playerSt.TotalAnswersCorrect +=
+                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.CorrectCount ?? 0;
+                playerSt.TotalAnswersWrong +=
+                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.WrongCount ?? 0;
+
+                if (firstPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesFirstPlace++;
+                }
+                else if (secondPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesSecondPlace++;
+                }
+                else if (thirdPlace.Key == playerId)
+                {
+                    playerSt.TotalGamesThirdPlace++;
+                }
+
+                dbContext.SaveChanges();
+            }
+        }
     }
 
 }

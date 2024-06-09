@@ -17,9 +17,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public bool IsCorrect { get; set; }
     }
 
-    public interface IScoreable
+    public interface IScorable
     {
         List<PlayerMove> PlayerMoveList { get; set; }
+        Dictionary<String, double> PlayerScore { get; set; }
+        Dictionary<string, string> PlayerList { get; set; }
     }
 
     public class Game:IDisposable,IAsyncDisposable
@@ -45,7 +47,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
 
         public Dictionary<String,JToken> RoomSettings { get; set; }
 
-        public ConcurrentDictionary<String, String> PlayerList { get; set; } = new();
+        public Dictionary<string, string> PlayerList { get; set; } = new();
 
         public class RallyNode(string name)
         {
@@ -53,7 +55,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
             public HashSet<string> PlayerIds { get; set; } = new();
         }
 
-        public ConcurrentDictionary<string, RallyNode> RallyNodes { get; } = new();
+        public Dictionary<string, RallyNode> RallyNodes { get; } = new();
 
         public int Version { get; set; }
 

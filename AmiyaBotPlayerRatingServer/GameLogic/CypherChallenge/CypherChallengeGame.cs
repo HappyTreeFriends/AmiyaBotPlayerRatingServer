@@ -2,7 +2,7 @@
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 {
-    public class CypherChallengeGame:Game,IScoreable
+    public class CypherChallengeGame:Game,IScorable
     {
 
         public class Answer

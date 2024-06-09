@@ -7,7 +7,7 @@ using static AmiyaBotPlayerRatingServer.GameLogic.IGameManager;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 {
-    public class CypherChallengeManager(ArknightsMemoryCache memoryCache, PlayerRatingDatabaseContext dbContext)
+    public class CypherChallengeManager(ArknightsMemoryCache memoryCache, GameManager manager)
         : IGameManager
     {
         private readonly List<String> _properties = ["势力", "职业", "子职业", "稀有度", "性别", "队伍", "阵营", "画师"];
@@ -333,11 +333,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 //更新分数
                 if (game.PlayerScore.ContainsKey(playerId))
                 {
-                    game.PlayerScore[playerId] += 100;
+                    game.PlayerScore[playerId] += 200;
                 }
                 else
                 {
-                    game.PlayerScore.TryAdd(playerId, 100);
+                    game.PlayerScore.TryAdd(playerId, 200);
                 }
 
                 currentQuestion.IsCompleted = true;
@@ -397,7 +397,19 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 {
                     if (currentQuestion.CharacterProperties[property.Key] == property.Value)
                     {
-                        currentQuestion.CharacterPropertiesRevealed[property.Key] = true;
+                        if (currentQuestion.CharacterPropertiesRevealed[property.Key] == false)
+                        {
+                            if (game.PlayerScore.ContainsKey(playerId))
+                            {
+                                game.PlayerScore[playerId] += 50;
+                            }
+                            else
+                            {
+                                game.PlayerScore.TryAdd(playerId, 50);
+                            }
+
+                            currentQuestion.CharacterPropertiesRevealed[property.Key] = true;
+                        }
                     }
                 }
 
@@ -441,7 +453,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     game.IsCompleted = true;
                     game.CompleteTime = DateTime.Now;
 
-                    //CreateStatistics(game);
+                    manager.CreateStatistics(game);
                 }
             }
             
@@ -493,7 +505,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             {
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
-                //CreateStatistics(game);
+                manager.CreateStatistics(game);
             }
 
             return Task.FromResult<object>(new
@@ -518,7 +530,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             {
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
-                //CreateStatistics(game);
+                manager.CreateStatistics(game);
             }
 
             return Task.FromResult<object>(new
