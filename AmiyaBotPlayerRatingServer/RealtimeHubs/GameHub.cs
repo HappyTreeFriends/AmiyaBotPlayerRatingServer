@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System.Security.Claims;
 using AmiyaBotPlayerRatingServer.Data;
 using AmiyaBotPlayerRatingServer.Model;
+using AmiyaBotPlayerRatingServer.Utility;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -302,7 +303,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             var oldConnectionId = game.PlayerList[playerId];
-            game.PlayerList.TryRemove(playerId,out _);
+            game.PlayerList.Remove(playerId);
 
             var playerKickedResponse = JsonConvert.SerializeObject(new
             {
@@ -335,7 +336,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            game.PlayerList.TryRemove(appUser.Id,out _);
+            game.PlayerList.Remove(appUser.Id);
 
             await _gameManager.SaveGameAsync(game);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
@@ -357,6 +358,34 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 await CloseGame(gameId);
             }
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
+        public async Task ChangeGameSettings(string gameId, string settings)
+        {
+            await using var game = await ValidateGame(gameId,false);
+            var appUser = await ValidateUser();
+
+            if (game.CreatorId != appUser.Id)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var settingsObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(settings);
+            if (settingsObj == null)
+            {
+                throw new DataException("Invalid Game Settings");
+            }
+
+            game.RoomSettings = settingsObj;
+
+            await _gameManager.SaveGameAsync(game);
+            await Clients.Group(gameId).SendAsync("GameSettingsChanged", JsonConvert.SerializeObject(new
+            {
+                Game = FormatGame(game),
+                Settings = settingsObj,
+            }));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -478,7 +507,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new DataException("Invalid Rally Point Name");
             }
 
-            var rallyNode = game.RallyNodes.GetOrAdd(rallyName, new Game.RallyNode(rallyName));
+            var rallyNode = game.RallyNodes.GetValueOrSetDefault(rallyName, new Game.RallyNode(rallyName));
 
             await _gameManager.SaveGameAsync(game);
 
@@ -522,7 +551,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new DataException("Invalid Rally Point Name");
             }
 
-            var rallyNode = game.RallyNodes.GetOrAdd(rallyName, new Game.RallyNode(rallyName));
+            var rallyNode = game.RallyNodes.GetValueOrSetDefault(rallyName, new Game.RallyNode(rallyName));
 
             await Clients.Caller.SendAsync("RallyPointStatus", JsonConvert.SerializeObject(new
             {
@@ -556,7 +585,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new DataException("Invalid Rally Point Name");
             }
 
-            var rallyNode = game.RallyNodes.GetOrAdd(rallyName, new Game.RallyNode(rallyName));
+            var rallyNode = game.RallyNodes.GetValueOrSetDefault(rallyName, new Game.RallyNode(rallyName));
 
             rallyNode.PlayerIds.Add(appUser.Id);
             
