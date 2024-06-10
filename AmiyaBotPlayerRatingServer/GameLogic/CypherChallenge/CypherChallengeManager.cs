@@ -52,9 +52,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 {
                     continue;
                 }
-                foreach (var property in randomProperties)
+
+                foreach (var property in _properties)
                 {
                     question.CharacterProperties[property] = GetPropValue(randomOperator, property)!;
+                }
+                foreach (var property in randomProperties)
+                {
                     question.CharacterPropertiesUsed[property] = true;
                 }
 
@@ -75,7 +79,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
                     var lastQuestion = game.QuestionList.Last();
                     var answers = new Dictionary<String, string>();
-                    foreach (var usedProp in lastQuestion.CharacterPropertiesUsed.Where(k=>k.Value).Select(k=>k.Key))
+                    foreach (var usedProp in question.CharacterPropertiesUsed.Where(k=>k.Value).Select(k=>k.Key))
                     {
                         var lastOp = lastQuestion.CharacterProperties[usedProp];
                         var currOp = question.CharacterProperties[usedProp];
@@ -83,8 +87,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                         if(answerJd == "Correct")
                         {
                             question.CharacterPropertiesRevealed[usedProp] = true;
+                            answers.Add(usedProp, answerJd);
                         }
-                        answers.Add(usedProp,answerJd);
                     }
 
                     var answer = new CypherChallengeGame.Answer()
