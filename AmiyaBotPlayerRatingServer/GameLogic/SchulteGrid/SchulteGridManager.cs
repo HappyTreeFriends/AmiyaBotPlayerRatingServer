@@ -22,7 +22,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             return charDataJson.Values.Contains(name);
         }
 
-        public async Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
+        public async Task<Game?> CreateNewGame(Dictionary<String, object> param)
         {
             var game = await SchulteGridGameData.BuildContinuousMode(memoryCache);
 

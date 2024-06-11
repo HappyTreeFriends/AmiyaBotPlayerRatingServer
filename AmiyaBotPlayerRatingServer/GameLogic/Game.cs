@@ -45,7 +45,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         public bool IsClosed { get; set; }
         public DateTime? CloseTime { get; set; }
 
-        public Dictionary<String,JToken> RoomSettings { get; set; }
+        public Dictionary<String,object> RoomSettings { get; set; }
 
         public Dictionary<string, string> PlayerList { get; set; } = new();
 

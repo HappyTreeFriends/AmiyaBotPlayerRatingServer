@@ -239,7 +239,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
         }
         
-        public Task<Game?> CreateNewGame(Dictionary<string, JToken> param)
+        public Task<Game?> CreateNewGame(Dictionary<string, object> param)
         {
             return Task.FromResult(GenerateGame());
         }

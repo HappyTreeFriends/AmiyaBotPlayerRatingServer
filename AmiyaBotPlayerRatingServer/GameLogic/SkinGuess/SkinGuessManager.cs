@@ -113,7 +113,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             return charDataJson.Values.Contains(name);
         }
         
-        public Task<Game?> CreateNewGame(Dictionary<String, JToken> param)
+        public Task<Game?> CreateNewGame(Dictionary<String, object> param)
         {
             var game = GenerateRealGame();
             return Task.FromResult<Game?>(game);

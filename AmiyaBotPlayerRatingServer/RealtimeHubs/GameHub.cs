@@ -188,7 +188,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var appUser = await ValidateUser();
 
 
-            var paramObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(param);
+            var paramObj = JsonConvert.DeserializeObject<Dictionary<String,object>>(param);
             if (paramObj == null)
             {
                 throw new DataException("Invalid Game Param");
@@ -206,7 +206,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             game.GameType = gameType;
-            game.IsPrivate = paramObj["IsPrivate"].ToObject<bool>();
+            game.IsPrivate = paramObj.ContainsKey("IsPrivate") && paramObj["IsPrivate"].ToString() == "true";
             game.RoomSettings = paramObj;
             game.CreatorId= appUser.Id;
             game.CreatorConnectionId = Context.ConnectionId;
@@ -372,13 +372,16 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 throw new UnauthorizedAccessException();
             }
 
-            var settingsObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(settings);
+            var settingsObj = JsonConvert.DeserializeObject<Dictionary<String,Object>>(settings);
             if (settingsObj == null)
             {
                 throw new DataException("Invalid Game Settings");
             }
 
             game.RoomSettings = settingsObj;
+
+            //isPrivate要特别处理
+            game.IsPrivate = settingsObj.ContainsKey("IsPrivate") && settingsObj["IsPrivate"].ToString() == "true";
 
             await _gameManager.SaveGameAsync(game);
             await Clients.Group(gameId).SendAsync("GameSettingsChanged", JsonConvert.SerializeObject(new

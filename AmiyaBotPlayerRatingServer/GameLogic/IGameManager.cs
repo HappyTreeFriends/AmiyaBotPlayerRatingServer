@@ -21,7 +21,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         }
 #pragma warning restore CS8618
 
-        public Task<Game?> CreateNewGame(Dictionary<String, JToken> param);
+        public Task<Game?> CreateNewGame(Dictionary<String, object> param);
 
         public Task<object> GetGamePayload(Game rawGame);
         public Task<double> GetScore(Game game, string player);
