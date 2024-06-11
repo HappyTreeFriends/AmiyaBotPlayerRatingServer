@@ -206,7 +206,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             }
 
             game.GameType = gameType;
-            game.IsPrivate = paramObj.ContainsKey("IsPrivate") && paramObj["IsPrivate"].ToString() == "true";
+            game.IsPrivate = paramObj.ContainsKey("IsPrivate") && paramObj["IsPrivate"].ToString() == "True";
             game.RoomSettings = paramObj;
             game.CreatorId= appUser.Id;
             game.CreatorConnectionId = Context.ConnectionId;
@@ -381,7 +381,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             game.RoomSettings = settingsObj;
 
             //isPrivate要特别处理
-            game.IsPrivate = settingsObj.ContainsKey("IsPrivate") && settingsObj["IsPrivate"].ToString() == "true";
+            game.IsPrivate = settingsObj.ContainsKey("IsPrivate") && settingsObj["IsPrivate"].ToString() == "True";
 
             await _gameManager.SaveGameAsync(game);
             await Clients.Group(gameId).SendAsync("GameSettingsChanged", JsonConvert.SerializeObject(new
