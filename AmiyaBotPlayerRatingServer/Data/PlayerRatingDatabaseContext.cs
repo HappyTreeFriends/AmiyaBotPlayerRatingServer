@@ -55,7 +55,7 @@ namespace AmiyaBotPlayerRatingServer.Data
         {
             base.OnConfiguring(options);
 
-            Console.WriteLine(GetConnectionString(Configuration));
+            //Console.WriteLine(GetConnectionString(Configuration));
 
             var dbType = Configuration["Db:Type"]?.ToUpper();
             switch (dbType)

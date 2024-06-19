@@ -72,7 +72,7 @@ if (!string.IsNullOrWhiteSpace(redisConn))
 
     builder.Services.AddSignalR().AddStackExchangeRedis(redisConn);
 
-    Console.WriteLine(redisConn);
+    //Console.WriteLine(redisConn);
 }
 else
 {
