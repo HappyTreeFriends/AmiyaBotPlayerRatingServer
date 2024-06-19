@@ -58,7 +58,11 @@ builder.Services.AddDbContext<PlayerRatingDatabaseContext>(options =>
 var redisConn = configuration["Redis:ConnectionString"];
 if (!string.IsNullOrWhiteSpace(redisConn))
 {
-    var connectionMultiplexer = ConnectionMultiplexer.Connect(redisConn);
+    var connectionMultiplexer = ConnectionMultiplexer.Connect(redisConn,
+        (t)=>
+        {
+            t.AbortOnConnectFail = false;
+        });
     builder.Services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
 
     builder.Services.AddSingleton((_) => RedLockFactory.Create(new List<RedLockMultiplexer>
@@ -67,6 +71,8 @@ if (!string.IsNullOrWhiteSpace(redisConn))
     }));
 
     builder.Services.AddSignalR().AddStackExchangeRedis(redisConn);
+
+    Console.WriteLine(redisConn);
 }
 else
 {
