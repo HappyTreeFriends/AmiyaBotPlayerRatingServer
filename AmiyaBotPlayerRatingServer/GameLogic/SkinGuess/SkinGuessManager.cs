@@ -6,7 +6,7 @@ using static AmiyaBotPlayerRatingServer.GameLogic.IGameManager;
 
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 {
-    public class SkinGuessManager(ArknightsMemoryCache arknightsMemoryCache, PlayerRatingDatabaseContext dbContext)
+    public class SkinGuessManager(ArknightsMemoryCache arknightsMemoryCache, PlayerRatingDatabaseContext dbContext,GameManager manager)
         : IGameManager
     {
         private static int RandomNumberGenerator ()=> new Random().Next(0, 100000);
@@ -17,7 +17,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             //手动添加一些测试数据
             game.GameType = "SkinGuess";
-            game.AnswerList =
+            game.QuestionList =
             [
                 new()
                 {
@@ -50,7 +50,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             //手动添加一些测试数据
             game.GameType = "SkinGuess";
-            game.AnswerList= new List<SkinGuessGame.Answer>();
+            game.QuestionList= new List<SkinGuessGame.Question>();
 
             var charMaps = arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
             var skinUrls = arknightsMemoryCache.GetJson("skinUrls.json") as JObject;
@@ -65,11 +65,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             var max = operatorIdList.Count;
             var random = new Random();
 
-            while(game.AnswerList.Count<16)
+            while(game.QuestionList.Count<16)
             {
                 var rand = random.Next(0, max);
                 var charId = operatorIdList[rand];
-                if (game.AnswerList.Any(x => x.CharacterId == charId))
+                if (game.QuestionList.Any(x => x.CharacterId == charId))
                 {
                     continue;
                 }
@@ -86,7 +86,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 var randSkin = random.Next(1, skinList.Count);
                 var skinUrl = skinList[randSkin].ToString();
                 
-                var answer = new SkinGuessGame.Answer()
+                var answer = new SkinGuessGame.Question()
                 {
                     CharacterName = charName,
                     CharacterId = charId,
@@ -95,7 +95,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                     ImageUrl = skinUrl,
                     RandomNumber = RandomNumberGenerator()
                 };
-                game.AnswerList.Add(answer);
+                game.QuestionList.Add(answer);
             }
 
             return game;
@@ -112,81 +112,59 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             return charDataJson.Values.Contains(name);
         }
-        
+
+        private object FormatGame(SkinGuessGame game)
+        {
+            var questionList = game.QuestionList.Select(x => new
+            {
+                CharacterName = x.CharacterName,
+                CharacterId = x.CharacterId,
+                SkinName = x.SkinName,
+                SkinId = x.SkinId,
+                ImageUrl = x.ImageUrl,
+                Completed = x.Completed,
+                AnswerTime = x.AnswerTime,
+                PlayerId = x.PlayerId
+            }).ToList();
+
+            return new
+            {
+                QuestionList = questionList,
+                CurrentQuestionIndex = game.CurrentQuestionIndex,
+                IsCompleted = game.IsCompleted,
+                CompleteTime = game.CompleteTime,
+                IsClosed = game.IsClosed,
+                CloseTime = game.CloseTime
+            };
+        }
+
         public Task<Game?> CreateNewGame(Dictionary<String, object> param)
         {
             var game = GenerateRealGame();
             return Task.FromResult<Game?>(game);
         }
 
+        public async Task<object> GetGamePayload(Game rawGame)
+        {
+            await Task.CompletedTask;
+
+            var game = rawGame as SkinGuessGame;
+
+            if (game == null)
+            {
+                throw new DataException("Game 类型不匹配.");
+            }
+
+            return new
+            {
+                Game = FormatGame(game)
+            };
+        }
+
         public Task<object> GetGameStartPayload(Game game)
         {
             return Task.FromResult<object>(new {});
         }
-
-        private void CreateStatistics(SkinGuessGame game)
-        {
-            //统计第一名第二名和第三名
-            var playerScoreList = game.PlayerScore.ToList();
-            playerScoreList.Sort((a, b) => b.Value.CompareTo(a.Value));
-
-            var firstPlace = playerScoreList.Count > 0 ? playerScoreList[0] : default;
-            var secondPlace = playerScoreList.Count > 1 ? playerScoreList[1] : default;
-            var thirdPlace = playerScoreList.Count > 2 ? playerScoreList[2] : default;
-
-            //统计每个玩家的正确和错误次数
-            var playerAnswerList = game.PlayerMoveList.Where(x => x.IsOperator).GroupBy(p => p.PlayerId)
-                .Select(p => new
-                {
-                    PlayerId = p.Key,
-                    CorrectCount = p.Count(c => c.IsCorrect),
-                    WrongCount = p.Count(c => !c.IsCorrect)
-                }).ToList();
-
-            foreach (var pl in game.PlayerList)
-            {
-                var playerId = pl.Key;
-                var playerSt =
-                    dbContext.ApplicationUserMinigameStatistics.FirstOrDefault(x => x.UserId == playerId);
-                if (playerSt == null)
-                {
-                    playerSt = new ApplicationUserMinigameStatistics()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        UserId = playerId,
-                        TotalGamesPlayed = 0,
-                        TotalGamesFirstPlace = 0,
-                        TotalGamesSecondPlace = 0,
-                        TotalGamesThirdPlace = 0,
-                        TotalAnswersCorrect = 0,
-                        TotalAnswersWrong = 0
-                    };
-                    dbContext.ApplicationUserMinigameStatistics.Add(playerSt);
-                }
-
-                playerSt.TotalGamesPlayed++;
-                playerSt.TotalAnswersCorrect +=
-                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.CorrectCount ?? 0;
-                playerSt.TotalAnswersWrong +=
-                    playerAnswerList.FirstOrDefault(x => x.PlayerId == playerId)?.WrongCount ?? 0;
-
-                if (firstPlace.Key == playerId)
-                {
-                    playerSt.TotalGamesFirstPlace++;
-                }
-                else if (secondPlace.Key == playerId)
-                {
-                    playerSt.TotalGamesSecondPlace++;
-                }
-                else if (thirdPlace.Key == playerId)
-                {
-                    playerSt.TotalGamesThirdPlace++;
-                }
-
-                dbContext.SaveChanges();
-            }
-        }
-
 
         public Task<object> HandleMove(Game rawGame, string playerId, string move)
         {
@@ -201,12 +179,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             if (!IsOperatorName(characterName))
             {
-                game.PlayerMoveList.Add(new SkinGuessGame.PlayerMove()
+                game.PlayerMoveList.Add(new PlayerMove()
                 {
                     PlayerId = playerId,
                     CharacterName = characterName,
                     IsCorrect = false,
-                    IsOperator = false,
+                    IsValid = false,
                 });
 
                 return Task.FromResult<object>(new
@@ -218,15 +196,15 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 });
             }
 
-            var answer = game.AnswerList[game.CurrentQuestionIndex];
+            var answer = game.QuestionList[game.CurrentQuestionIndex];
             if (answer.CharacterName != characterName)
             {
-                game.PlayerMoveList.Add(new SkinGuessGame.PlayerMove()
+                game.PlayerMoveList.Add(new PlayerMove()
                 {
                     PlayerId = playerId,
                     CharacterName = characterName,
                     IsCorrect = false,
-                    IsOperator = true,
+                    IsValid = true,
                 });
 
                 return Task.FromResult<object>(new
@@ -240,12 +218,12 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             
             if (answer.PlayerId != null)
             {
-                game.PlayerMoveList.Add(new SkinGuessGame.PlayerMove()
+                game.PlayerMoveList.Add(new PlayerMove()
                 {
                     PlayerId = playerId,
                     CharacterName = characterName,
                     IsCorrect = false,
-                    IsOperator = true,
+                    IsValid = true,
                 });
 
                 return Task.FromResult<object>(new { Result = "Answered", PlayerId = playerId, CharacterName = characterName, Answer = answer, Completed = game.IsCompleted });
@@ -265,22 +243,22 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 game.PlayerScore.TryAdd(playerId, 200);
             }
 
-            game.PlayerMoveList.Add(new SkinGuessGame.PlayerMove()
+            game.PlayerMoveList.Add(new PlayerMove()
             {
                 PlayerId = playerId,
                 CharacterName = characterName,
                 IsCorrect = true,
-                IsOperator = true,
+                IsValid = true,
             });
 
             game.CurrentQuestionIndex++;
 
-            if (game.CurrentQuestionIndex >= game.AnswerList.Count)
+            if (game.CurrentQuestionIndex >= game.QuestionList.Count)
             {
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
 
-                CreateStatistics(game);
+                manager.CreateStatistics(game);
             }
 
 
@@ -304,14 +282,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
 
-                CreateStatistics(game);
+                manager.CreateStatistics(game);
             }
 
 
             return Task.FromResult<object>(new
             {
                 GameId = game.Id,
-                RemainingAnswers = game.AnswerList.Where(a => a.Completed == false)
+                RemainingAnswers = game.QuestionList.Where(a => a.Completed == false)
             });
         }
 
@@ -328,33 +306,17 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
 
-                CreateStatistics(game);
+                manager.CreateStatistics(game);
             }
 
 
             return Task.FromResult<object>(new
             {
                 GameId = game.Id,
-                RemainingAnswers = game.AnswerList.Where(a => a.Completed == false)
+                RemainingAnswers = game.QuestionList.Where(a => a.Completed == false)
             });
         }
-
-        public Task<object> GetGamePayload(Game rawGame)
-        {
-            var game = rawGame as SkinGuessGame;
-
-            if (game == null)
-            {
-                throw new DataException("Game 类型不匹配.");
-            }
-            
-            return Task.FromResult<object>(new
-            {
-                AnswerList = game.AnswerList,
-                CurrentQuestionIndex = game.CurrentQuestionIndex,
-            });
-        }
-
+        
         public Task<double> GetScore(Game game, string player)
         {
             var schulteGridGame = game as SkinGuessGame;
@@ -385,16 +347,16 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 });
             }
 
-            var answer = game.AnswerList[game.CurrentQuestionIndex];
+            var answer = game.QuestionList[game.CurrentQuestionIndex];
 
             answer.Completed = true;
             answer.AnswerTime = DateTime.Now;
             game.CurrentQuestionIndex++;
-            if (game.CurrentQuestionIndex >= game.AnswerList.Count)
+            if (game.CurrentQuestionIndex >= game.QuestionList.Count)
             {
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
-                CreateStatistics(game);
+                manager.CreateStatistics(game);
             }
 
             return Task.FromResult(new RequestHintOrGiveUpResult()
@@ -415,7 +377,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 throw new DataException("Game 类型不匹配.");
             }
 
-            var answer = game.AnswerList[game.CurrentQuestionIndex];
+            var answer = game.QuestionList[game.CurrentQuestionIndex];
 
             if (answer.HintLevel == 0)
             {

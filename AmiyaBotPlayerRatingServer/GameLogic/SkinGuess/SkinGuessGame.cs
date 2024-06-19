@@ -7,9 +7,9 @@ using JetBrains.Annotations;
 #pragma warning disable CS8618
 namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 {
-    public class SkinGuessGame:Game
+    public class SkinGuessGame:Game,IScorable, ISequentialQuestionGame<SkinGuessGame.Question>
     {
-        public class Answer
+        public class Question
         {
             public String CharacterName { get; set; }
             public String CharacterId { get; set; }
@@ -32,18 +32,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         public int CurrentQuestionIndex { get; set; }
 
-        public List<Answer> AnswerList { get; set; }
+        public List<Question> QuestionList { get; set; }
 
-        public ConcurrentDictionary<String, double> PlayerScore { get; set; } = new ();
-
-
-        public class PlayerMove
-        {
-            public string PlayerId { get; set; }
-            public String CharacterName { get; set; }
-            public bool IsOperator { get; set; }
-            public bool IsCorrect { get; set; }
-        }
+        public Dictionary<String, double> PlayerScore { get; set; } = new ();
 
         public List<PlayerMove> PlayerMoveList { get; set; } = new();
     }

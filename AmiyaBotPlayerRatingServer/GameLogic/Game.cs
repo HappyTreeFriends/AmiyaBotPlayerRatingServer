@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RedLockNet;
+using static AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge.CypherChallengeGame;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 // ReSharper disable UnusedMember.Global
@@ -22,6 +23,14 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         List<PlayerMove> PlayerMoveList { get; set; }
         Dictionary<String, double> PlayerScore { get; set; }
         Dictionary<string, string> PlayerList { get; set; }
+    }
+
+    public interface ISequentialQuestionGame<TQuestion>
+    {
+        public int CurrentQuestionIndex { get; set; }
+
+        public List<TQuestion> QuestionList { get; set; }
+
     }
 
     public class Game:IDisposable,IAsyncDisposable

@@ -482,7 +482,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
             if (game == null)
             {
-                return Task.FromResult<object>(new { });
+                return new { };
             }
 
             return new
