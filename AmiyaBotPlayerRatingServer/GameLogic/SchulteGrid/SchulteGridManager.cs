@@ -316,6 +316,25 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SchulteGrid
             
             return new
             {
+                game.Id,
+                game.GameType,
+                game.JoinCode,
+
+                game.CreatorId,
+                game.CreatorConnectionId,
+                game.CreateTime,
+
+                game.IsStarted,
+                game.StartTime,
+
+                game.IsCompleted,
+                game.CompleteTime,
+
+                game.IsClosed,
+                game.CloseTime,
+
+                game.RoomSettings,
+
                 AnswerList = game.AnswerList.Where(a=>a.Completed),
                 RemainingAnswers = game.IsCompleted ? game.AnswerList.Where(a => !a.Completed) : [],
                 Grid = game.Grid,

@@ -129,12 +129,27 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             return new
             {
+                game.Id,
+                game.GameType,
+                game.JoinCode,
+
+                game.CreatorId,
+                game.CreatorConnectionId,
+                game.CreateTime,
+
+                game.IsStarted,
+                game.StartTime,
+
+                game.IsCompleted,
+                game.CompleteTime,
+
+                game.IsClosed,
+                game.CloseTime,
+
+                game.RoomSettings,
+
                 QuestionList = questionList,
                 CurrentQuestionIndex = game.CurrentQuestionIndex,
-                IsCompleted = game.IsCompleted,
-                CompleteTime = game.CompleteTime,
-                IsClosed = game.IsClosed,
-                CloseTime = game.CloseTime
             };
         }
 
@@ -262,9 +277,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             }
 
 
-            return Task.FromResult<object>(new { Result = "Correct", PlayerId = playerId,
+            return Task.FromResult<object>(new { 
+                Result = "Correct", PlayerId = playerId,
                 CharacterName = characterName, Answer = answer, Completed = game.IsCompleted,
-                CurrentQuestionIndex = game.CurrentQuestionIndex
+                CurrentQuestionIndex = game.CurrentQuestionIndex,
+                Game = FormatGame(game)
             });
 
         }

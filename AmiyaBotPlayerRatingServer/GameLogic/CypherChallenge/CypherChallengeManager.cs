@@ -229,13 +229,28 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
             return new
             {
+                game.Id,
+                game.GameType,
+                game.JoinCode,
+
+                game.CreatorId,
+                game.CreatorConnectionId,
+                game.CreateTime,
+
+                game.IsStarted,
+                game.StartTime,
+
+                game.IsCompleted,
+                game.CompleteTime,
+
+                game.IsClosed,
+                game.CloseTime,
+
+                game.RoomSettings,
+
+
                 QuestionList = questionList,
                 CurrentQuestionIndex = game.CurrentQuestionIndex,
-
-                IsCompleted = game.IsCompleted,
-                CompleteTime = game.CompleteTime,
-                IsClosed = game.IsClosed,
-                CloseTime = game.CloseTime
             };
 
         }
