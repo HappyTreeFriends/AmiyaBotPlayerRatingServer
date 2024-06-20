@@ -203,7 +203,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 GameType = gameType,
                 GameJoinCode = game.JoinCode,
 
-                Game = gameManager.GetGamePayload(game),
+                Game = await gameManager.GetGamePayload(game),
             }));
         }
 
