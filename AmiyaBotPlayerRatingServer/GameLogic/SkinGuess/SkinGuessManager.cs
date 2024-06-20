@@ -172,10 +172,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 throw new DataException("Game 类型不匹配.");
             }
 
-            return new
-            {
-                Game = FormatGame(game)
-            };
+            return FormatGame(game);
         }
 
         public Task<object> GetGameStartPayload(Game game)
