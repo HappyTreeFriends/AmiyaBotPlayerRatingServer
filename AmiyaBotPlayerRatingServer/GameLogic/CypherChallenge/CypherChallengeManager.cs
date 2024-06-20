@@ -463,6 +463,11 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     manager.CreateStatistics(game);
                 }
             }
+
+            if (game.CurrentQuestionIndex >= game.QuestionList.Count)
+            {
+                game.CurrentQuestionIndex = game.QuestionList.Count-1;
+            }
             
             return Task.FromResult<object>(new
             {
@@ -471,7 +476,6 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 PlayerId = playerId,
                 CharacterName = characterName,
                 CurrentQuestionIndex = game.CurrentQuestionIndex,
-                CurrentQuestionIndexHint = "注意，在最后一题结束时，CurrentQuestionIndex可能会超出QuestionList的长度。",
                 Completed = game.IsCompleted,
                 CompleteTime = game.CompleteTime,
                 Game = FormatGame(game)
