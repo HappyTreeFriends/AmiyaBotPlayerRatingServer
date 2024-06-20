@@ -272,6 +272,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             if (game.CurrentQuestionIndex >= game.QuestionList.Count)
             {
+                game.CurrentQuestionIndex = game.QuestionList.Count - 1;
+
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
 
@@ -373,6 +375,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             game.CurrentQuestionIndex++;
             if (game.CurrentQuestionIndex >= game.QuestionList.Count)
             {
+                game.CurrentQuestionIndex = game.QuestionList.Count - 1;
                 game.IsCompleted = true;
                 game.CompleteTime = DateTime.Now;
                 manager.CreateStatistics(game);
