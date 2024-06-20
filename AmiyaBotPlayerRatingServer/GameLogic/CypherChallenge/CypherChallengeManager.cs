@@ -508,10 +508,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                 return new { };
             }
 
-            return new
-            {
-                Game = FormatGame(game)
-            };
+            return FormatGame(game);
         }
 
         public Task<object> GetGameStartPayload(Game game)
