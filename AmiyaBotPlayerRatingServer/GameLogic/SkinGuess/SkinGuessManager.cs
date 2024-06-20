@@ -361,7 +361,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
             return Task.FromResult(new RequestHintOrGiveUpResult()
             {
-                Payload = new { Question = answer },
+                Payload = new { 
+                    Question = answer,
+                    Game = FormatGame(game)
+                },
                 GiveUpTriggered = true
             });
 
@@ -391,7 +394,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                         {
                             Question = answer,
                             CurrentQuestionIndex = game.CurrentQuestionIndex,
-                            HintLevel = answer.HintLevel
+                            HintLevel = answer.HintLevel,
+                            Game = FormatGame(game)
                         },
                     GiveUpTriggered = false,
                     HintTriggered = true
@@ -403,7 +407,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 //不允许再次提示
                 return Task.FromResult(new RequestHintOrGiveUpResult()
                 {
-                    Payload = answer,
+                    Payload = null,
                     GiveUpTriggered = false,
                     HintTriggered = false,
                 });
