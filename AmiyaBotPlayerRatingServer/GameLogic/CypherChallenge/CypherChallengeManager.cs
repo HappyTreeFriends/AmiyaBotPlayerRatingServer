@@ -315,7 +315,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
             //接下来分两种情况,回答正确和回答错误
             //不管哪一种，最后都要返回完整Game
-
+            bool moveToNextQuestion = false;
             if (currentQuestion.CharacterName == characterName)
             {
                 //回答正确
@@ -346,6 +346,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
                 currentQuestion.IsCompleted = true;
                 game.CurrentQuestionIndex++;
+                moveToNextQuestion = true;
 
                 //添加PlayerMove
                 game.PlayerMoveList.Add(
@@ -437,6 +438,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     //回答错误，且没有机会了
                     currentQuestion.IsCompleted = false;
                     game.CurrentQuestionIndex++;
+                    moveToNextQuestion = true;
                 }
 
                 //添加PlayerMove
@@ -464,6 +466,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             return Task.FromResult<object>(new
             {
                 Result = currentQuestion.IsCompleted?"Correct":"Wrong",
+                MoveTonextQuestion = moveToNextQuestion,
                 PlayerId = playerId,
                 CharacterName = characterName,
                 CurrentQuestionIndex = game.CurrentQuestionIndex,
