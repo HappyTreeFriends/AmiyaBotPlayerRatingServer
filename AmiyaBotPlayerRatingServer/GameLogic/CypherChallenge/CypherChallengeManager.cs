@@ -233,8 +233,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
                 IsCompleted = game.IsCompleted,
                 CompleteTime = game.CompleteTime,
-                IsClosed = true,
-                CloseTime = DateTime.Now
+                IsClosed = game.IsClosed,
+                CloseTime = game.CloseTime
             };
 
         }
