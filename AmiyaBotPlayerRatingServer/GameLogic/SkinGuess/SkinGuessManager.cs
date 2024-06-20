@@ -121,6 +121,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 CharacterId = x.CharacterId,
                 SkinName = x.SkinName,
                 SkinId = x.SkinId,
+                RandomNumber = x.RandomNumber,
+                HintLevel = x.HintLevel,
                 ImageUrl = x.ImageUrl,
                 Completed = x.Completed,
                 AnswerTime = x.AnswerTime,
