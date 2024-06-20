@@ -98,6 +98,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                         AnswerTime = DateTime.Now,
                         IsAnswerCorrect = true,
                         PlayerId = null,
+                        CharacterProperties = lastQuestion.CharacterProperties,
                         CharacterPropertiesResult = answers
                     };
 
