@@ -256,15 +256,20 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             answer.Completed = true;
             answer.AnswerTime = DateTime.Now;
             answer.PlayerId = playerId;
-            
+
+            var score = 200;
+            if (answer.HintLevel > 0)
+            {
+                score = 100;
+            }
 
             if (game.PlayerScore.ContainsKey(playerId))
             {
-                game.PlayerScore[playerId] += 200;
+                game.PlayerScore[playerId] += score;
             }
             else
             {
-                game.PlayerScore.TryAdd(playerId, 200);
+                game.PlayerScore.TryAdd(playerId, score);
             }
 
             game.PlayerMoveList.Add(new PlayerMove()
