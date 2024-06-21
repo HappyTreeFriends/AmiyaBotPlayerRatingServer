@@ -29,6 +29,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             var game= new CypherChallengeGame();
             game.GameType="CypherChallenge";
 
+            game.MaxQuestionCount = 10;
             while (game.QuestionList.Count<10)
             {
                 var randomIndex = random.Next(0, operatorIdList.Count);

@@ -31,6 +31,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
         }
 
         public int CurrentQuestionIndex { get; set; }
+        public int MaxQuestionCount { get; set; }
 
         public List<Question> QuestionList { get; set; }
 

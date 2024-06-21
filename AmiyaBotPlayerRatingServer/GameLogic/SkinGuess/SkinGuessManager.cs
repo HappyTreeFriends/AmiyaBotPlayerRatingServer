@@ -65,7 +65,9 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             var max = operatorIdList.Count;
             var random = new Random();
 
-            while(game.QuestionList.Count<16)
+            game.MaxQuestionCount = 20;
+
+            while(game.QuestionList.Count< 20)
             {
                 var rand = random.Next(0, max);
                 var charId = operatorIdList[rand];
@@ -75,6 +77,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
                 }
 
                 var charName = charMaps[charId];
+
+                if (charName.Contains("阿米娅"))
+                {
+                    //阿米娅不参与，升变太烦人了
+                    continue;
+                }
+
                 var skinList = (skinUrls[charId] as JObject)?.Properties().Select(p=>p.Value).ToList();
 
                 if (skinList==null||skinList.Count <= 1)
@@ -103,7 +112,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
         private bool IsOperatorName(string name)
         {
-            var charDataJson = arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String,String>>();
+            var charDataJson = arknightsMemoryCache.GetJson("character_names.json")?.ToObject<Dictionary<String, String>>();
             if (charDataJson == null)
             {
                 //ERROR
@@ -152,6 +161,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
 
                 QuestionList = questionList,
                 CurrentQuestionIndex = game.CurrentQuestionIndex,
+                MaxQuestionCount = game.MaxQuestionCount,
             };
         }
 

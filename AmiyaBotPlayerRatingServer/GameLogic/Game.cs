@@ -28,6 +28,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
     public interface ISequentialQuestionGame<TQuestion>
     {
         public int CurrentQuestionIndex { get; set; }
+        public int MaxQuestionCount { get; set; }
 
         public List<TQuestion> QuestionList { get; set; }
 

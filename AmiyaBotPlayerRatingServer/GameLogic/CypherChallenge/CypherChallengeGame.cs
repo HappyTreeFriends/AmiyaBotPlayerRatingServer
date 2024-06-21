@@ -39,6 +39,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
         }
 
         public int CurrentQuestionIndex { get; set; } = 0;
+        public int MaxQuestionCount { get; set; } = 10;
 
         public List<Question> QuestionList { get; set; } = new();
         public Dictionary<String, double> PlayerScore { get; set; } = new();
