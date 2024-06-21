@@ -674,6 +674,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 await Clients.Group(gameId).SendAsync("Hint", JsonConvert.SerializeObject(new
                 {
+                    PlayerId = appUser.Id,
                     Payload = hintResult.Payload,
                     Game = await manager.GetGamePayload(game),
                     PlayerList = await FormatPlayerList(game),
