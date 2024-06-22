@@ -65,7 +65,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             var max = operatorIdList.Count;
             var random = new Random();
 
-            game.MaxQuestionCount = 5;
+            game.MaxQuestionCount = 15;
 
             while(game.QuestionList.Count< game.MaxQuestionCount)
             {
