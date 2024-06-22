@@ -905,6 +905,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             //重新创建一个游戏,然后给所有人发送重新开始的消息
             await this.CreateGame(game.GameType, JsonConvert.SerializeObject(game.RoomSettings));
+
+            await Clients.Group(gameId).SendAsync("Rematch", JsonConvert.SerializeObject(new
+            {
+                GameId = gameId,
+            }));
         }
     }
 }
