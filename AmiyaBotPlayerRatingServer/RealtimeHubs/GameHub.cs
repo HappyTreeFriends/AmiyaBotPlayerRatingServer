@@ -426,19 +426,20 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 game.CloseTime = DateTime.Now;
             }
 
-            var ret = await manager.GetCloseGamePayload(game);
+            var payload = await manager.GetCloseGamePayload(game);
+            var ret = JsonConvert.SerializeObject(new
+            {
+                Game = await manager.GetGamePayload(game),
+                Payload = payload,
+            });
 
             if (game.IsCompleted && oldCompleteState==false)
             {
-                await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
-                {
-                    Game = await manager.GetGamePayload(game),
-                    Payload = ret,
-                }));
+                await Clients.Group(gameId).SendAsync("GameCompleted", ret);
             }
 
             await _gameManager.SaveGameAsync(game);
-            await Clients.Group(gameId).SendAsync("GameClosed", JsonConvert.SerializeObject(ret));
+            await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }
 
         //放弃整个游戏
@@ -464,14 +465,14 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 return;
             }
 
-            var ret = await manager.GetCompleteGamePayload(game);
-
-            await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
+            var payload = await manager.GetCompleteGamePayload(game);
+            var ret = JsonConvert.SerializeObject(new
             {
                 Game = await manager.GetGamePayload(game),
-                Payload = ret,
-            }));
+                Payload = payload,
+            });
 
+            await Clients.Group(gameId).SendAsync("GameCompleted", ret);
             await _gameManager.SaveGameAsync(game);
         }
 
@@ -514,6 +515,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
@@ -554,12 +556,14 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 Name = rallyName,
                 CreatePlayer = appUser.Id,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game)
             }));
 
             await Clients.Group(gameId).SendAsync("RallyPointStatus", JsonConvert.SerializeObject(new
             {
                 Name = rallyName,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game)
             }));
         }
 
@@ -570,6 +574,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
@@ -607,6 +612,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 Name = rallyName,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game),
             }));
         }
 
@@ -616,6 +622,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
@@ -655,6 +662,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 Name = rallyName,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game),
             }));
             
 
@@ -665,6 +673,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 {
                     Name = rallyName,
                     Players = rallyNode.PlayerIds,
+                    Game = manager.GetGamePayload(game),
                 }));
 
                 //game.RallyNodes.Remove(rallyName, out _);
@@ -877,6 +886,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 UserId = appUser.Id,
                 UserName = appUser.Nickname,
                 Message = message,
+                GameId = gameId,
             }));
         }
     }
