@@ -221,7 +221,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.SkinGuess
             }
 
             var answer = game.QuestionList[game.CurrentQuestionIndex];
-            if (answer.CharacterName != characterName)
+            if (answer.CharacterName.ToUpper() != characterName.ToUpper())
             {
                 game.PlayerMoveList.Add(new PlayerMove()
                 {
