@@ -141,20 +141,6 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             await Groups.AddToGroupAsync(Context.ConnectionId, game.Id!);
             await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
             {
-                Message = "请注意，以Game开头的一系列字段如GameId和GameType，以及CreatorId与CreatorConnectionId均已废弃，请改为使用Game对象。",
-                GameId = game.Id,
-                GameType = game.GameType,
-                GameJoinCode = game.JoinCode,
-                GameCreated = game.CreateTime,
-                GameStarted = game.IsStarted,
-                GameStartTime = game.StartTime,
-                GameCompleted = game.IsCompleted,
-                GameCompleteTime = game.CompleteTime,
-                GameClosed = game.IsClosed,
-                GameCloseTime = game.CloseTime,
-                CreatorId = game.CreatorId,
-                CreatorConnectionId = game.CreatorConnectionId,
-
                 Game = await manager.GetGamePayload(game),
                 PlayerList = await FormatPlayerList(game),
                 Payload = await manager.GetGamePayload(game),
