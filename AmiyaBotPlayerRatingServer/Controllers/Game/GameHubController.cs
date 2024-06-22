@@ -118,7 +118,8 @@ namespace AmiyaBotPlayerRatingServer.Controllers.Game
 
             return Ok(new
             {
-                url=links
+                url=links,
+                response = responseContent
             });
         }
 
