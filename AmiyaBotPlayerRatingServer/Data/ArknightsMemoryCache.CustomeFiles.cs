@@ -135,9 +135,11 @@ namespace AmiyaBotPlayerRatingServer.Data
                 }
 
                 var obtain = character.Value["itemObtainApproach"]?.ToString();
-                if (obtain != "凭证交易所" && obtain != "招募寻访" &&
-                    obtain != "活动获得" && obtain != "主线剧情" &&
-                    obtain != "信用交易所")
+                if (String.IsNullOrWhiteSpace(obtain) ||
+                    (!obtain.Contains("凭证交易所") && !obtain.Contains("招募寻访") &&
+                    !obtain.Contains("活动获得") && !obtain.Contains("主线剧情") &&
+                    !obtain.Contains("信用交易所"))
+                    )
                 {
                     continue;
                 }
