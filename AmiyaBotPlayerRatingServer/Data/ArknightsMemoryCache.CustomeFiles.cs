@@ -138,7 +138,7 @@ namespace AmiyaBotPlayerRatingServer.Data
                 if (String.IsNullOrWhiteSpace(obtain) ||
                     (!obtain.Contains("凭证交易所") && !obtain.Contains("招募寻访") &&
                     !obtain.Contains("活动获得") && !obtain.Contains("主线剧情") &&
-                    !obtain.Contains("信用交易所"))
+                    !obtain.Contains("信用交易所") && !obtain.Contains("限时礼包"))
                     )
                 {
                     continue;
