@@ -252,6 +252,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
                 QuestionList = questionList,
                 CurrentQuestionIndex = game.CurrentQuestionIndex,
+                MaxQuestionCount = game.MaxQuestionCount,
             };
 
         }
