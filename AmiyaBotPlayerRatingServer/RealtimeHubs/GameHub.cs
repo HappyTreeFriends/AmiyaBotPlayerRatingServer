@@ -9,6 +9,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json.Linq;
+using StackExchange.Redis;
 
 namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 {
@@ -16,12 +17,15 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
     {
         private readonly PlayerRatingDatabaseContext _dbContext;
         private readonly GameManager _gameManager;
+        private readonly IDatabase _redisService;
 
 
-        public GameHub(PlayerRatingDatabaseContext dbContext,GameManager gameManager)
+        public GameHub(PlayerRatingDatabaseContext dbContext,
+            IConnectionMultiplexer redisService, GameManager gameManager)
         {
             _dbContext = dbContext;
             _gameManager = gameManager;
+            _redisService = redisService.GetDatabase();
         }
 
         #region Helper Methods
@@ -156,7 +160,16 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var appUser = await ValidateUser();
 
             //用户每10秒才能创建一个房间
-
+            var lastUserTime = _redisService.StringGet("AmiyaBot-Minigame-CreateGameLock-" + appUser.Id);
+            if(lastUserTime.HasValue && DateTime.UtcNow - Convert.ToDateTime(lastUserTime) < TimeSpan.FromSeconds(10))
+            {
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您创建房间的速度过快，请稍候再试。",
+                }));
+                return;
+            }
+            _redisService.StringSet("AmiyaBot-Minigame-CreateGameLock-" + appUser.Id, DateTime.UtcNow.ToString("s"), TimeSpan.FromSeconds(15));
 
             var paramObj = JsonConvert.DeserializeObject<Dictionary<String,object>>(param);
             if (paramObj == null)
@@ -828,10 +841,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
         }
-
         
-
-
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [UsedImplicitly]
         public async Task GetNotification()
@@ -874,6 +884,27 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 Message = message,
                 GameId = gameId,
             }));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
+        public async Task Rematch(string gameId)
+        {
+            await using var game = await ValidateGame(gameId);
+            var manager = await ValidateManager(game.GameType);
+            var appUser = await ValidateUser();
+
+            if (game.CreatorId != appUser.Id)
+            {
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是房主，无法重新开始游戏",
+                }));
+                return;
+            }
+
+            //重新创建一个游戏,然后给所有人发送重新开始的消息
+            await this.CreateGame(game.GameType, JsonConvert.SerializeObject(game.RoomSettings));
         }
     }
 }
