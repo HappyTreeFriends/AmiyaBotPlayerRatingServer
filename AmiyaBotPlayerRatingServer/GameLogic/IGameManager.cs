@@ -21,15 +21,13 @@ namespace AmiyaBotPlayerRatingServer.GameLogic
         }
 #pragma warning restore CS8618
 
-        public Task<Game?> CreateNewGame(Dictionary<String, object> param);
-
         public Task<object> GetGamePayload(Game rawGame);
+
+        public Task<Game?> CreateNewGame(Dictionary<String, object> param);
+        public Task<object> GetGameStartPayload(Game game);
         public Task<double> GetScore(Game game, string player);
 
-        public Task<object> GetGameStartPayload(Game game);
-
         public Task<object> HandleMove(Game game, string playerId, string move);
-
         public Task<RequestHintOrGiveUpResult> GiveUp(Game game, string appUserId);
         public Task<RequestHintOrGiveUpResult> RequestHint(Game game, string appUserId);
 

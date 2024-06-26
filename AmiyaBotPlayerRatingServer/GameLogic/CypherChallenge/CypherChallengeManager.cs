@@ -29,7 +29,8 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
             var game= new CypherChallengeGame();
             game.GameType="CypherChallenge";
 
-            while (game.QuestionList.Count<10)
+            game.MaxQuestionCount = 3;
+            while (game.QuestionList.Count< game.MaxQuestionCount)
             {
                 var randomIndex = random.Next(0, operatorIdList.Count);
                 var operatorId = operatorIdList[randomIndex];
@@ -103,6 +104,10 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
                     };
 
                     question.AnswerList.Add(answer);
+                }
+                else
+                {
+                    //第一题给阿米娅
                 }
 
                 game.QuestionList.Add(question);
@@ -251,6 +256,7 @@ namespace AmiyaBotPlayerRatingServer.GameLogic.CypherChallenge
 
                 QuestionList = questionList,
                 CurrentQuestionIndex = game.CurrentQuestionIndex,
+                MaxQuestionCount = game.MaxQuestionCount,
             };
 
         }

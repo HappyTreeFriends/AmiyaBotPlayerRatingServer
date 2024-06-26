@@ -1,5 +1,4 @@
-﻿using System.Data;
-using AmiyaBotPlayerRatingServer.GameLogic;
+﻿using AmiyaBotPlayerRatingServer.GameLogic;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using System.Security.Claims;
@@ -10,6 +9,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json.Linq;
+using StackExchange.Redis;
 
 namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 {
@@ -17,12 +17,15 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
     {
         private readonly PlayerRatingDatabaseContext _dbContext;
         private readonly GameManager _gameManager;
+        private readonly IDatabase _redisService;
 
 
-        public GameHub(PlayerRatingDatabaseContext dbContext,GameManager gameManager)
+        public GameHub(PlayerRatingDatabaseContext dbContext,
+            IConnectionMultiplexer redisService, GameManager gameManager)
         {
             _dbContext = dbContext;
             _gameManager = gameManager;
+            _redisService = redisService.GetDatabase();
         }
 
         #region Helper Methods
@@ -33,6 +36,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (appUser == null)
             {
+                //登录信息失效，此时就是要弹回，所以抛出异常
                 throw new UnauthorizedAccessException();
             }
 
@@ -45,6 +49,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (game == null)
             {
+                //获取了错误的房间信息，此时就是要弹回，所以抛出异常
                 throw new UnauthorizedAccessException();
             }
 
@@ -57,6 +62,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (manager == null)
             {
+                //获取了错误的房间信息，此时就是要弹回，所以抛出异常
                 throw new UnauthorizedAccessException();
             }
 
@@ -90,6 +96,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (userId == null)
             {
+                //登录信息失效，此时就是要弹回，所以抛出异常
                 throw new UnauthorizedAccessException();
             }
 
@@ -123,9 +130,13 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var manager = await ValidateManager(game.GameType);
             var appUser = await ValidateUser();
 
-            if (game==null||!game.PlayerList.ContainsKey(appUser.Id))
+            if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您需要先加入该房间才能查看房间信息。",
+                }));
+                return;
             }
 
             game.PlayerList[appUser.Id] = Context.ConnectionId;
@@ -134,20 +145,6 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             await Groups.AddToGroupAsync(Context.ConnectionId, game.Id!);
             await Clients.Caller.SendAsync("GameInfo", JsonConvert.SerializeObject(new
             {
-                Message = "请注意，以Game开头的一系列字段如GameId和GameType，以及CreatorId与CreatorConnectionId均已废弃，请改为使用Game对象。",
-                GameId = game.Id,
-                GameType = game.GameType,
-                GameJoinCode = game.JoinCode,
-                GameCreated = game.CreateTime,
-                GameStarted = game.IsStarted,
-                GameStartTime = game.StartTime,
-                GameCompleted = game.IsCompleted,
-                GameCompleteTime = game.CompleteTime,
-                GameClosed = game.IsClosed,
-                GameCloseTime = game.CloseTime,
-                CreatorId = game.CreatorId,
-                CreatorConnectionId = game.CreatorConnectionId,
-
                 Game = await manager.GetGamePayload(game),
                 PlayerList = await FormatPlayerList(game),
                 Payload = await manager.GetGamePayload(game),
@@ -162,11 +159,26 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var gameManager = await ValidateManager(gameType);
             var appUser = await ValidateUser();
 
+            //用户每10秒才能创建一个房间
+            var lastUserTime = _redisService.StringGet("AmiyaBot-Minigame-CreateGameLock-" + appUser.Id);
+            if(lastUserTime.HasValue && DateTime.UtcNow - Convert.ToDateTime(lastUserTime) < TimeSpan.FromSeconds(10))
+            {
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您创建房间的速度过快，请稍候再试。",
+                }));
+                return;
+            }
+            _redisService.StringSet("AmiyaBot-Minigame-CreateGameLock-" + appUser.Id, DateTime.UtcNow.ToString("s"), TimeSpan.FromSeconds(15));
 
             var paramObj = JsonConvert.DeserializeObject<Dictionary<String,object>>(param);
             if (paramObj == null)
             {
-                throw new DataException("Invalid Game Param");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "错误的房间设置s",
+                }));
+                return;
             }
 
             await using var game = await gameManager.CreateNewGame(paramObj);
@@ -274,7 +286,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (game.CreatorId != appUser.Id)
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是房主，无法踢人",
+                }));
+                return;
             }
 
             var manager = await ValidateManager(game.GameType);
@@ -311,7 +327,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您需要先加入该房间才能查看房间信息。",
+                }));
+                return;
             }
 
             var manager = await ValidateManager(game.GameType);
@@ -349,7 +369,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (game.CreatorId != appUser.Id)
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是房主，无法修改房间设置",
+                }));
+                return;
             }
 
 
@@ -358,7 +382,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             var settingsObj = JsonConvert.DeserializeObject<Dictionary<String,Object>>(settings);
             if (settingsObj == null)
             {
-                throw new DataException("Invalid Game Settings");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "错误的房间设置",
+                }));
+                return;
             }
 
             game.RoomSettings = settingsObj;
@@ -384,7 +412,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (game.CreatorId != appUser.Id)
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是房主，无法关闭房间",
+                }));
+                return;
             }
 
             var oldCompleteState = game.IsCompleted;
@@ -394,19 +426,20 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 game.CloseTime = DateTime.Now;
             }
 
-            var ret = await manager.GetCloseGamePayload(game);
+            var payload = await manager.GetCloseGamePayload(game);
+            var ret = JsonConvert.SerializeObject(new
+            {
+                Game = await manager.GetGamePayload(game),
+                Payload = payload,
+            });
 
             if (game.IsCompleted && oldCompleteState==false)
             {
-                await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
-                {
-                    Game = await manager.GetGamePayload(game),
-                    Payload = ret,
-                }));
+                await Clients.Group(gameId).SendAsync("GameCompleted", ret);
             }
 
             await _gameManager.SaveGameAsync(game);
-            await Clients.Group(gameId).SendAsync("GameClosed", JsonConvert.SerializeObject(ret));
+            await Clients.Group(gameId).SendAsync("GameClosed", ret);
         }
 
         //放弃整个游戏
@@ -420,22 +453,26 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (game.CreatorId != appUser.Id)
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是房主，无法关闭房间",
+                }));
+                return;
             }
 
-            if (game.IsClosed == true)
+            if (game.IsClosed)
             {
                 return;
             }
 
-            var ret = await manager.GetCompleteGamePayload(game);
-
-            await Clients.Group(gameId).SendAsync("GameCompleted", JsonConvert.SerializeObject(new
+            var payload = await manager.GetCompleteGamePayload(game);
+            var ret = JsonConvert.SerializeObject(new
             {
                 Game = await manager.GetGamePayload(game),
-                Payload = ret,
-            }));
+                Payload = payload,
+            });
 
+            await Clients.Group(gameId).SendAsync("GameCompleted", ret);
             await _gameManager.SaveGameAsync(game);
         }
 
@@ -449,7 +486,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             
             if (game.CreatorId != appUser.Id)
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是房主，无法开始游戏",
+                }));
+                return;
             }
 
             var payload = await manager.GetGameStartPayload(game);
@@ -474,23 +515,36 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是该房间内的玩家。",
+                }));
+                return;
             }
 
             var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
             if (rallyDataObj == null)
             {
-                throw new DataException("Invalid Rally Point Payload");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "错误的集结点参数。",
+                }));
+                return;
             }
 
-            var rallyName = rallyDataObj["Name"].ToString();
+            var rallyName = rallyDataObj.GetValueOrDefault("Name")?.ToString();
 
             if (rallyName == null)
             {
-                throw new DataException("Invalid Rally Point Name");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "未提供集结点名称。",
+                }));
+                return;
             }
 
             var rallyNode = game.RallyNodes.GetValueOrSetDefault(rallyName, new Game.RallyNode(rallyName));
@@ -502,12 +556,14 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 Name = rallyName,
                 CreatePlayer = appUser.Id,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game)
             }));
 
             await Clients.Group(gameId).SendAsync("RallyPointStatus", JsonConvert.SerializeObject(new
             {
                 Name = rallyName,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game)
             }));
         }
 
@@ -518,23 +574,36 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是该房间内的玩家。",
+                }));
+                return;
             }
 
             var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
             if (rallyDataObj == null)
             {
-                throw new DataException("Invalid Rally Point Payload");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "错误的集结点参数。",
+                }));
+                return;
             }
 
-            var rallyName = rallyDataObj["Name"].ToString();
+            var rallyName = rallyDataObj.GetValueOrDefault("Name")?.ToString();
 
             if (rallyName == null)
             {
-                throw new DataException("Invalid Rally Point Name");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "未提供集结点名称。",
+                }));
+                return;
             }
 
             var rallyNode = game.RallyNodes.GetValueOrSetDefault(rallyName, new Game.RallyNode(rallyName));
@@ -543,6 +612,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 Name = rallyName,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game),
             }));
         }
 
@@ -552,23 +622,36 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
         {
             await using var game = await ValidateGame(gameId,false);
             var appUser = await ValidateUser();
+            var manager = await ValidateManager(game.GameType);
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是该房间内的玩家。",
+                }));
+                return;
             }
 
             var rallyDataObj = JsonConvert.DeserializeObject<Dictionary<String,JToken>>(rallyData);
             if (rallyDataObj == null)
             {
-                throw new DataException("Invalid Rally Point Payload");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "错误的集结点参数。",
+                }));
+                return;
             }
 
-            var rallyName = rallyDataObj["Name"].ToString();
+            var rallyName = rallyDataObj.GetValueOrDefault("Name")?.ToString();
 
             if (rallyName == null)
             {
-                throw new DataException("Invalid Rally Point Name");
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "未提供集结点名称。",
+                }));
+                return;
             }
 
             var rallyNode = game.RallyNodes.GetValueOrSetDefault(rallyName, new Game.RallyNode(rallyName));
@@ -579,6 +662,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 Name = rallyName,
                 Players = rallyNode.PlayerIds,
+                Game = manager.GetGamePayload(game),
             }));
             
 
@@ -589,6 +673,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 {
                     Name = rallyName,
                     Players = rallyNode.PlayerIds,
+                    Game = manager.GetGamePayload(game),
                 }));
 
                 //game.RallyNodes.Remove(rallyName, out _);
@@ -607,7 +692,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您需要先加入该房间才能查看房间信息。",
+                }));
+                return;
             }
 
             if (game.IsCompleted)
@@ -647,7 +736,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您需要先加入该房间才能查看房间信息。",
+                }));
+                return;
             }
 
             if (game.IsCompleted)
@@ -675,6 +768,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
             {
                 await Clients.Group(gameId).SendAsync("Hint", JsonConvert.SerializeObject(new
                 {
+                    PlayerId = appUser.Id,
                     Payload = hintResult.Payload,
                     Game = await manager.GetGamePayload(game),
                     PlayerList = await FormatPlayerList(game),
@@ -706,7 +800,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您需要先加入该房间才能查看房间信息。",
+                }));
+                return;
             }
 
             if (game.IsCompleted)
@@ -744,10 +842,7 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             await _gameManager.SaveGameAsync(game);
         }
-
         
-
-
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [UsedImplicitly]
         public async Task GetNotification()
@@ -776,7 +871,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             if (!game.PlayerList.ContainsKey(appUser.Id))
             {
-                throw new UnauthorizedAccessException();
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您需要先加入该房间才能查看房间信息。",
+                }));
+                return;
             }
 
             await Clients.Group(gameId).SendAsync("Chat", JsonConvert.SerializeObject(new
@@ -784,6 +883,33 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 UserId = appUser.Id,
                 UserName = appUser.Nickname,
                 Message = message,
+                GameId = gameId,
+            }));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [UsedImplicitly]
+        public async Task Rematch(string gameId)
+        {
+            await using var game = await ValidateGame(gameId);
+            var manager = await ValidateManager(game.GameType);
+            var appUser = await ValidateUser();
+
+            if (game.CreatorId != appUser.Id)
+            {
+                await Clients.Caller.SendAsync("Alert", JsonConvert.SerializeObject(new
+                {
+                    Message = "您不是房主，无法重新开始游戏",
+                }));
+                return;
+            }
+
+            //重新创建一个游戏,然后给所有人发送重新开始的消息
+            await this.CreateGame(game.GameType, JsonConvert.SerializeObject(game.RoomSettings));
+
+            await Clients.Group(gameId).SendAsync("Rematch", JsonConvert.SerializeObject(new
+            {
+                GameId = gameId,
             }));
         }
     }
