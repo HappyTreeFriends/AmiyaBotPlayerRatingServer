@@ -295,10 +295,11 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
                 Game = await manager.GetGamePayload(game),
             });
 
-            await _gameManager.SaveGameAsync(game);
             await Clients.Client(playerId).SendAsync("PlayerKicked", playerKickedResponse);
             await Clients.Group(gameId).SendAsync("PlayerKicked", playerKickedResponse);
             await Groups.RemoveFromGroupAsync(playerId, gameId);
+
+            await _gameManager.SaveGameAsync(game);
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
