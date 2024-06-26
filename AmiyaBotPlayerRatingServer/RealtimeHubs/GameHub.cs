@@ -295,8 +295,10 @@ namespace AmiyaBotPlayerRatingServer.RealtimeHubs
 
             var manager = await ValidateManager(game.GameType);
 
-            var oldConnectionId = game.PlayerList[playerId];
-            game.PlayerList.Remove(playerId);
+            if (!game.PlayerList.Remove(playerId, out var oldConnectionId))
+            {
+                return;
+            }
 
             var playerKickedResponse = JsonConvert.SerializeObject(new
             {
