@@ -60,4 +60,5 @@ const headers = {
 现在请将其改写为一个hangfire任务，用于在asp.net core平台上执行
 
 
->%USERPROFILE%\.dotnet\tools\dotnet-ef migrations add 
+>%USERPROFILE%\.dotnet\tools\dotnet-ef migrations add
+>1
