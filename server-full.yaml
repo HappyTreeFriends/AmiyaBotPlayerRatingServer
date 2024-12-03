@@ -61,3 +61,71 @@ spec:
             path: /mnt/raid1-pool1/amiya-bot/RatingServer/Assets
       imagePullSecrets:
         - name: harbor.hsyhhssyy.net
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: amiya-bot-player-rating-server-service
+  namespace: amiya-bot
+spec:
+  selector:
+    app: amiya-bot-player-rating-server
+  ports:
+  - name: port-80
+    protocol: TCP
+    port: 80
+    targetPort: 80
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: amiya-bot-rating-server-ingress
+  namespace: amiya-bot
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+spec:
+  tls:
+    - hosts:
+        - amiya-bot-service.hsyhhssyy.net
+      secretName: amiya-bot-service.hsyhhssyy.net.tls
+  rules:
+  - host: amiya-bot-service.hsyhhssyy.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: amiya-bot-player-rating-server-service-website
+            port:
+              number: 80
+      - path: /api/
+        pathType: Prefix
+        backend:
+          service:
+            name: amiya-bot-player-rating-server-service
+            port:
+              number: 80   
+      - path: /gamehub
+        pathType: Prefix
+        backend:
+          service:
+            name: amiya-bot-player-rating-server-service
+            port:
+              number: 80      
+      - path: /connect/
+        pathType: Prefix
+        backend:
+          service:
+            name: amiya-bot-player-rating-server-service
+            port:
+              number: 80
